@@ -1,27 +1,58 @@
-package com.leoschulmann.roboquote.model;
+package com.leoschulmann.roboquote.entities;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.leoschulmann.roboquote.serializers.ItemDeserializer;
 import com.leoschulmann.roboquote.serializers.ItemSerializer;
+import org.hibernate.annotations.Columns;
+import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
 
+import javax.money.Monetary;
+import javax.persistence.*;
+
+@Entity
 @JsonSerialize(using = ItemSerializer.class)
+@JsonDeserialize(using = ItemDeserializer.class)
 public class Item {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id")
+    int id;
+
+    @Column(name = "part_no")
     String partno;
+
+    @Column(name = "name_rus")
     String nameRus;
+
+    @Column(name = "name_eng")
     String nameEng;
+
+    @Columns(columns = {
+            @Column(name = "buying_currency"),
+            @Column(name = "buying_amount")})
+    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     Money buyingPrice;
+
+    @Column(name = "selling_margin")
     double margin;
+
+    @Columns(columns = {
+            @Column(name = "selling_currency"),
+            @Column(name = "selling_amount")})
+    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     Money sellingPrice;
 
     public Item() {
     }
 
-    public Item(String partno, String nameRus, String nameEng, Money buyingPrice, double margin) {
-        this.partno = partno;
-        this.nameRus = nameRus;
-        this.nameEng = nameEng;
-        this.buyingPrice = buyingPrice;
-        this.margin = margin;
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getPartno() {
@@ -65,7 +96,8 @@ public class Item {
     }
 
     public Money getSellingPrice() {
-        return sellingPrice == null ? buyingPrice.divide((100 - margin) / 100.) : sellingPrice;
+        if (sellingPrice.isNegativeOrZero()) sellingPrice = buyingPrice.divide((100 - margin) / 100.);
+        return sellingPrice.with(Monetary.getDefaultRounding());
     }
 
     public void setSellingPrice(Money sellingPrice) { //overrides calculation of selling price
