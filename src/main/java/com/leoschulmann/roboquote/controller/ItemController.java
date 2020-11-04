@@ -28,4 +28,9 @@ public class ItemController {
     void addNewItem(@RequestBody Item item) {
         itemServiceImpl.addNewItem(item);
     }
+
+    @GetMapping("/search/{str}")
+    List<Item> search(@PathVariable String str) {
+        return itemServiceImpl.searchBy(str);
+    }
 }

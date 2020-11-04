@@ -19,11 +19,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Item getItemByName(String name) {
-        return itemRepository.findByNameRus(name);
-    }
-
-    @Override
     public List<Item> getAll() {
         return itemRepository.findAll();
     }
@@ -31,5 +26,12 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public void addNewItem(Item item) {
         itemRepository.save(item);
+    }
+
+    @Override
+    public List<Item> searchBy(String str) {
+        return itemRepository.
+                findAllByNameRusContainingIgnoreCaseOrNameEngContainingIgnoreCaseOrPartnoContainingIgnoreCase
+                        (str, str, str);
     }
 }

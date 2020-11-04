@@ -7,9 +7,9 @@ import java.util.List;
 public interface ItemService {
     Item getItemById(int id);
 
-    Item getItemByName(String name);
-
     List<Item> getAll();
 
     void addNewItem(Item item);
+
+    List<Item> searchBy(String str);
 }

@@ -20,10 +20,13 @@ public class Item {
     @Column(name = "id")
     int id;
 
-    @Column(name = "part_no")
+    @Column(name = "brand")
+    String brand;
+
+    @Column(name = "part_no", nullable = false)
     String partno;
 
-    @Column(name = "name_rus")
+    @Column(name = "name_rus", nullable = false)
     String nameRus;
 
     @Column(name = "name_eng")
@@ -49,10 +52,6 @@ public class Item {
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getPartno() {
@@ -100,7 +99,15 @@ public class Item {
         return sellingPrice.with(Monetary.getDefaultRounding());
     }
 
-    public void setSellingPrice(Money sellingPrice) { //overrides calculation of selling price
+    public void setSellingPrice(Money sellingPrice) {
         this.sellingPrice = sellingPrice;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
     }
 }
