@@ -7,9 +7,11 @@ import com.leoschulmann.roboquote.serializers.ItemSerializer;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.money.Monetary;
 import javax.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @JsonSerialize(using = ItemSerializer.class)
@@ -46,6 +48,12 @@ public class Item {
             @Column(name = "selling_amount")})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     Money sellingPrice;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    LocalDate created;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    LocalDate modified;
 
     public Item() {
     }
@@ -109,5 +117,21 @@ public class Item {
 
     public void setBrand(String brand) {
         this.brand = brand;
+    }
+
+    public LocalDate getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDate created) {
+        this.created = created;
+    }
+
+    public LocalDate getModified() {
+        return modified;
+    }
+
+    public void setModified(LocalDate modified) {
+        this.modified = modified;
     }
 }

@@ -5,6 +5,7 @@ import com.leoschulmann.roboquote.services.ItemServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -26,6 +27,8 @@ public class ItemController {
 
     @PostMapping("/")
     void addNewItem(@RequestBody Item item) {
+        item.setCreated(LocalDate.now());
+        item.setModified(LocalDate.now());
         itemServiceImpl.addNewItem(item);
     }
 
