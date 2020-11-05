@@ -1,6 +1,6 @@
-package com.leoschulmann.roboquote.services;
+package com.leoschulmann.roboquote.itemservice.services;
 
-import com.leoschulmann.roboquote.entities.Item;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
 
 import java.util.List;
 

@@ -1,9 +1,9 @@
-package com.leoschulmann.roboquote.entities;
+package com.leoschulmann.roboquote.itemservice.entities;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.leoschulmann.roboquote.serializers.ItemDeserializer;
-import com.leoschulmann.roboquote.serializers.ItemSerializer;
+import com.leoschulmann.roboquote.itemservice.serializers.ItemDeserializer;
+import com.leoschulmann.roboquote.itemservice.serializers.ItemSerializer;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;

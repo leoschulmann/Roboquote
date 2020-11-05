@@ -1,4 +1,4 @@
-package com.leoschulmann.roboquote.config;
+package com.leoschulmann.roboquote.itemservice.config;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 

@@ -1,11 +1,10 @@
-package com.leoschulmann.roboquote.serializers;
+package com.leoschulmann.roboquote.itemservice.serializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.leoschulmann.roboquote.entities.Item;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
 import org.javamoney.moneta.Money;
 
 import java.io.IOException;

@@ -1,7 +1,7 @@
-package com.leoschulmann.roboquote.controller;
+package com.leoschulmann.roboquote.itemservice.controller;
 
-import com.leoschulmann.roboquote.entities.Item;
-import com.leoschulmann.roboquote.services.ItemServiceImpl;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.itemservice.services.ItemServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

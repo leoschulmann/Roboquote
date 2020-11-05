@@ -1,4 +1,4 @@
-package com.leoschulmann.roboquote.config;
+package com.leoschulmann.roboquote.itemservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,14 +15,14 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
-@EnableJpaRepositories ("com.leoschulmann.roboquote.repositories")
+@EnableJpaRepositories ("com.leoschulmann.roboquote.itemservice.repositories")
 @EnableTransactionManagement
 public class JpaConfig {
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
         LocalContainerEntityManagerFactoryBean entityManager = new LocalContainerEntityManagerFactoryBean();
-        entityManager.setPackagesToScan("com.leoschulmann.roboquote.entities");
+        entityManager.setPackagesToScan("com.leoschulmann.roboquote.itemservice.entities");
         entityManager.setDataSource(dataSource());
         JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         entityManager.setJpaVendorAdapter(vendorAdapter);

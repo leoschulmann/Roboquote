@@ -1,9 +1,9 @@
-package com.leoschulmann.roboquote.serializers;
+package com.leoschulmann.roboquote.itemservice.serializers;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.leoschulmann.roboquote.entities.Item;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;

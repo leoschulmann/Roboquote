@@ -1,6 +1,6 @@
-package com.leoschulmann.roboquote.repositories;
+package com.leoschulmann.roboquote.itemservice.repositories;
 
-import com.leoschulmann.roboquote.entities.Item;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

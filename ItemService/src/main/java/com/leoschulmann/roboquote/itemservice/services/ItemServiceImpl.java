@@ -1,7 +1,7 @@
-package com.leoschulmann.roboquote.services;
+package com.leoschulmann.roboquote.itemservice.services;
 
-import com.leoschulmann.roboquote.entities.Item;
-import com.leoschulmann.roboquote.repositories.ItemRepository;
+import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
