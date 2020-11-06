@@ -134,4 +134,8 @@ public class Item {
     public void setModified(LocalDate modified) {
         this.modified = modified;
     }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 }

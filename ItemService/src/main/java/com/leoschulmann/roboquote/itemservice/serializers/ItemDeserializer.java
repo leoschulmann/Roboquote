@@ -9,6 +9,8 @@ import org.javamoney.moneta.Money;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class ItemDeserializer extends JsonDeserializer<Item> {
     @Override
@@ -29,6 +31,13 @@ public class ItemDeserializer extends JsonDeserializer<Item> {
         BigDecimal sellingAmt = node.get("amount-selling").decimalValue();
         item.setSellingPrice(Money.of(sellingAmt, sellingCur));
 
+        if (node.has("id")) item.setId(node.get("id").intValue());
+        if (node.has("date-created")) {
+            item.setCreated(LocalDate.parse(node.get("date-created").textValue(), DateTimeFormatter.ISO_DATE));
+        }
+        if (node.has("date-modified")) {
+            item.setCreated(LocalDate.parse(node.get("date-modified").textValue(), DateTimeFormatter.ISO_DATE));
+        }
         return item;
     }
 }
