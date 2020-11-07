@@ -4,6 +4,8 @@ import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.services.ItemPositionService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,13 +21,15 @@ public class QuoteController {
     }
 
     @PostMapping("/save")
-    public void saveQuote(@RequestBody Quote quote) {
+    public ResponseEntity<Quote> saveQuote(@RequestBody Quote quote) {
         quote.getItemPositions().forEach(itemPosition -> itemPosition.setQuote(quote));
-        quoteService.saveQuote(quote);
+        Quote q = quoteService.saveQuote(quote);
+        return new ResponseEntity<>(q, HttpStatus.CREATED);
     }
 
     @GetMapping("/add/{inventoryId}/{qty}")
-    public ItemPosition getNewItemPosition(@PathVariable Integer inventoryId, @PathVariable Integer qty) {
-        return itemPositionService.getNewItemPosition(inventoryId, qty);
+    public ResponseEntity<ItemPosition> getNewItemPosition(@PathVariable Integer inventoryId, @PathVariable Integer qty) {
+        ItemPosition i = itemPositionService.getNewItemPosition(inventoryId, qty);
+        return new ResponseEntity<>(i, HttpStatus.OK);
     }
 }

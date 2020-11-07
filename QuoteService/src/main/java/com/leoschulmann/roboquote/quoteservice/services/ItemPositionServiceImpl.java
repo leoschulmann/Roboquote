@@ -2,11 +2,11 @@ package com.leoschulmann.roboquote.quoteservice.services;
 
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
+import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -16,7 +16,7 @@ public class ItemPositionServiceImpl implements ItemPositionService {
     String url;
 
     @Override
-    public ItemPosition getNewItemPosition(Integer inventoryId, Integer qty) {
+    public ItemPosition getNewItemPosition(Integer inventoryId, Integer qty) throws NoInventoryItemFound {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Item> responseEntity = restTemplate.getForEntity(
                 url + inventoryId, Item.class);
@@ -28,6 +28,6 @@ public class ItemPositionServiceImpl implements ItemPositionService {
             i.setName(item.getNameRus());  //todo do not forget to make changeable
             i.setQty(qty);
             return i;
-        } else throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+        } else throw new NoInventoryItemFound(inventoryId);
     }
 }
