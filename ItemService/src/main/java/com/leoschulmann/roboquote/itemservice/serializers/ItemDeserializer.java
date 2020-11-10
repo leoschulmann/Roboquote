@@ -36,7 +36,7 @@ public class ItemDeserializer extends JsonDeserializer<Item> {
             item.setCreated(LocalDate.parse(node.get("date-created").textValue(), DateTimeFormatter.ISO_DATE));
         }
         if (node.has("date-modified")) {
-            item.setCreated(LocalDate.parse(node.get("date-modified").textValue(), DateTimeFormatter.ISO_DATE));
+            item.setModified(LocalDate.parse(node.get("date-modified").textValue(), DateTimeFormatter.ISO_DATE));
         }
         return item;
     }
