@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.quoteservice.serializers.ItemPositionDeserializer;
 import com.leoschulmann.roboquote.quoteservice.serializers.ItemPositionSerializer;
+import com.sun.istack.NotNull;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
@@ -23,6 +24,9 @@ public class ItemPosition {
     @Column(name = "name_in_quote", nullable = false)
     private String name;
 
+    @Column(name = "part_no")
+    private String partNo;
+
     @Columns(columns = {
             @Column(name = "selling_currency", nullable = false),
             @Column(name = "selling_amount", nullable = false)})
@@ -32,9 +36,15 @@ public class ItemPosition {
     @Column(name = "qty", nullable = false)
     private Integer qty;
 
-    @JoinColumn(name = "q_ref")
+    @Columns(columns = {
+            @Column(name = "selling_sum_currency", nullable = false),
+            @Column(name = "selling_sum_amount", nullable = false)})
+    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
+    private Money sellingSum;
+
+    @JoinColumn(name = "section_ref", nullable = false)
     @ManyToOne
-    private Quote quote;
+    private QuoteSection section;
 
     @Column(name = "inventory_item_id")  //todo make not null
     private Integer itemId;
@@ -74,12 +84,12 @@ public class ItemPosition {
         this.qty = qty;
     }
 
-    public Quote getQuote() {
-        return quote;
+    public QuoteSection getSection() {
+        return section;
     }
 
-    public void setQuote(Quote quote) {
-        this.quote = quote;
+    public void setSection(QuoteSection quote) {
+        this.section = quote;
     }
 
     public Integer getItemId() {
@@ -88,5 +98,30 @@ public class ItemPosition {
 
     public void setItemId(Integer itemId) {
         this.itemId = itemId;
+    }
+
+    public String getPartNo() {
+        return partNo;
+    }
+
+    public void setPartNo(String partNo) {
+        this.partNo = partNo;
+    }
+
+    public Money getSellingSum() {
+        return sellingSum;
+    }
+
+    public void setSellingSum(Money sellingSum) {
+        this.sellingSum = sellingSum;
+    }
+
+    public ItemPosition(String name, String partNo, @NotNull Money sellingPrice, @NotNull Integer qty, Integer itemId) {
+        this.name = name;
+        this.partNo = partNo;
+        this.sellingPrice = sellingPrice;
+        this.qty = qty;
+        this.itemId = itemId;
+        this.sellingSum = sellingPrice.multiply(qty);
     }
 }

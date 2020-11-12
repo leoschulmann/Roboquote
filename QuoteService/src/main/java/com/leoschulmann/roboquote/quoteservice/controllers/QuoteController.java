@@ -22,7 +22,6 @@ public class QuoteController {
 
     @PostMapping("/save")
     public ResponseEntity<Quote> saveQuote(@RequestBody Quote quote) {
-        quote.getItemPositions().forEach(itemPosition -> itemPosition.setQuote(quote));
         Quote q = quoteService.saveQuote(quote);
         return new ResponseEntity<>(q, HttpStatus.CREATED);
     }

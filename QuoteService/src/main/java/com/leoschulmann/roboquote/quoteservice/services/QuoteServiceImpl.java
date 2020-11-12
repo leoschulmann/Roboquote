@@ -20,7 +20,7 @@ public class QuoteServiceImpl implements QuoteService {
 
     @Override
     public Quote saveQuote(Quote quote) {
-        if (quote.getItemPositions().size() == 0) throw new EmptyQuoteException();
+        if (quote.getSections().size() == 0) throw new EmptyQuoteException();
         quote.setCreated(LocalDate.now());
         quote.setNumber(generatingService.generate());
         quote.setValidThru(LocalDate.now().plus(3, ChronoUnit.MONTHS));

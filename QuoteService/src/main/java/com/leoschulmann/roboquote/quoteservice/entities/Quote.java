@@ -2,6 +2,8 @@ package com.leoschulmann.roboquote.quoteservice.entities;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Entity
@@ -11,23 +13,23 @@ public class Quote {
     @GeneratedValue(strategy = GenerationType.AUTO)
     int id;
 
-    @Column(name = "serial")
+    @Column(name = "serial", nullable = false)
     String number;
 
-    @Column(name = "date_created")
+    @Column(name = "date_created", nullable = false)
     LocalDate created;
 
     @Column(name = "date_valid")
     LocalDate validThru;
 
-    @Column(name = "version")
+    @Column(name = "version", columnDefinition = "int default 1")
     Integer version;
 
-    @Column(name = "customer")
+    @Column(name = "customer", nullable = false)
     String customer;
 
     @OneToMany(mappedBy = "quote", cascade = {CascadeType.ALL})
-    List<ItemPosition> itemPositions;
+    List<QuoteSection> sections;
 
 
     public Quote() {
@@ -81,11 +83,26 @@ public class Quote {
         this.customer = customer;
     }
 
-    public List<ItemPosition> getItemPositions() {
-        return itemPositions;
+    public List<QuoteSection> getSections() {
+        return sections;
     }
 
-    public void setItemPositions(List<ItemPosition> itemPositions) {
-        this.itemPositions = itemPositions;
+    public void setSections(List<QuoteSection> sections) {
+        this.sections = sections;
+    }
+
+    public Quote(String number, String customer, LocalDate validThru) {
+        this.number = number;
+        this.created = LocalDate.now();
+        this.customer = customer;
+        this.sections = new ArrayList<>();
+        this.validThru = validThru;
+    }
+
+    public void addSections(QuoteSection... sec) {
+        Arrays.stream(sec).forEach(quoteSection -> {
+            sections.add(quoteSection);
+            quoteSection.setQuote(this);
+        });
     }
 }
