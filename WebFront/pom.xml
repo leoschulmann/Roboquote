@@ -14,17 +14,22 @@
 	<name>WebFront</name>
 	<description>Web front end for Roboquote</description>
 
+
 	<properties>
 		<java.version>11</java.version>
 		<vaadin.version>14.4.2</vaadin.version>
 	</properties>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>com.leoschulmann</groupId>
 			<artifactId>ItemService</artifactId>
 			<version>0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.leoschulmann</groupId>
+			<artifactId>QuoteService</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -97,6 +102,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>
