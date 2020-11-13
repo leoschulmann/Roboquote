@@ -2,6 +2,7 @@ package com.leoschulmann.roboquote.quoteservice.controllers;
 
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
+import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
 import com.leoschulmann.roboquote.quoteservice.services.ItemPositionService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,12 @@ public class QuoteController {
 
     @GetMapping("/add/{inventoryId}/{qty}")
     public ResponseEntity<ItemPosition> getNewItemPosition(@PathVariable Integer inventoryId, @PathVariable Integer qty) {
-        ItemPosition i = itemPositionService.getNewItemPosition(inventoryId, qty);
+        ItemPosition i = null;
+        try {
+            i = itemPositionService.getNewItemPosition(inventoryId, qty);
+        } catch (NoInventoryItemFound noInventoryItemFound) {
+            noInventoryItemFound.printStackTrace();
+        }
         return new ResponseEntity<>(i, HttpStatus.OK);
     }
 }

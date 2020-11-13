@@ -3,9 +3,11 @@ package com.leoschulmann.roboquote.WebFront.components;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class InventoryItemHelperImplRUS implements InventoryItemHelper {
     @Override
     public QuoteSection append(QuoteSection content, Item item) {
