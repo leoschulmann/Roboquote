@@ -1,28 +1,28 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
+import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
+import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.grid.Grid;
 
-import java.util.ArrayList;
-import java.util.List;
+public class SectionGrid extends Grid<ItemPosition> {
+    private final QuoteSection quoteSection;
 
-public class SectionGrid<T> extends Grid<T> {
-    private  List<T> content;
-
-
-    public SectionGrid(Class<T> beanType) {
-        super(beanType);
-        content = new ArrayList<>();
-    }
-
-    public List<T> getContent() {
-        return content;
-    }
-
-    public void setContent(List<T> content) {
-        this.content = content;
+    public SectionGrid(String name) {
+        super(ItemPosition.class);
+        this.quoteSection = new QuoteSection(name);
+        setItems(quoteSection.getPositions());
     }
 
     public void renderItems() {
-        setItems(content);
+        setItems(quoteSection.getPositions());
+    }
+
+    public QuoteSection getQuoteSection() {
+        return quoteSection;
+    }
+
+    @Override
+    public String toString() {
+        return quoteSection.getName();
     }
 }
