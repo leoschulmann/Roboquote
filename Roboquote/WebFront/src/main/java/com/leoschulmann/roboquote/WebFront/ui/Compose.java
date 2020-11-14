@@ -3,6 +3,7 @@ package com.leoschulmann.roboquote.WebFront.ui;
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.InventoryItemToItemPositionConverter;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
+import com.leoschulmann.roboquote.WebFront.components.QuoteSectionHandler;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
@@ -16,14 +17,17 @@ import java.util.List;
 @Route(value = "compose", layout = MainLayout.class)
 public class Compose extends VerticalLayout {
     private ItemService itemService;
-    private CurrencyFormatService currencyFormatService;
+    private CurrencyFormatService currencyFormatter;
     private InventoryItemToItemPositionConverter converter;
-    public Compose(ItemService itemService, CurrencyFormatService currencyFormatService,
-                   InventoryItemToItemPositionConverter converter) {
+    private QuoteSectionHandler sectionHandler;
+
+    public Compose(ItemService itemService, CurrencyFormatService currencyFormatter,
+                   InventoryItemToItemPositionConverter converter, QuoteSectionHandler sectionHandler) {
 
         this.itemService = itemService;
-        this.currencyFormatService = currencyFormatService;
+        this.currencyFormatter = currencyFormatter;
         this.converter = converter;
+        this.sectionHandler = sectionHandler;
 
         ComboBox<Item> searchBox = getItemComboBox();
 
@@ -32,10 +36,17 @@ public class Compose extends VerticalLayout {
         SectionGrid<ItemPosition> defaultGrid = new SectionGrid<>(ItemPosition.class);
         defaultGrid.setContent(defaultSection.getPositions());
         defaultGrid.removeAllColumns();
-        defaultGrid.addColumns("name", "qty", "partNo");
+
+        defaultGrid.addColumn("name").setHeader("Item name").setAutoWidth(true);
+        defaultGrid.addColumn("qty").setHeader("Quantity");
+        defaultGrid.addColumn("partNo").setHeader("Part No");
+        defaultGrid.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price");
+        defaultGrid.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum");
+
         searchBox.addValueChangeListener(e -> {
             if (e.getValue() != null) {
-                converter.append(defaultSection, e.getValue());
+                ItemPosition ip = converter.convert(e.getValue());
+                sectionHandler.putToSection(defaultSection, ip);
                 defaultGrid.renderItems();
             }
         });

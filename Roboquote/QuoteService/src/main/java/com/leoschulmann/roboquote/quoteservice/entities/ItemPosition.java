@@ -127,5 +127,6 @@ public class ItemPosition {
 
     public void incrementQty() {
         this.qty++;
+        this.sellingSum = sellingPrice.multiply(qty);
     }
 }
