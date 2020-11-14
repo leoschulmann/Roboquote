@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class InventoryItemHelperImplRUS implements InventoryItemHelper {
+public class InventoryItemToItemPositionConverterImplRus implements InventoryItemToItemPositionConverter {
     @Override
     public QuoteSection append(QuoteSection content, Item item) {
         Optional<ItemPosition> opt = content.getPositions()

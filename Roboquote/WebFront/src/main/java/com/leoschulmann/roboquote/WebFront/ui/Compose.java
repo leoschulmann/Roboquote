@@ -1,7 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
-import com.leoschulmann.roboquote.WebFront.components.InventoryItemHelper;
+import com.leoschulmann.roboquote.WebFront.components.InventoryItemToItemPositionConverter;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
@@ -17,10 +17,9 @@ import java.util.List;
 public class Compose extends VerticalLayout {
     private ItemService itemService;
     private CurrencyFormatService currencyFormatService;
-    private InventoryItemHelper converter;
-    private InventoryItemHelper itemConverter;
+    private InventoryItemToItemPositionConverter converter;
     public Compose(ItemService itemService, CurrencyFormatService currencyFormatService,
-                   InventoryItemHelper converter) {
+                   InventoryItemToItemPositionConverter converter) {
 
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
@@ -33,32 +32,7 @@ public class Compose extends VerticalLayout {
         SectionGrid<ItemPosition> defaultGrid = new SectionGrid<>(ItemPosition.class);
         defaultGrid.setContent(defaultSection.getPositions());
         defaultGrid.removeAllColumns();
-//        defaultGrid.addColumns("brand", "partno", "nameRus", "nameEng");
-//        defaultGrid.addColumn(item -> this.currencyFormatService.formatMoney(item.getSellingPrice())).setHeader("Selling Price");
-//        defaultGrid.addColumns("margin", "modified");
-//
-//        defaultGrid.getColumns().forEach(col -> col.setAutoWidth(true));
-
-
-        //    private Integer id;
-        //
-        //    private String name;
-        //
-        //    @Columns(columns = {
-        //            @Column(name = "selling_currency", nullable = false),
-        //            @Column(name = "selling_amount", nullable = false)})
-        //    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
-        //    private Money sellingPrice;
-        //
-        //    private Integer qty;
-        //
-        //    private Quote quote;
-        //
-        //    private Integer itemId;
-
         defaultGrid.addColumns("name", "qty", "partNo");
-
-
         searchBox.addValueChangeListener(e -> {
             if (e.getValue() != null) {
                 converter.append(defaultSection, e.getValue());
