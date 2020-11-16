@@ -7,9 +7,10 @@ import com.leoschulmann.roboquote.WebFront.components.QuoteSectionHandler;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.vaadin.flow.component.ItemLabelGenerator;
+import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.H5;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,7 +28,7 @@ public class Compose extends VerticalLayout {
     private QuoteSectionHandler sectionHandler;
 
     private VerticalLayout gridsBlock;
-    private List<SectionGrid> grids;
+    private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
@@ -40,8 +41,12 @@ public class Compose extends VerticalLayout {
         this.converter = converter;
         this.sectionHandler = sectionHandler;
 
-        grids = new ArrayList<>();
-        add(prepareControlBlock());
+        Accordion accordion = new Accordion();
+        accordion.setWidthFull();
+
+        gridList = new ArrayList<>();
+        accordion.add("Inventory lookup", prepareControlBlock());
+        add(accordion);
         gridsBlock = createGridsBlock();
         addNewGrid(DEFAULT_SECTION_NAME);
 
@@ -55,7 +60,7 @@ public class Compose extends VerticalLayout {
         layout.setWidthFull();
         ComboBox<Item> searchBox = getItemComboBox();
         avaiableGridsBox = new ComboBox<>();
-        avaiableGridsBox.setItems(grids);
+        avaiableGridsBox.setItems(gridList);
         Button addToGridBtn = new Button(VaadinIcon.PLUS.create());
         addToGridBtn.addClickListener(click -> {
             if (searchBox.getValue() != null && avaiableGridsBox.getValue() != null) {
@@ -65,7 +70,9 @@ public class Compose extends VerticalLayout {
             }
         });
         searchBox.setWidthFull();
+        searchBox.setPlaceholder("Inventory lookup");
         avaiableGridsBox.setWidthFull();
+        avaiableGridsBox.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
         layout.add(searchBox, avaiableGridsBox, addToGridBtn);
         return layout;
@@ -81,7 +88,8 @@ public class Compose extends VerticalLayout {
         layout.setWidthFull();
         HorizontalLayout controlSublayout = new HorizontalLayout();
         controlSublayout.setWidthFull();
-        TextField gridNameInputField = new TextField("Section ");
+        TextField gridNameInputField = new TextField();  //todo add validation (non-empty, non-duplicating, etc)
+        gridNameInputField.setPlaceholder("Add new section ");
         Button addNewGridButton = new Button(VaadinIcon.PLUS.create());
         addNewGridButton.addClickListener(click -> {
             addNewGrid(gridNameInputField.getValue());
@@ -96,6 +104,12 @@ public class Compose extends VerticalLayout {
     }
 
     private void addNewGrid(String name) {
+        Accordion accordion = new Accordion();
+        accordion.setWidthFull();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setWidthFull();
+        HorizontalLayout head = new HorizontalLayout();
+        head.setWidthFull();
         SectionGrid sg = new SectionGrid(name);
         sg.removeAllColumns();
         sg.addColumn("name").setHeader("Item name").setAutoWidth(true);
@@ -103,11 +117,35 @@ public class Compose extends VerticalLayout {
         sg.addColumn("partNo").setHeader("Part No");
         sg.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price");
         sg.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum");
-        grids.add(sg);
-        avaiableGridsBox.setItems(grids);
-        gridsBlock.add(new H5(name), sg);
-    }
+        sg.setHeightByRows(true);
+        gridList.add(sg);
+        avaiableGridsBox.setItems(gridList);
+        TextField nameField = new TextField();
+        nameField.setWidth("50%");
+        nameField.setValue(name);
+        nameField.setVisible(false);
 
+        nameField.addValueChangeListener(event -> {
+            sg.setName(event.getValue());
+            avaiableGridsBox.setItems(gridList);
+            accordion.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
+        });
+
+        Button editNameBtn = new Button(VaadinIcon.EDIT.create());
+        editNameBtn.addClickListener(c -> nameField.setVisible(!nameField.isVisible()));
+
+        Button deleteBtn = new Button(VaadinIcon.TRASH.create());
+        deleteBtn.addClickListener(c -> {
+            gridsBlock.remove(head, sg);
+            gridList.remove(sg);
+            avaiableGridsBox.setItems(gridList); //todo refactor as method
+        });
+
+        head.add(nameField,editNameBtn, deleteBtn);
+        layout.add(head, sg);
+        accordion.add(name, layout);
+        gridsBlock.add(accordion);
+    }
 
     private ComboBox<Item> getItemComboBox() {
         ComboBox<Item> filteringComboBox = new ComboBox<>();

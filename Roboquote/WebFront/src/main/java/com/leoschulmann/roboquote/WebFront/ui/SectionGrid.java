@@ -25,4 +25,13 @@ public class SectionGrid extends Grid<ItemPosition> {
     public String toString() {
         return quoteSection.getName();
     }
+
+    public String getName() {
+        return quoteSection.getName();
+    }
+
+    public void setName(String name) {
+        quoteSection.setName(name);
+    }
+
 }
