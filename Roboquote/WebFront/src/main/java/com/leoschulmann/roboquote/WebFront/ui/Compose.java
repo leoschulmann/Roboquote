@@ -4,21 +4,33 @@ import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.InventoryItemToItemPositionConverter;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
 import com.leoschulmann.roboquote.WebFront.components.QuoteSectionHandler;
+import com.leoschulmann.roboquote.WebFront.components.QuoteAssembler;
+import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
+import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Route(value = "compose", layout = MainLayout.class)
 public class Compose extends VerticalLayout {
@@ -26,36 +38,81 @@ public class Compose extends VerticalLayout {
     private CurrencyFormatService currencyFormatter;
     private InventoryItemToItemPositionConverter converter;
     private QuoteSectionHandler sectionHandler;
+    private QuoteAssembler assembler;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
+    private Binder<QuoteDetails> detailsBinder = new Binder<>(QuoteDetails.class);
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
 
-    public Compose(ItemService itemService, CurrencyFormatService currencyFormatter,
-                   InventoryItemToItemPositionConverter converter, QuoteSectionHandler sectionHandler) {
+    public Compose(ItemService itemService,
+                   CurrencyFormatService currencyFormatter,
+                   InventoryItemToItemPositionConverter converter,
+                   QuoteSectionHandler sectionHandler,
+                   QuoteAssembler assembler) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
         this.converter = converter;
         this.sectionHandler = sectionHandler;
-
-        Accordion accordion = new Accordion();
-        accordion.setWidthFull();
+        this.assembler = assembler;
 
         gridList = new ArrayList<>();
-        accordion.add("Inventory lookup", prepareControlBlock());
-        add(accordion);
+        add(getInventoryLookupAccordeon());
         gridsBlock = createGridsBlock();
         addNewGrid(DEFAULT_SECTION_NAME);
 
-        //add(quoteinfoBlock);
+        add(quoteInfoBlock());
         add(gridsBlock);
         add(createFinishBlock());
     }
 
-    private HorizontalLayout prepareControlBlock() {
+    private Accordion quoteInfoBlock() {
+        FormLayout columnLayout = new FormLayout();
+        columnLayout.setResponsiveSteps(
+                new ResponsiveStep("25em", 1),
+                new ResponsiveStep("32em", 2),
+                new ResponsiveStep("40em", 3));
+        TextField customer = new TextField(); //todo lookup in DB
+        customer.setPlaceholder("Customer");
+        TextField dealer = new TextField();
+        dealer.setPlaceholder("Dealer");
+        EmailField email = new EmailField();  //todo email validation
+        email.setPlaceholder("Email");
+
+        TextField paymentTerms = new TextField();
+        paymentTerms.setPlaceholder("Payment Terms");  //todo make selectable from list
+        TextField shippingTerms = new TextField();
+        shippingTerms.setPlaceholder("Shipping Terms");  //todo make selectable from list
+        TextField warranty = new TextField();
+        warranty.setPlaceholder("Warranty");    //todo make selectable from list
+
+        DatePicker validThru = new DatePicker();
+        validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
+
+        columnLayout.add(customer, 3);
+        columnLayout.add(dealer, 2);
+        columnLayout.add(email);
+        columnLayout.add(paymentTerms, shippingTerms, warranty, validThru);
+        add(columnLayout);
+
+        detailsBinder.bind(customer, QuoteDetails::getCustomer, QuoteDetails::setCustomer);
+        detailsBinder.bind(dealer, QuoteDetails::getDealer, QuoteDetails::setDealer);
+        detailsBinder.bind(email, QuoteDetails::getEmail, QuoteDetails::setEmail);
+        detailsBinder.bind(paymentTerms, QuoteDetails::getPaymentTerms, QuoteDetails::setPaymentTerms);
+        detailsBinder.bind(shippingTerms, QuoteDetails::getShippingTerms, QuoteDetails::setShippingTerms);
+        detailsBinder.bind(warranty, QuoteDetails::getWarranty, QuoteDetails::setWarranty);
+        detailsBinder.bind(validThru, QuoteDetails::getValidThru, QuoteDetails::setValidThru);
+
+        Accordion accordion = new Accordion();
+        accordion.setWidthFull();
+        accordion.add("Quote details", columnLayout);
+        return accordion;
+    }
+
+    private Accordion getInventoryLookupAccordeon() {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setWidthFull();
         ComboBox<Item> searchBox = getItemComboBox();
@@ -67,6 +124,7 @@ public class Compose extends VerticalLayout {
                 ItemPosition ip = converter.convert(searchBox.getValue());
                 sectionHandler.putToSection(avaiableGridsBox.getValue().getQuoteSection(), ip);
                 avaiableGridsBox.getValue().renderItems();
+                avaiableGridsBox.getValue().refreshTotals();
             }
         });
         searchBox.setWidthFull();
@@ -75,7 +133,10 @@ public class Compose extends VerticalLayout {
         avaiableGridsBox.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
         layout.add(searchBox, avaiableGridsBox, addToGridBtn);
-        return layout;
+        Accordion accordion = new Accordion();
+        accordion.setWidthFull();
+        accordion.add("Inventory lookup", layout);
+        return accordion;
     }
 
     private VerticalLayout createGridsBlock() {
@@ -99,7 +160,19 @@ public class Compose extends VerticalLayout {
         addNewGridButton.setWidth("10%");
         controlSublayout.add(gridNameInputField, addNewGridButton);
         controlSublayout.setAlignItems(Alignment.END);
-        add(controlSublayout);
+        Button postQuote = new Button(VaadinIcon.CHECK_CIRCLE.create());
+
+        QuoteDetails qd = new QuoteDetails();
+        postQuote.addClickListener(click -> {
+            try {
+                detailsBinder.writeBean(qd);
+                List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
+                assembler.assemble(qd, sections);
+            } catch (ValidationException e) {
+                e.printStackTrace();
+            }
+        });
+        add(controlSublayout, postQuote);
         return layout;
     }
 
@@ -110,14 +183,7 @@ public class Compose extends VerticalLayout {
         layout.setWidthFull();
         HorizontalLayout head = new HorizontalLayout();
         head.setWidthFull();
-        SectionGrid sg = new SectionGrid(name);
-        sg.removeAllColumns();
-        sg.addColumn("name").setHeader("Item name").setAutoWidth(true);
-        sg.addColumn("qty").setHeader("Quantity");
-        sg.addColumn("partNo").setHeader("Part No");
-        sg.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price");
-        sg.addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum");
-        sg.setHeightByRows(true);
+        SectionGrid sg = new SectionGrid(name, currencyFormatter);
         gridList.add(sg);
         avaiableGridsBox.setItems(gridList);
         TextField nameField = new TextField();
@@ -141,7 +207,11 @@ public class Compose extends VerticalLayout {
             avaiableGridsBox.setItems(gridList); //todo refactor as method
         });
 
-        head.add(nameField,editNameBtn, deleteBtn);
+        Button discountBtn = new Button(VaadinIcon.MAGIC.create()); //todo implement
+
+        Button currencyBtn = new Button(VaadinIcon.DOLLAR.create()); //todo implement
+
+        head.add(nameField, editNameBtn, discountBtn, currencyBtn, deleteBtn);
         layout.add(head, sg);
         accordion.add(name, layout);
         gridsBlock.add(accordion);
