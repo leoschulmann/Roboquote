@@ -33,7 +33,8 @@ public class QuoteJpaTest {
 
     @Test
     public void saveFullStack() {
-        Quote q = new Quote(generatingService.generate(), "randomCust", LocalDate.now().plus(3, ChronoUnit.MONTHS));
+        Quote q = new Quote(generatingService.generate(),LocalDate.now().plus(3, ChronoUnit.MONTHS ),
+                "randomCust", null, null, null);
 
         QuoteSection sect1 = new QuoteSection("testname");
         ItemPosition pos = new ItemPosition("item1", "ppp", Money.of(100, "EUR"), 10, 1);
@@ -55,7 +56,8 @@ public class QuoteJpaTest {
 
     @Test
     public void testRepo() {
-        Quote q = new Quote(generatingService.generate(), "any customer", LocalDate.now().plus(3, ChronoUnit.MONTHS));
+        Quote q = new Quote(generatingService.generate(),LocalDate.now().plus(3, ChronoUnit.MONTHS ),
+                "randomCust", null, null, null);
 
         ItemPosition i = new ItemPosition("sdfsfd", "123", Money.of(1, "USD"), 2, 10);
         QuoteSection qs = new QuoteSection("some section");

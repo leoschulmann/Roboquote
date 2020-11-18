@@ -13,27 +13,50 @@ public class Quote {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private int id;
 
     @Column(name = "serial", nullable = false)
-    String number;
+    private String number;
 
     @Column(name = "date_created", nullable = false)
-    LocalDate created;
+    private LocalDate created;
 
     @Column(name = "date_valid")
-    LocalDate validThru;
+    private LocalDate validThru;
 
     @Column(name = "version", columnDefinition = "int default 1")
-    Integer version;
+    private Integer version;
 
     @Column(name = "customer", nullable = false)
-    String customer;
+    private String customer;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "quote", cascade = {CascadeType.ALL})
-    List<QuoteSection> sections;
+    private List<QuoteSection> sections;
 
+    @Column(name = "discount", columnDefinition = "decimal(3,1) default 0.0")
+    private Integer discount;
+
+    @Column(name = "dealer")
+    private String dealer;
+
+    @Column(name = "customer_info")
+    private String customerInfo;
+
+    @Column(name = "dealer_info")
+    private String dealerInfo;
+
+    @Column(name = "payment_terms")
+    private String paymentTerms;
+
+    @Column(name = "shipping_terms")
+    private String shippingTerms;
+
+    @Column(name = "warranty")
+    private String warranty;
+
+
+    //todo make overridable price
 
     public Quote() {
     }
@@ -94,12 +117,72 @@ public class Quote {
         this.sections = sections;
     }
 
-    public Quote(String number, String customer, LocalDate validThru) {
+
+    public Integer getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Integer discount) {
+        this.discount = discount;
+    }
+
+    public String getDealer() {
+        return dealer;
+    }
+
+    public void setDealer(String dealer) {
+        this.dealer = dealer;
+    }
+
+    public String getCustomerInfo() {
+        return customerInfo;
+    }
+
+    public void setCustomerInfo(String customerInfo) {
+        this.customerInfo = customerInfo;
+    }
+
+    public String getDealerInfo() {
+        return dealerInfo;
+    }
+
+    public void setDealerInfo(String dealerInfo) {
+        this.dealerInfo = dealerInfo;
+    }
+
+    public String getPaymentTerms() {
+        return paymentTerms;
+    }
+
+    public void setPaymentTerms(String paymentTerms) {
+        this.paymentTerms = paymentTerms;
+    }
+
+    public String getShippingTerms() {
+        return shippingTerms;
+    }
+
+    public void setShippingTerms(String shippingTerms) {
+        this.shippingTerms = shippingTerms;
+    }
+
+    public String getWarranty() {
+        return warranty;
+    }
+
+    public void setWarranty(String warranty) {
+        this.warranty = warranty;
+    }
+
+    public Quote(String number, LocalDate validThru, String customer, String dealer, String customerInfo, String dealerInfo) {
         this.number = number;
-        this.created = LocalDate.now();
-        this.customer = customer;
-        this.sections = new ArrayList<>();
         this.validThru = validThru;
+        this.customer = customer;
+        this.dealer = dealer;
+        this.customerInfo = customerInfo;
+        this.dealerInfo = dealerInfo;
+        this.sections = new ArrayList<>();
+        this.created = LocalDate.now();
     }
 
     public void addSections(QuoteSection... sec) {

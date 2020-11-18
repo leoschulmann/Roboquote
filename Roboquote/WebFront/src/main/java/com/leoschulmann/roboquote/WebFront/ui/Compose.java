@@ -1,10 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
-import com.leoschulmann.roboquote.WebFront.components.InventoryItemToItemPositionConverter;
-import com.leoschulmann.roboquote.WebFront.components.ItemService;
-import com.leoschulmann.roboquote.WebFront.components.QuoteSectionHandler;
-import com.leoschulmann.roboquote.WebFront.components.QuoteAssembler;
+import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
@@ -16,6 +12,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -25,12 +22,16 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
+import org.javamoney.moneta.Money;
+import org.javamoney.moneta.function.MonetaryFunctions;
 
+import javax.money.MonetaryAmount;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Route(value = "compose", layout = MainLayout.class)
 public class Compose extends VerticalLayout {
@@ -44,6 +45,8 @@ public class Compose extends VerticalLayout {
     private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
     private Binder<QuoteDetails> detailsBinder = new Binder<>(QuoteDetails.class);
+    private H4 totalString = new H4("TOTAL ");
+
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
 
@@ -77,10 +80,13 @@ public class Compose extends VerticalLayout {
                 new ResponsiveStep("40em", 3));
         TextField customer = new TextField(); //todo lookup in DB
         customer.setPlaceholder("Customer");
+        EmailField customerInfo = new EmailField();
+        customerInfo.setPlaceholder("Customer info");
+
         TextField dealer = new TextField();
         dealer.setPlaceholder("Dealer");
-        EmailField email = new EmailField();  //todo email validation
-        email.setPlaceholder("Email");
+        EmailField dealerInfo = new EmailField();
+        dealerInfo.setPlaceholder("Dealer info");
 
         TextField paymentTerms = new TextField();
         paymentTerms.setPlaceholder("Payment Terms");  //todo make selectable from list
@@ -92,15 +98,17 @@ public class Compose extends VerticalLayout {
         DatePicker validThru = new DatePicker();
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
 
-        columnLayout.add(customer, 3);
-        columnLayout.add(dealer, 2);
-        columnLayout.add(email);
+        columnLayout.add(customer);
+        columnLayout.add(customerInfo, 2);
+        columnLayout.add(dealer);
+        columnLayout.add(dealerInfo, 2);
         columnLayout.add(paymentTerms, shippingTerms, warranty, validThru);
         add(columnLayout);
 
         detailsBinder.bind(customer, QuoteDetails::getCustomer, QuoteDetails::setCustomer);
+        detailsBinder.bind(customerInfo, QuoteDetails::getCustomerInfo, QuoteDetails::setCustomerInfo);
         detailsBinder.bind(dealer, QuoteDetails::getDealer, QuoteDetails::setDealer);
-        detailsBinder.bind(email, QuoteDetails::getEmail, QuoteDetails::setEmail);
+        detailsBinder.bind(dealerInfo, QuoteDetails::getDealerInfo, QuoteDetails::setDealerInfo);
         detailsBinder.bind(paymentTerms, QuoteDetails::getPaymentTerms, QuoteDetails::setPaymentTerms);
         detailsBinder.bind(shippingTerms, QuoteDetails::getShippingTerms, QuoteDetails::setShippingTerms);
         detailsBinder.bind(warranty, QuoteDetails::getWarranty, QuoteDetails::setWarranty);
@@ -125,6 +133,11 @@ public class Compose extends VerticalLayout {
                 sectionHandler.putToSection(avaiableGridsBox.getValue().getQuoteSection(), ip);
                 avaiableGridsBox.getValue().renderItems();
                 avaiableGridsBox.getValue().refreshTotals();
+                totalString.setText("TOTAL " + currencyFormatter.formatMoney(
+                        gridList.stream()
+                                .map(gr -> (MonetaryAmount) gr.getTotal())
+                                .reduce(MonetaryFunctions.sum())
+                                .orElseGet(() -> Money.of(0, "EUR"))));
             }
         });
         searchBox.setWidthFull();
@@ -160,6 +173,12 @@ public class Compose extends VerticalLayout {
         addNewGridButton.setWidth("10%");
         controlSublayout.add(gridNameInputField, addNewGridButton);
         controlSublayout.setAlignItems(Alignment.END);
+
+        add(controlSublayout, totalString, createPostQuoteButton());
+        return layout;
+    }
+
+    private Button createPostQuoteButton() {
         Button postQuote = new Button(VaadinIcon.CHECK_CIRCLE.create());
 
         QuoteDetails qd = new QuoteDetails();
@@ -172,8 +191,7 @@ public class Compose extends VerticalLayout {
                 e.printStackTrace();
             }
         });
-        add(controlSublayout, postQuote);
-        return layout;
+        return postQuote;
     }
 
     private void addNewGrid(String name) {

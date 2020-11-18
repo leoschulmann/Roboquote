@@ -5,8 +5,9 @@ import java.time.LocalDate;
 public class QuoteDetails {
     private String name;
     private String customer;
+    private String customerInfo;
     private String dealer;
-    private String email;
+    private String dealerInfo;
     private String paymentTerms;
     private String shippingTerms;
     private String warranty;
@@ -39,12 +40,12 @@ public class QuoteDetails {
         this.dealer = dealer;
     }
 
-    public String getEmail() {
-        return email;
+    public String getDealerInfo() {
+        return dealerInfo;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setDealerInfo(String dealerInfo) {
+        this.dealerInfo = dealerInfo;
     }
 
     public String getPaymentTerms() {
@@ -77,5 +78,13 @@ public class QuoteDetails {
 
     public void setValidThru(LocalDate validThru) {
         this.validThru = validThru;
+    }
+
+    public String getCustomerInfo() {
+        return customerInfo;
+    }
+
+    public void setCustomerInfo(String customerInfo) {
+        this.customerInfo = customerInfo;
     }
 }

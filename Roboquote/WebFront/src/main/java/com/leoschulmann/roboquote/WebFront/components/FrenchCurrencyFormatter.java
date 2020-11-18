@@ -1,10 +1,10 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
-import org.javamoney.moneta.Money;
 import org.javamoney.moneta.format.CurrencyStyle;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.money.MonetaryAmount;
 import javax.money.format.AmountFormatQueryBuilder;
 import javax.money.format.MonetaryAmountFormat;
 import javax.money.format.MonetaryFormats;
@@ -24,7 +24,7 @@ public class FrenchCurrencyFormatter implements CurrencyFormatService {
     }
 
     @Override
-    public String formatMoney(Money money) {
+    public String formatMoney(MonetaryAmount money) {
         return formatter.format(money);
     }
 }

@@ -1,7 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
-import org.javamoney.moneta.Money;
+import javax.money.MonetaryAmount;
 
 public interface CurrencyFormatService {
-    String formatMoney(Money money);
+    String formatMoney(MonetaryAmount money);
 }

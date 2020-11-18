@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Entity
+@Table(name = "quote_section")
 public class QuoteSection {
     @Id
     @Column(name = "id")
@@ -81,9 +82,9 @@ public class QuoteSection {
     }
 
     public void addItemPositions(ItemPosition... pos) {
-    Arrays.stream(pos).forEach(itemPosition -> {
-        itemPosition.setSection(this);
-        positions.add(itemPosition);
-    });
+        Arrays.stream(pos).forEach(itemPosition -> {
+            itemPosition.setSection(this);
+            positions.add(itemPosition);
+        });
     }
 }
