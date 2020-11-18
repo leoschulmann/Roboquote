@@ -1,5 +1,7 @@
 package com.leoschulmann.roboquote.quoteservice.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ public class Quote {
     @Column(name = "customer", nullable = false)
     String customer;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "quote", cascade = {CascadeType.ALL})
     List<QuoteSection> sections;
 

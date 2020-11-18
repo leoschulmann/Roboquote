@@ -167,7 +167,7 @@ public class Compose extends VerticalLayout {
             try {
                 detailsBinder.writeBean(qd);
                 List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
-                assembler.assemble(qd, sections);
+                assembler.assembleAndPostNew(qd, sections);
             } catch (ValidationException e) {
                 e.printStackTrace();
             }

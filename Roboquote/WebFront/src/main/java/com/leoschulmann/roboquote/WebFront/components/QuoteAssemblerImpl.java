@@ -20,14 +20,12 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
 
 
     @Override
-    public void assemble(QuoteDetails details, List<QuoteSection> sections) {
-        System.out.println("adding fields");
+    public void assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections) {
         Quote q = new Quote(getNameFromService(), details.getCustomer(), details.getValidThru());
-        System.out.println("adding sections");
+        q.setVersion(1);
+        sections.forEach(sect -> sect.getPositions().forEach(pos -> pos.setSection(sect)));
         sections.forEach(q::addSections);
-        System.out.println("writing to remote service");
         postQuote(q);
-        System.out.println("done");
     }
 
     private String getNameFromService() {

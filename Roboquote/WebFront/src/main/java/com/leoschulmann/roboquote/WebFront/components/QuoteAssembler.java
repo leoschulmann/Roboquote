@@ -6,5 +6,5 @@ import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import java.util.List;
 
 public interface QuoteAssembler {
-    void assemble(QuoteDetails details, List<QuoteSection> sections);
+    void assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections);
 }

@@ -1,9 +1,10 @@
 package com.leoschulmann.roboquote.quoteservice.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.leoschulmann.roboquote.quoteservice.serializers.ItemPositionDeserializer;
-import com.leoschulmann.roboquote.quoteservice.serializers.ItemPositionSerializer;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
 import com.sun.istack.NotNull;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
@@ -12,8 +13,6 @@ import org.javamoney.moneta.Money;
 import javax.persistence.*;
 
 @Entity
-@JsonSerialize(using = ItemPositionSerializer.class)
-@JsonDeserialize(using = ItemPositionDeserializer.class)
 @Table(name = "item_position")
 public class ItemPosition {
     @Id
@@ -31,6 +30,8 @@ public class ItemPosition {
             @Column(name = "selling_currency", nullable = false),
             @Column(name = "selling_amount", nullable = false)})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
+    @JsonDeserialize(using = MoneyDeserializer.class)
+    @JsonSerialize(using = MoneySerializer.class)
     private Money sellingPrice;
 
     @Column(name = "qty", nullable = false)
@@ -40,10 +41,13 @@ public class ItemPosition {
             @Column(name = "selling_sum_currency", nullable = false),
             @Column(name = "selling_sum_amount", nullable = false)})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
+    @JsonDeserialize(using = MoneyDeserializer.class)
+    @JsonSerialize(using = MoneySerializer.class)
     private Money sellingSum;
 
     @JoinColumn(name = "section_ref", nullable = false)
     @ManyToOne
+    @JsonBackReference
     private QuoteSection section;
 
     @Column(name = "inventory_item_id")  //todo make not null

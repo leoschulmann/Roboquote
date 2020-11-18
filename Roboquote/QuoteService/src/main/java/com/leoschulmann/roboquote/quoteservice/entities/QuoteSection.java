@@ -1,5 +1,8 @@
 package com.leoschulmann.roboquote.quoteservice.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +17,7 @@ public class QuoteSection {
 
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<ItemPosition> positions;
 
     @Column(name = "name", nullable = false)
@@ -23,6 +27,7 @@ public class QuoteSection {
     private Integer discount;
 
     @ManyToOne
+    @JsonBackReference
     @JoinColumn(name = "q_ref", nullable = false)
     private Quote quote;
 
