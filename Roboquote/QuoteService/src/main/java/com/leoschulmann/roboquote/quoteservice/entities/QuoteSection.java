@@ -2,7 +2,11 @@ package com.leoschulmann.roboquote.quoteservice.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import org.javamoney.moneta.Money;
+import org.javamoney.moneta.function.MonetaryFunctions;
 
+
+import javax.money.MonetaryAmount;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,6 +83,7 @@ public class QuoteSection {
     public QuoteSection(String name) {
         this.name = name;
         positions = new ArrayList<>();
+        discount = 0;
     }
 
     public void addItemPositions(ItemPosition... pos) {
@@ -86,5 +91,17 @@ public class QuoteSection {
             itemPosition.setSection(this);
             positions.add(itemPosition);
         });
+    }
+
+    public MonetaryAmount getTotal() {
+        //todo do smth with mismatching currencies within one table
+        return getPositions().stream()
+                .map(ip -> (MonetaryAmount) (ip.getSellingSum()))
+                .reduce(MonetaryFunctions.sum())
+                .orElseGet(() -> Money.of(0, "EUR"));
+    }
+
+    public MonetaryAmount getTotalDiscounted() {
+        return getTotal().multiply((100 - discount) / 100.);
     }
 }

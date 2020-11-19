@@ -4,14 +4,13 @@ import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.grid.Grid;
-import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
-
-import javax.money.MonetaryAmount;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Paragraph;
 
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
-    private CurrencyFormatService currencyFormatter;
+    static private CurrencyFormatService currencyFormatter;
+    private Footer footer;
 
 
     public SectionGrid(String name, CurrencyFormatService currencyFormatter) {
@@ -27,11 +26,12 @@ public class SectionGrid extends Grid<ItemPosition> {
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price");
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum()))
                 .setKey("total")
-                .setHeader("Sum")
-                .setFooter("Subtotal:  "+ currencyFormatter.formatMoney(getTotal()));
+                .setHeader("Sum");
+//                .setFooter("Subtotal:  " + currencyFormatter.formatMoney(quoteSection.getTotal()));
         setHeightByRows(true);
         getColumnByKey("total").setAutoWidth(true);
         recalculateColumnWidths();
+        footer = new Footer(this, currencyFormatter);
     }
 
     public void renderItems() {
@@ -55,15 +55,36 @@ public class SectionGrid extends Grid<ItemPosition> {
         quoteSection.setName(name);
     }
 
-    public Money getTotal() {  //todo do smth with mismatching currencies within one table
-        return (Money) quoteSection.getPositions().stream()
-                .map(ip -> (MonetaryAmount) (ip.getSellingSum()))
-                .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(0, "EUR"));
+    public Footer getFooter() {
+        return footer;
     }
 
-
     public void refreshTotals() {
-        getColumnByKey("total").setFooter("Subtotal: " + currencyFormatter.formatMoney(getTotal()));
+//        getColumnByKey("total").setFooter("Subtotal: " + currencyFormatter.formatMoney(quoteSection.getTotal()));
+        footer.update();
+    }
+}
+
+class Footer extends Div {
+    private Paragraph total;
+    private Paragraph totalDiscounted;
+    private CurrencyFormatService currencyFormatter;
+
+    public Footer(SectionGrid grid, CurrencyFormatService currencyFormatter) {
+        this.currencyFormatter = currencyFormatter;
+        this.grid = grid;
+        total = new Paragraph();
+        totalDiscounted = new Paragraph();
+        add(total, totalDiscounted);
+    }
+
+    private SectionGrid grid;
+
+    public void update() {
+        total.setText("Subotal " + grid.getName() + " " + currencyFormatter.formatMoney(grid.getQuoteSection().getTotal()));
+        totalDiscounted.setText(
+                grid.getQuoteSection().getDiscount() <= 0 ? "" :
+                        "Subtotal " + grid.getName() + " (disc. " + grid.getQuoteSection().getDiscount() + "%) " +
+                                currencyFormatter.formatMoney(grid.getQuoteSection().getTotalDiscounted()));
     }
 }

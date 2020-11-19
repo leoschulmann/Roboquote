@@ -18,6 +18,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -25,7 +26,6 @@ import com.vaadin.flow.router.Route;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
-import javax.money.MonetaryAmount;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -133,11 +133,7 @@ public class Compose extends VerticalLayout {
                 sectionHandler.putToSection(avaiableGridsBox.getValue().getQuoteSection(), ip);
                 avaiableGridsBox.getValue().renderItems();
                 avaiableGridsBox.getValue().refreshTotals();
-                totalString.setText("TOTAL " + currencyFormatter.formatMoney(
-                        gridList.stream()
-                                .map(gr -> (MonetaryAmount) gr.getTotal())
-                                .reduce(MonetaryFunctions.sum())
-                                .orElseGet(() -> Money.of(0, "EUR"))));
+                refreshTotal();
             }
         });
         searchBox.setWidthFull();
@@ -150,6 +146,14 @@ public class Compose extends VerticalLayout {
         accordion.setWidthFull();
         accordion.add("Inventory lookup", layout);
         return accordion;
+    }
+
+    private void refreshTotal() {
+        totalString.setText("TOTAL " + currencyFormatter.formatMoney(
+                gridList.stream()
+                        .map(gr -> gr.getQuoteSection().getTotalDiscounted())
+                        .reduce(MonetaryFunctions.sum())
+                        .orElseGet(() -> Money.of(0, "EUR"))));
     }
 
     private VerticalLayout createGridsBlock() {
@@ -199,40 +203,63 @@ public class Compose extends VerticalLayout {
         accordion.setWidthFull();
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
-        HorizontalLayout head = new HorizontalLayout();
-        head.setWidthFull();
         SectionGrid sg = new SectionGrid(name, currencyFormatter);
         gridList.add(sg);
         avaiableGridsBox.setItems(gridList);
+
+        layout.add(getGridHeaderPanel(accordion, sg), sg, sg.getFooter());
+        accordion.add(name, layout);
+        gridsBlock.add(accordion);
+        sg.refreshTotals();
+    }
+
+    private HorizontalLayout getGridHeaderPanel(Accordion acc, SectionGrid grid) {
+        HorizontalLayout head = new HorizontalLayout();
+        head.setWidthFull();
         TextField nameField = new TextField();
         nameField.setWidth("50%");
-        nameField.setValue(name);
+        nameField.setValue(grid.getName());
         nameField.setVisible(false);
 
         nameField.addValueChangeListener(event -> {
-            sg.setName(event.getValue());
+            grid.setName(event.getValue());
+            grid.refreshTotals();
             avaiableGridsBox.setItems(gridList);
-            accordion.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
+            acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
         });
 
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
         editNameBtn.addClickListener(c -> nameField.setVisible(!nameField.isVisible()));
 
-        Button deleteBtn = new Button(VaadinIcon.TRASH.create());
-        deleteBtn.addClickListener(c -> {
-            gridsBlock.remove(head, sg);
-            gridList.remove(sg);
-            avaiableGridsBox.setItems(gridList); //todo refactor as method
+        IntegerField discountField = new IntegerField();
+        discountField.setValue(0);
+        discountField.setVisible(false);
+        discountField.setHasControls(true);
+        discountField.setMin(0);
+        discountField.setMax(100);
+        discountField.addValueChangeListener(c -> {
+            grid.getQuoteSection().setDiscount(c.getValue());
+            grid.refreshTotals();
+            refreshTotal();
         });
 
-        Button discountBtn = new Button(VaadinIcon.MAGIC.create()); //todo implement
+
+        Button discountBtn = new Button("%");
+        discountBtn.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
         Button currencyBtn = new Button(VaadinIcon.DOLLAR.create()); //todo implement
 
-        head.add(nameField, editNameBtn, discountBtn, currencyBtn, deleteBtn);
-        layout.add(head, sg);
-        accordion.add(name, layout);
-        gridsBlock.add(accordion);
+        Button deleteBtn = new Button(VaadinIcon.TRASH.create());
+        deleteBtn.addClickListener(c -> {
+            gridsBlock.remove(acc);
+            gridList.remove(grid);
+            avaiableGridsBox.setItems(gridList); //todo refactor as method
+            refreshTotal();
+        });
+
+        head.add(nameField, editNameBtn, discountField, discountBtn, currencyBtn, deleteBtn);
+
+        return head;
     }
 
     private ComboBox<Item> getItemComboBox() {
