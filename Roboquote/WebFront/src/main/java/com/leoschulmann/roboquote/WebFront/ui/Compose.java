@@ -26,6 +26,7 @@ import com.vaadin.flow.router.Route;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
+import javax.money.MonetaryAmount;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -45,7 +46,9 @@ public class Compose extends VerticalLayout {
     private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
     private Binder<QuoteDetails> detailsBinder = new Binder<>(QuoteDetails.class);
-    private H4 totalString = new H4("TOTAL ");
+    private final H4 totalString = new H4();
+    private final H4 totalWithDiscountString = new H4();
+    private Integer discount = 0;
 
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
@@ -149,11 +152,18 @@ public class Compose extends VerticalLayout {
     }
 
     private void refreshTotal() {
-        totalString.setText("TOTAL " + currencyFormatter.formatMoney(
-                gridList.stream()
-                        .map(gr -> gr.getQuoteSection().getTotalDiscounted())
-                        .reduce(MonetaryFunctions.sum())
-                        .orElseGet(() -> Money.of(0, "EUR"))));
+        MonetaryAmount am = getTotalMoney();
+        totalString.setText("TOTAL " + currencyFormatter.formatMoney(getTotalMoney()));
+        totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
+                + currencyFormatter.formatMoney(getTotalMoney().multiply((100.0 - discount) / 100)));
+        totalWithDiscountString.setVisible(discount > 0);
+    }
+
+    private MonetaryAmount getTotalMoney() {
+        return gridList.stream()
+                .map(gr -> gr.getQuoteSection().getTotalDiscounted())
+                .reduce(MonetaryFunctions.sum())
+                .orElseGet(() -> Money.of(0, "EUR"));
     }
 
     private VerticalLayout createGridsBlock() {
@@ -178,12 +188,30 @@ public class Compose extends VerticalLayout {
         controlSublayout.add(gridNameInputField, addNewGridButton);
         controlSublayout.setAlignItems(Alignment.END);
 
-        add(controlSublayout, totalString, createPostQuoteButton());
+        totalWithDiscountString.setVisible(false);
+        add(controlSublayout, totalString, totalWithDiscountString, createFinishingControls());
         return layout;
     }
 
-    private Button createPostQuoteButton() {
-        Button postQuote = new Button(VaadinIcon.CHECK_CIRCLE.create());
+    private HorizontalLayout createFinishingControls() {
+        Button postQuote = new Button("Save to DB");
+
+        IntegerField discountField = new IntegerField();
+        discountField.setValue(0);
+        discountField.setVisible(false);
+        discountField.setHasControls(true);
+        discountField.setMin(0);
+        discountField.setMax(99);
+        discountField.addValueChangeListener(c -> {
+            discount = c.getValue();
+            refreshTotal();
+        });
+
+        detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
+
+        Button showDiscountFieldButton = new Button("%");
+
+        showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
         QuoteDetails qd = new QuoteDetails();
         postQuote.addClickListener(click -> {
@@ -195,7 +223,7 @@ public class Compose extends VerticalLayout {
                 e.printStackTrace();
             }
         });
-        return postQuote;
+        return new HorizontalLayout(discountField, showDiscountFieldButton, postQuote);
     }
 
     private void addNewGrid(String name) {

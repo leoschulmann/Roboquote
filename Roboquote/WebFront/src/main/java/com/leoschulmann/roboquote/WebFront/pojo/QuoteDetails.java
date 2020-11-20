@@ -12,6 +12,7 @@ public class QuoteDetails {
     private String shippingTerms;
     private String warranty;
     private LocalDate validThru;
+    private Integer discount;
 
     public QuoteDetails() {
     }
@@ -86,5 +87,13 @@ public class QuoteDetails {
 
     public void setCustomerInfo(String customerInfo) {
         this.customerInfo = customerInfo;
+    }
+
+    public Integer getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Integer discount) {
+        this.discount = discount;
     }
 }
