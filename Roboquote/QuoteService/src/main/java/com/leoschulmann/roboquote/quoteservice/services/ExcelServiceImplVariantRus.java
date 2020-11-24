@@ -37,7 +37,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     private CellStyle currencyTotalStyle;
 
     @Override
-    public void generateFile(Quote quote, String fileLocation) {
+    public byte[] generateFile(Quote quote) throws IOException {
 
         workbook = new XSSFWorkbook();
         sheet = workbook.createSheet(quote.getNumber());
@@ -74,7 +74,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
 
         drawTotals(quote);
 
-        writeFile(fileLocation);
+        return writeFileToByteArray();
     }
 
     private void drawColumnHeaders() {
@@ -248,14 +248,11 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         return source.multiply(0.2).divide(1.2).getNumber().doubleValueExact();
     }
 
-    private void writeFile(String fileLocation) {
-        FileOutputStream outputStream = null;
-        try {
-            outputStream = new FileOutputStream(fileLocation);
-            workbook.write(outputStream);
+    private byte[] writeFileToByteArray() throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            workbook.write(baos);
             workbook.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            return baos.toByteArray();
         }
     }
 

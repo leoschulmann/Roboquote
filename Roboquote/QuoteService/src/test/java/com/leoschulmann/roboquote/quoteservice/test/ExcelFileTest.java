@@ -8,14 +8,14 @@ import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.javamoney.moneta.Money;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExcelFileTest {  // removing 'public' prevents junit vintage to start and complain
 
     Quote quote;
@@ -74,17 +75,19 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
 
 
     @Test
-    public void writeExcelDocument() throws IOException {
+    @Order(1)
+    public void deserializeByteArrAndWrite() throws IOException {
         Files.deleteIfExists(Path.of("./test.xlsx"));
-        excelService.generateFile(quote, "./test.xlsx");
+        try (FileOutputStream fos = new FileOutputStream("./test.xlsx")) {
+            byte[] arr = excelService.generateFile(quote);
+            fos.write(arr);
+        }
         assertTrue(Files.exists(Path.of("./test.xlsx")));
     }
 
     @Test
+    @Order(2)
     public void excelContents() throws Exception {
-        if (!Files.exists(Path.of("./test.xlsx"))) {
-            excelService.generateFile(quote, "./test.xlsx");
-        }
         try (XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream("./test.xlsx"));) {
             Sheet sheet = workbook.getSheetAt(0);
             assertEquals(136., sheet.getRow(sheet.getLastRowNum()-1).getCell(4).getNumericCellValue());
