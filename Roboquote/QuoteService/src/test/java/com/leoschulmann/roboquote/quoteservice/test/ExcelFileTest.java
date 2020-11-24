@@ -5,6 +5,8 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.leoschulmann.roboquote.quoteservice.services.ExcelService;
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.javamoney.moneta.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -22,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
- class ExcelFileTest {  // removing 'public' prevents junit vintage to start and complain
+class ExcelFileTest {  // removing 'public' prevents junit vintage to start and complain
 
     Quote quote;
     @Autowired
@@ -52,8 +56,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
         qs1.addItemPositions(ip1, ip2);
         qs2.addItemPositions(ip3, ip4);
-        qs2.setDiscount(10);
-        quote.addSections(qs1, qs2);
+        qs1.setDiscount(10);
+        qs2.setDiscount(95);
+        quote.addSections(qs2, qs1);
+        quote.setDiscount(15);
     }
 
     @Test
@@ -68,9 +74,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
     @Test
-    public void writeExcelDocument() {
+    public void writeExcelDocument() throws IOException {
+        Files.deleteIfExists(Path.of("./test.xlsx"));
         excelService.generateFile(quote, "./test.xlsx");
         assertTrue(Files.exists(Path.of("./test.xlsx")));
+    }
+
+    @Test
+    public void excelContents() throws Exception {
+        if (!Files.exists(Path.of("./test.xlsx"))) {
+            excelService.generateFile(quote, "./test.xlsx");
+        }
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream("./test.xlsx"));) {
+            Sheet sheet = workbook.getSheetAt(0);
+            assertEquals(136., sheet.getRow(sheet.getLastRowNum()-1).getCell(4).getNumericCellValue());
+        }
     }
 
 }
