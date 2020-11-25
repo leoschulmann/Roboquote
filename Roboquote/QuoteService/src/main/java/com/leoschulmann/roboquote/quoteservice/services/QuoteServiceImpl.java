@@ -23,6 +23,7 @@ public class QuoteServiceImpl implements QuoteService {
 
     @Override
     public Quote getQuote(Integer id) {
-        return quoteRepo.findById(id).orElseThrow(() -> new NoQuoteFoundException(id));
+        return quoteRepo.findDistinctById(id).orElseThrow(() -> new NoQuoteFoundException(id));
+//        return quoteRepo.findById(id).orElseThrow(() -> new NoQuoteFoundException(id)); //produces duplicates :(
     }
 }
