@@ -217,15 +217,15 @@ public class Compose extends VerticalLayout {
         detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
 
         Button showDiscountFieldButton = new Button("%");
-        Button downloadXlsx = new Button("Download .xlsx");
-//        FileDownloadWrapper buttonWrapper = new FileDownloadWrapper(
-//                new StreamResource("foo.txt", () -> new ByteArrayInputStream("foo".getBytes())));
-        FileDownloadWrapper buttonWrapper = new FileDownloadWrapper("", new File(""));
-        buttonWrapper.wrapComponent(downloadXlsx);
+        Button dlButt = new Button("Download .xlsx");
+        FileDownloadWrapper wrapper = new FileDownloadWrapper(
+                new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
+        );
+        wrapper.wrapComponent(dlButt);
+        wrapper.setVisible(false);
 
         showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
-        downloadXlsx.setVisible(false);
-        buttonWrapper.setVisible(false);
+        HorizontalLayout layout = new HorizontalLayout(discountField, showDiscountFieldButton, postQuote, wrapper);
 
         QuoteDetails qd = new QuoteDetails();
         postQuote.addClickListener(click -> {
@@ -233,24 +233,16 @@ public class Compose extends VerticalLayout {
                 detailsBinder.writeBean(qd);
                 List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
                 int id = assembler.assembleAndPostNew(qd, sections);
-
-                downloadXlsx.setVisible(true);
-                buttonWrapper.setVisible(true);
-                downloadXlsx.addClickListener(c -> {
-
-                    byte[] bytes = downloadService.downloadXlsx(id);
-
-                    UUID uuid = UUID.nameUUIDFromBytes(bytes);
-
-                    buttonWrapper.setResource(new StreamResource(uuid.toString(),
-                            () -> new ByteArrayInputStream(bytes)));
-                });
+                byte[] bytes = downloadService.downloadXlsx(id);
+                wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
+                        () -> new ByteArrayInputStream(bytes)));
+                wrapper.setVisible(true);
 
             } catch (ValidationException e) {
                 e.printStackTrace();
             }
         });
-        return new HorizontalLayout(discountField, showDiscountFieldButton, postQuote, buttonWrapper);
+        return layout;
     }
 
     private void addNewGrid(String name) {

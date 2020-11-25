@@ -18,7 +18,7 @@ public class DownloadServiceImpl implements DownloadService {
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
         ResponseEntity<byte[]> response = restTemplate.exchange(
-                downloadUrl, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
+                downloadUrl+"/"+id, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
 
         return response.getBody();
     }
