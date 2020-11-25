@@ -31,7 +31,7 @@ public class Quote {
     private String customer;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "quote", cascade = {CascadeType.ALL})
+    @OneToMany(mappedBy = "quote", cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
     private List<QuoteSection> sections;
 
     @Column(name = "discount", columnDefinition = "decimal(3,1) default 0.0")

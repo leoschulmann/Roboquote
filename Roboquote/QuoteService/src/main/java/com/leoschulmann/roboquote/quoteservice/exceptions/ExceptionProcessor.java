@@ -20,4 +20,17 @@ public class ExceptionProcessor extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> noInventoryItemFoundForId(NoInventoryItemFound e) {
         return new ResponseEntity<>(new ExceptionMessage("No item for id " + e.id + " found", 404), HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(NoQuoteFoundException.class)
+    public ResponseEntity<Object> noQuoteFoundForID(NoQuoteFoundException e) {
+        return new ResponseEntity<>(new ExceptionMessage("No quote found for id " + e.id, 404), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CreatingXlsxFileException.class)
+    public ResponseEntity<Object> errorInExcelController(CreatingXlsxFileException e) {
+        String message = (e.getPic() == null) ? "Exception writing file to byte array" :
+                "Exception adding picture " + e.getPic() + "file";
+
+        return new ResponseEntity<>(new ExceptionMessage(message, 500), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

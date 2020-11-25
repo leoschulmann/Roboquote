@@ -1,6 +1,7 @@
 package com.leoschulmann.roboquote.quoteservice.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
@@ -21,7 +22,7 @@ public class QuoteSection {
     private int id;
 
 
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<ItemPosition> positions;
 
@@ -93,6 +94,7 @@ public class QuoteSection {
         });
     }
 
+    @JsonIgnore
     public MonetaryAmount getTotal() {
         //todo do smth with mismatching currencies within one table
         return getPositions().stream()
@@ -100,7 +102,7 @@ public class QuoteSection {
                 .reduce(MonetaryFunctions.sum())
                 .orElseGet(() -> Money.of(0, "EUR"));
     }
-
+    @JsonIgnore
     public MonetaryAmount getTotalDiscounted() {
         return getTotal().multiply((100 - discount) / 100.);
     }

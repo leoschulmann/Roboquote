@@ -3,6 +3,7 @@ package com.leoschulmann.roboquote.quoteservice.services;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import com.leoschulmann.roboquote.quoteservice.exceptions.CreatingXlsxFileException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.RegionUtil;
@@ -37,7 +38,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     private CellStyle currencyTotalStyle;
 
     @Override
-    public byte[] generateFile(Quote quote) throws IOException {
+    public byte[] generateFile(Quote quote)  {
 
         workbook = new XSSFWorkbook();
         sheet = workbook.createSheet(quote.getNumber());
@@ -112,8 +113,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     }
 
     private void addPicture(String file, int col1, int row1) {
-        try {
-            InputStream fileStream = new FileInputStream(file);
+        try (InputStream fileStream = new FileInputStream(file)) {
             byte[] bytes = IOUtils.toByteArray(fileStream);
             int pictureId = workbook.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
             fileStream.close();
@@ -123,9 +123,9 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             anchor.setRow1(row1);
             Picture picture = drawing.createPicture(anchor, pictureId);
             picture.resize();
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+        catch (IOException e) {
+            throw new CreatingXlsxFileException(file);
         }
     }
 
@@ -224,8 +224,8 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             sheet.addMergedRegion(discoRegion);
             discoRow.getCell(0).setCellValue("ИТОГО (со скидкой " + quote.getDiscount() + "%):");
             discoRow.getCell(4).setCellValue(sum.multiply((100 - quote.getDiscount()) / 100.).getNumber().doubleValue());
-        discoRow.getCell(0).setCellStyle(getTotalStyle());
-        discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
+            discoRow.getCell(0).setCellStyle(getTotalStyle());
+            discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
         }
 
         idx++;
@@ -234,7 +234,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         CellRangeAddress taxRegion = new CellRangeAddress(idx, idx, 0, 3);
         sheet.addMergedRegion(taxRegion);
         taxRow.getCell(0).setCellValue("в т.ч. НДС 20%:"); //todo fix hardcoded tax
-        taxRow.getCell(4).setCellValue(getTaxSum(sum , quote.getDiscount()));
+        taxRow.getCell(4).setCellValue(getTaxSum(sum, quote.getDiscount()));
         taxRow.getCell(0).setCellStyle(getTotalStyle());
         taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
     }
@@ -248,11 +248,13 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         return source.multiply(0.2).divide(1.2).getNumber().doubleValueExact();
     }
 
-    private byte[] writeFileToByteArray() throws IOException {
+    private byte[] writeFileToByteArray() {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             workbook.write(baos);
             workbook.close();
             return baos.toByteArray();
+        } catch (IOException e) {
+            throw new CreatingXlsxFileException();
         }
     }
 
@@ -406,32 +408,32 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     }
 
     private CellStyle getTotalStyle() {
-                if (totalStyle == null) {
-                    totalStyle = workbook.createCellStyle();
-                    XSSFFont xssfFont = (XSSFFont) workbook.createFont();
-                    xssfFont.setBold(true);
-                    xssfFont.setFontHeight(12);
-                    xssfFont.setFontName("Arial");
-                    xssfFont.setBold(true);
-                    totalStyle.setFont(xssfFont);
-                    totalStyle.setAlignment(HorizontalAlignment.RIGHT);
-                }
-                return totalStyle;
+        if (totalStyle == null) {
+            totalStyle = workbook.createCellStyle();
+            XSSFFont xssfFont = (XSSFFont) workbook.createFont();
+            xssfFont.setBold(true);
+            xssfFont.setFontHeight(12);
+            xssfFont.setFontName("Arial");
+            xssfFont.setBold(true);
+            totalStyle.setFont(xssfFont);
+            totalStyle.setAlignment(HorizontalAlignment.RIGHT);
+        }
+        return totalStyle;
     }
 
     private CellStyle getTotalCurrencyStyle(String currencyCode) {
-                if (currencyTotalStyle == null) {
-                    currencyTotalStyle = workbook.createCellStyle();
-                    XSSFFont font = (XSSFFont) workbook.createFont();
-                    font.setFontHeight(12);
-                    font.setBold(true);
-                    font.setFontName("Arial");
-                    currencyTotalStyle.setFont(font);
-                    currencyTotalStyle.setAlignment(HorizontalAlignment.RIGHT);
-                    DataFormat dataFormat = workbook.createDataFormat();
-                    format(currencyCode, currencyTotalStyle, dataFormat);
-                }
-                return currencyTotalStyle;
+        if (currencyTotalStyle == null) {
+            currencyTotalStyle = workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setFontHeight(12);
+            font.setBold(true);
+            font.setFontName("Arial");
+            currencyTotalStyle.setFont(font);
+            currencyTotalStyle.setAlignment(HorizontalAlignment.RIGHT);
+            DataFormat dataFormat = workbook.createDataFormat();
+            format(currencyCode, currencyTotalStyle, dataFormat);
+        }
+        return currencyTotalStyle;
     }
 
     private void format(String currency, CellStyle currStyle, DataFormat dataFormat) {

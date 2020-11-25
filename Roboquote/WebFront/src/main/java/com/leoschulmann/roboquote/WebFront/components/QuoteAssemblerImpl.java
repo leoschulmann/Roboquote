@@ -20,7 +20,7 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
 
 
     @Override
-    public void assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections) {
+    public int assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections) {
         Quote q = new Quote(getNameFromService(), details.getValidThru(), details.getCustomer(), details.getDealer(),
                 details.getCustomerInfo(), details.getDealerInfo());
         q.setVersion(1);
@@ -30,7 +30,7 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
         q.setDiscount(details.getDiscount());
         sections.forEach(sect -> sect.getPositions().forEach(pos -> pos.setSection(sect)));
         sections.forEach(q::addSections);
-        postQuote(q);
+        return postQuote(q);
     }
 
     private String getNameFromService() {
@@ -39,8 +39,9 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
         return responseEntity.getBody(); //todo exception handling
     }
 
-    private void postQuote(Quote quote) {
+    private int postQuote(Quote quote) {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Quote> responseEntity = restTemplate.postForEntity(saveQuoteUrl, quote, Quote.class);
+        return responseEntity.getBody().getId();
     }
 }

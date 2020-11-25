@@ -23,14 +23,19 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamResource;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
+import org.vaadin.olli.FileDownloadWrapper;
 
 import javax.money.MonetaryAmount;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -41,6 +46,7 @@ public class Compose extends VerticalLayout {
     private InventoryItemToItemPositionConverter converter;
     private QuoteSectionHandler sectionHandler;
     private QuoteAssembler assembler;
+    private DownloadService downloadService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -57,13 +63,14 @@ public class Compose extends VerticalLayout {
                    CurrencyFormatService currencyFormatter,
                    InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
-                   QuoteAssembler assembler) {
+                   QuoteAssembler assembler, DownloadService downloadService) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
         this.converter = converter;
         this.sectionHandler = sectionHandler;
         this.assembler = assembler;
+        this.downloadService = downloadService;
 
         gridList = new ArrayList<>();
         add(getInventoryLookupAccordeon());
@@ -210,20 +217,40 @@ public class Compose extends VerticalLayout {
         detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
 
         Button showDiscountFieldButton = new Button("%");
+        Button downloadXlsx = new Button("Download .xlsx");
+//        FileDownloadWrapper buttonWrapper = new FileDownloadWrapper(
+//                new StreamResource("foo.txt", () -> new ByteArrayInputStream("foo".getBytes())));
+        FileDownloadWrapper buttonWrapper = new FileDownloadWrapper("", new File(""));
+        buttonWrapper.wrapComponent(downloadXlsx);
 
         showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
+        downloadXlsx.setVisible(false);
+        buttonWrapper.setVisible(false);
 
         QuoteDetails qd = new QuoteDetails();
         postQuote.addClickListener(click -> {
             try {
                 detailsBinder.writeBean(qd);
                 List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
-                assembler.assembleAndPostNew(qd, sections);
+                int id = assembler.assembleAndPostNew(qd, sections);
+
+                downloadXlsx.setVisible(true);
+                buttonWrapper.setVisible(true);
+                downloadXlsx.addClickListener(c -> {
+
+                    byte[] bytes = downloadService.downloadXlsx(id);
+
+                    UUID uuid = UUID.nameUUIDFromBytes(bytes);
+
+                    buttonWrapper.setResource(new StreamResource(uuid.toString(),
+                            () -> new ByteArrayInputStream(bytes)));
+                });
+
             } catch (ValidationException e) {
                 e.printStackTrace();
             }
         });
-        return new HorizontalLayout(discountField, showDiscountFieldButton, postQuote);
+        return new HorizontalLayout(discountField, showDiscountFieldButton, postQuote, buttonWrapper);
     }
 
     private void addNewGrid(String name) {

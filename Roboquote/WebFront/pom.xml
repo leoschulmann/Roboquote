@@ -15,11 +15,24 @@
         <vaadin.version>14.4.2</vaadin.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>vaadin-addons</id>
+            <url>https://maven.vaadin.com/vaadin-addons</url>
+        </repository>
+    </repositories>
+
     <dependencies>
+        <dependency>
+            <groupId>org.vaadin.olli</groupId>
+            <artifactId>file-download-wrapper</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
         <dependency>
             <groupId>com.leoschulmann</groupId>
             <artifactId>ItemService</artifactId>
-            <version>0.0-SNAPSHOT</version>
+            <version>0.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>
@@ -34,7 +47,7 @@
         <dependency>
             <groupId>com.leoschulmann</groupId>
             <artifactId>QuoteService</artifactId>
-            <version>0.0-SNAPSHOT</version>
+            <version>0.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
