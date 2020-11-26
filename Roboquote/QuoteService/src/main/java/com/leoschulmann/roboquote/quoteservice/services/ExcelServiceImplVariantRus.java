@@ -233,19 +233,19 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         createBlankCells(taxRow);
         CellRangeAddress taxRegion = new CellRangeAddress(idx, idx, 0, 3);
         sheet.addMergedRegion(taxRegion);
-        taxRow.getCell(0).setCellValue("в т.ч. НДС 20%:"); //todo fix hardcoded tax
-        taxRow.getCell(4).setCellValue(getTaxSum(sum, quote.getDiscount()));
+        taxRow.getCell(0).setCellValue("в т.ч. НДС " + quote.getVat() + "%):");
+        taxRow.getCell(4).setCellValue(getTaxSum(sum, quote.getDiscount(), quote.getVat()));
         taxRow.getCell(0).setCellStyle(getTotalStyle());
         taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
     }
 
-    private double getTaxSum(MonetaryAmount sum, Integer discount) {
+    private double getTaxSum(MonetaryAmount sum, Integer discount, Integer vat) {
         //todo refactor to FORMULA
         MonetaryAmount source;
         if (discount != null && discount > 0) {
             source = sum.multiply((100 - discount) / 100.);
         } else source = sum;
-        return source.multiply(0.2).divide(1.2).getNumber().doubleValueExact();
+        return source.multiply(vat/100.).divide(vat/100. + 1).getNumber().doubleValueExact();
     }
 
     private byte[] writeFileToByteArray() {

@@ -55,6 +55,8 @@ public class Quote {
     @Column(name = "warranty")
     private String warranty;
 
+    @Column(name = "vat")
+    private Integer vat;
 
     //todo make overridable price
 
@@ -172,6 +174,14 @@ public class Quote {
 
     public void setWarranty(String warranty) {
         this.warranty = warranty;
+    }
+
+    public Integer getVat() {
+        return vat;
+    }
+
+    public void setVat(Integer vat) {
+        this.vat = vat;
     }
 
     public Quote(String number, LocalDate validThru, String customer, String dealer, String customerInfo, String dealerInfo) {

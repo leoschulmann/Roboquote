@@ -14,6 +14,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -52,15 +53,13 @@ public class Compose extends VerticalLayout {
     private Binder<QuoteDetails> detailsBinder = new Binder<>(QuoteDetails.class);
     private final H4 totalString = new H4();
     private final H4 totalWithDiscountString = new H4();
+    private final H5 includingVatValue = new H5();
     private Integer discount = 0;
-
-    Set<HasEnabled> clickableComponents;
-
-    {
-        clickableComponents = new HashSet<>();
-    }
+    private Integer vat = DEFAULT_VAT;
+    private Set<HasEnabled> clickableComponents;
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
+    static final Integer DEFAULT_VAT = 20;
 
     public Compose(ItemService itemService,
                    CurrencyFormatService currencyFormatter,
@@ -74,8 +73,9 @@ public class Compose extends VerticalLayout {
         this.sectionHandler = sectionHandler;
         this.assembler = assembler;
         this.downloadService = downloadService;
+        this.clickableComponents = new HashSet<>();
+        this.gridList = new ArrayList<>();
 
-        gridList = new ArrayList<>();
         add(getInventoryLookupAccordeon());
         gridsBlock = createGridsBlock();
         addNewGrid(DEFAULT_SECTION_NAME);
@@ -116,6 +116,7 @@ public class Compose extends VerticalLayout {
         addToClickableComponents(warranty);
 
         DatePicker validThru = new DatePicker();
+        validThru.setLabel("Valid through date");
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
         addToClickableComponents(validThru);
 
@@ -172,10 +173,17 @@ public class Compose extends VerticalLayout {
 
     private void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
-        totalString.setText("TOTAL " + currencyFormatter.formatMoney(getTotalMoney()));
+        totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
         totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
-                + currencyFormatter.formatMoney(getTotalMoney().multiply((100.0 - discount) / 100)));
+                + currencyFormatter.formatMoney(am.multiply((100.0 - discount) / 100)));
         totalWithDiscountString.setVisible(discount > 0);
+
+        includingVatValue.setText("(incl. VAT " + vat + "% " +
+                currencyFormatter.formatMoney(
+                        am.multiply((100.0 - discount) / 100)
+                                .multiply(vat / 100.)
+                                .divide((vat + 100) / 100.))
+        );
     }
 
     private MonetaryAmount getTotalMoney() {
@@ -192,74 +200,102 @@ public class Compose extends VerticalLayout {
 
     private VerticalLayout createFinishBlock() {
         VerticalLayout layout = new VerticalLayout();
-        layout.setWidthFull();
         HorizontalLayout controlSublayout = new HorizontalLayout();
-        controlSublayout.setWidthFull();
         TextField gridNameInputField = new TextField();  //todo add validation (non-empty, non-duplicating, etc)
-        gridNameInputField.setPlaceholder("Add new section ");
-        addToClickableComponents(gridNameInputField);
         Button addNewGridButton = new Button(VaadinIcon.PLUS.create());
+
+        layout.setWidthFull();
+        controlSublayout.setWidthFull();
+        gridNameInputField.setPlaceholder("Add new section ");
+        gridNameInputField.setWidth("50%");
         addNewGridButton.addClickListener(click -> {
             addNewGrid(gridNameInputField.getValue());
             gridNameInputField.clear();
         });
+
+        addToClickableComponents(gridNameInputField);
         addToClickableComponents(addNewGridButton);
-        gridNameInputField.setWidth("50%");
         addNewGridButton.setWidth("10%");
+
         controlSublayout.add(gridNameInputField, addNewGridButton);
         controlSublayout.setAlignItems(Alignment.END);
 
         totalWithDiscountString.setVisible(false);
-        add(controlSublayout, totalString, totalWithDiscountString, createFinishingControls());
+        add(controlSublayout, totalString, totalWithDiscountString, includingVatValue, createFinishControlElements());
         return layout;
     }
 
-    private HorizontalLayout createFinishingControls() {
+    private HorizontalLayout createFinishControlElements() {
+        IntegerField discountField = new IntegerField();
+        Button showDiscountFieldButton = new Button("%");
+        IntegerField vatField = new IntegerField();
+        Button showVatFieldButton = new Button(VaadinIcon.PIGGY_BANK_COIN.create());
         Button postQuote = new Button("Save to DB");
+        Button dlButt = new Button("Download .xlsx");
+        FileDownloadWrapper wrapper = new FileDownloadWrapper(
+                new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
+        );
+
+        addToClickableComponents(discountField);
+        addToClickableComponents(vatField);
         addToClickableComponents(postQuote);
 
-        IntegerField discountField = new IntegerField();
-        addToClickableComponents(discountField);
         discountField.setValue(0);
         discountField.setVisible(false);
         discountField.setHasControls(true);
         discountField.setMin(0);
         discountField.setMax(99);
+        discountField.setLabel("Discount, %");
         discountField.addValueChangeListener(c -> {
             discount = c.getValue();
             refreshTotal();
         });
+        showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
-        detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
+        vatField.setValue(DEFAULT_VAT);
+        vatField.setVisible(false);
+        vatField.setHasControls(true);
+        vatField.setMin(0);
+        vatField.setMax(99);
+        vatField.setLabel("Vat, %");
+        vatField.addValueChangeListener(c -> {
+            vat = c.getValue();
+            refreshTotal();
+        });
+        showVatFieldButton.addClickListener(c -> vatField.setVisible(!vatField.isVisible()));
 
-        Button showDiscountFieldButton = new Button("%");
-        Button dlButt = new Button("Download .xlsx");
-        FileDownloadWrapper wrapper = new FileDownloadWrapper(
-                new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
-        );
         wrapper.wrapComponent(dlButt);
         wrapper.setVisible(false);
 
-        showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
-        HorizontalLayout layout = new HorizontalLayout(discountField, showDiscountFieldButton, postQuote, wrapper);
+        detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
+        detailsBinder.bind(vatField, QuoteDetails::getVat, QuoteDetails::setVat);
 
-        QuoteDetails qd = new QuoteDetails();
+        HorizontalLayout layout = new HorizontalLayout(
+                discountField, showDiscountFieldButton, vatField, showVatFieldButton, postQuote, wrapper);
+
+        layout.setAlignItems(Alignment.END);
         postQuote.addClickListener(click -> {
-            try {
-                detailsBinder.writeBean(qd);
-                List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
-                int id = assembler.assembleAndPostNew(qd, sections);
-                byte[] bytes = downloadService.downloadXlsx(id);
-                wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
-                        () -> new ByteArrayInputStream(bytes)));
-                wrapper.setVisible(true);
+            int id = postToDbAndGetID();
+            byte[] bytes = downloadService.downloadXlsx(id);
+            wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
+                    () -> new ByteArrayInputStream(bytes)));
+            wrapper.setVisible(true);
 
-                disableClickableComponents();
-            } catch (ValidationException e) {
-                e.printStackTrace();
-            }
+            disableClickableComponents();
         });
         return layout;
+    }
+
+    private int postToDbAndGetID() {
+        try {
+            QuoteDetails quoteDetails = new QuoteDetails();
+            detailsBinder.writeBean(quoteDetails);
+            List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
+            return assembler.assembleAndPostNew(quoteDetails, sections);
+        } catch (ValidationException e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     private void addNewGrid(String name) {

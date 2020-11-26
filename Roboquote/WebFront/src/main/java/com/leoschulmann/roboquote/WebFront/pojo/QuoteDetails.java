@@ -13,6 +13,7 @@ public class QuoteDetails {
     private String warranty;
     private LocalDate validThru;
     private Integer discount;
+    private Integer vat;
 
     public QuoteDetails() {
     }
@@ -95,5 +96,13 @@ public class QuoteDetails {
 
     public void setDiscount(Integer discount) {
         this.discount = discount;
+    }
+
+    public Integer getVat() {
+        return vat;
+    }
+
+    public void setVat(Integer vat) {
+        this.vat = vat;
     }
 }

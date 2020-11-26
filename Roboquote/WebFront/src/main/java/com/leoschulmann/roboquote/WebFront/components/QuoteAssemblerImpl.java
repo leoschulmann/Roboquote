@@ -28,6 +28,8 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
         q.setPaymentTerms(details.getPaymentTerms());
         q.setWarranty(details.getWarranty());
         q.setDiscount(details.getDiscount());
+        q.setVat(details.getVat());
+
         sections.forEach(sect -> sect.getPositions().forEach(pos -> pos.setSection(sect)));
         sections.forEach(q::addSections);
         return postQuote(q);
