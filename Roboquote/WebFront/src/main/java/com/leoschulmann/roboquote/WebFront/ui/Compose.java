@@ -5,6 +5,7 @@ import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
@@ -30,12 +31,9 @@ import org.vaadin.olli.FileDownloadWrapper;
 
 import javax.money.MonetaryAmount;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -56,6 +54,11 @@ public class Compose extends VerticalLayout {
     private final H4 totalWithDiscountString = new H4();
     private Integer discount = 0;
 
+    Set<HasEnabled> clickableComponents;
+
+    {
+        clickableComponents = new HashSet<>();
+    }
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
 
@@ -90,23 +93,31 @@ public class Compose extends VerticalLayout {
                 new ResponsiveStep("40em", 3));
         TextField customer = new TextField(); //todo lookup in DB
         customer.setPlaceholder("Customer");
+        addToClickableComponents(customer);
         EmailField customerInfo = new EmailField();
         customerInfo.setPlaceholder("Customer info");
+        addToClickableComponents(customerInfo);
 
         TextField dealer = new TextField();
         dealer.setPlaceholder("Dealer");
+        addToClickableComponents(dealer);
         EmailField dealerInfo = new EmailField();
         dealerInfo.setPlaceholder("Dealer info");
+        addToClickableComponents(dealerInfo);
 
         TextField paymentTerms = new TextField();
         paymentTerms.setPlaceholder("Payment Terms");  //todo make selectable from list
+        addToClickableComponents(paymentTerms);
         TextField shippingTerms = new TextField();
         shippingTerms.setPlaceholder("Shipping Terms");  //todo make selectable from list
+        addToClickableComponents(shippingTerms);
         TextField warranty = new TextField();
         warranty.setPlaceholder("Warranty");    //todo make selectable from list
+        addToClickableComponents(warranty);
 
         DatePicker validThru = new DatePicker();
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
+        addToClickableComponents(validThru);
 
         columnLayout.add(customer);
         columnLayout.add(customerInfo, 2);
@@ -146,6 +157,7 @@ public class Compose extends VerticalLayout {
                 refreshTotal();
             }
         });
+        addToClickableComponents(addToGridBtn);
         searchBox.setWidthFull();
         searchBox.setPlaceholder("Inventory lookup");
         avaiableGridsBox.setWidthFull();
@@ -185,11 +197,13 @@ public class Compose extends VerticalLayout {
         controlSublayout.setWidthFull();
         TextField gridNameInputField = new TextField();  //todo add validation (non-empty, non-duplicating, etc)
         gridNameInputField.setPlaceholder("Add new section ");
+        addToClickableComponents(gridNameInputField);
         Button addNewGridButton = new Button(VaadinIcon.PLUS.create());
         addNewGridButton.addClickListener(click -> {
             addNewGrid(gridNameInputField.getValue());
             gridNameInputField.clear();
         });
+        addToClickableComponents(addNewGridButton);
         gridNameInputField.setWidth("50%");
         addNewGridButton.setWidth("10%");
         controlSublayout.add(gridNameInputField, addNewGridButton);
@@ -202,8 +216,10 @@ public class Compose extends VerticalLayout {
 
     private HorizontalLayout createFinishingControls() {
         Button postQuote = new Button("Save to DB");
+        addToClickableComponents(postQuote);
 
         IntegerField discountField = new IntegerField();
+        addToClickableComponents(discountField);
         discountField.setValue(0);
         discountField.setVisible(false);
         discountField.setHasControls(true);
@@ -238,6 +254,7 @@ public class Compose extends VerticalLayout {
                         () -> new ByteArrayInputStream(bytes)));
                 wrapper.setVisible(true);
 
+                disableClickableComponents();
             } catch (ValidationException e) {
                 e.printStackTrace();
             }
@@ -264,6 +281,7 @@ public class Compose extends VerticalLayout {
         HorizontalLayout head = new HorizontalLayout();
         head.setWidthFull();
         TextField nameField = new TextField();
+        addToClickableComponents(nameField);
         nameField.setWidth("50%");
         nameField.setValue(grid.getName());
         nameField.setVisible(false);
@@ -289,6 +307,7 @@ public class Compose extends VerticalLayout {
             grid.refreshTotals();
             refreshTotal();
         });
+        addToClickableComponents(discountField);
 
 
         Button discountBtn = new Button("%");
@@ -303,6 +322,7 @@ public class Compose extends VerticalLayout {
             avaiableGridsBox.setItems(gridList); //todo refactor as method
             refreshTotal();
         });
+        addToClickableComponents(deleteBtn);
 
         head.add(nameField, editNameBtn, discountField, discountBtn, currencyBtn, deleteBtn);
 
@@ -327,5 +347,13 @@ public class Compose extends VerticalLayout {
 
         filteringComboBox.setClearButtonVisible(true);
         return filteringComboBox;
+    }
+
+    private void addToClickableComponents(HasEnabled component) {
+        clickableComponents.add(component);
+    }
+
+    private void disableClickableComponents() {
+        clickableComponents.forEach(c -> c.setEnabled(false));
     }
 }
