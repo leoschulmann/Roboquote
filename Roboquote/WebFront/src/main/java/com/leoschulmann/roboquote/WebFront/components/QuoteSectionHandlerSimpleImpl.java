@@ -18,4 +18,10 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
             optional.get().incrementQty();
         } else section.getPositions().add(ip);
     }
+
+    @Override
+    public void deletePosition(QuoteSection quoteSection, ItemPosition itemPosition) {
+        Optional<ItemPosition> opt = quoteSection.getPositions().stream().filter(ip -> ip == itemPosition).findFirst();
+        opt.ifPresent(p -> quoteSection.getPositions().remove(p));
+    }
 }

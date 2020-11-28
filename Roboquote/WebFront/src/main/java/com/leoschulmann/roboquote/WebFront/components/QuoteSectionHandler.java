@@ -7,5 +7,7 @@ public interface QuoteSectionHandler {
 
     void putToSection(QuoteSection section, ItemPosition ip);
 
+    void deletePosition(QuoteSection quoteSection, ItemPosition itemPosition);
+
     //todo make some fancy sorting implementations (like more expensive goes first etc)
 }

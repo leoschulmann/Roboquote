@@ -154,7 +154,7 @@ public class Compose extends VerticalLayout {
                 ItemPosition ip = converter.convert(searchBox.getValue());
                 sectionHandler.putToSection(avaiableGridsBox.getValue().getQuoteSection(), ip);
                 avaiableGridsBox.getValue().renderItems();
-                avaiableGridsBox.getValue().refreshTotals();
+                avaiableGridsBox.getValue().refreshSubtotals();
                 refreshTotal();
             }
         });
@@ -171,7 +171,7 @@ public class Compose extends VerticalLayout {
         return accordion;
     }
 
-    private void refreshTotal() {
+     void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
         totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
         totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
@@ -183,7 +183,7 @@ public class Compose extends VerticalLayout {
                         am.multiply((100.0 - discount) / 100)
                                 .multiply(vat / 100.)
                                 .divide((vat + 100) / 100.))
-        );
+        +")");
     }
 
     private MonetaryAmount getTotalMoney() {
@@ -303,14 +303,15 @@ public class Compose extends VerticalLayout {
         accordion.setWidthFull();
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
-        SectionGrid sg = new SectionGrid(name, currencyFormatter);
+        SectionGrid sg = new SectionGrid(name, currencyFormatter, sectionHandler, this);
+
         gridList.add(sg);
         avaiableGridsBox.setItems(gridList);
 
         layout.add(getGridHeaderPanel(accordion, sg), sg, sg.getFooter());
         accordion.add(name, layout);
         gridsBlock.add(accordion);
-        sg.refreshTotals();
+        sg.refreshSubtotals();
     }
 
     private HorizontalLayout getGridHeaderPanel(Accordion acc, SectionGrid grid) {
@@ -324,7 +325,7 @@ public class Compose extends VerticalLayout {
 
         nameField.addValueChangeListener(event -> {
             grid.setName(event.getValue());
-            grid.refreshTotals();
+            grid.refreshSubtotals();
             avaiableGridsBox.setItems(gridList);
             acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
         });
@@ -340,7 +341,7 @@ public class Compose extends VerticalLayout {
         discountField.setMax(100);
         discountField.addValueChangeListener(c -> {
             grid.getQuoteSection().setDiscount(c.getValue());
-            grid.refreshTotals();
+            grid.refreshSubtotals();
             refreshTotal();
         });
         addToClickableComponents(discountField);
