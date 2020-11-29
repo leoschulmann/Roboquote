@@ -107,6 +107,10 @@ public class Item {
         return sellingPrice.with(Monetary.getDefaultRounding());
     }
 
+    public Money getSellingPriceAsOverriddenValue() {
+        return sellingPrice;
+    }
+
     public void setSellingPrice(Money sellingPrice) {
         this.sellingPrice = sellingPrice;
     }

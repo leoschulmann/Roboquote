@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,13 @@ public class ItemServiceImpl implements ItemService {
         if (responseEntity.getBody() != null) {
             return Arrays.asList(responseEntity.getBody());
         } else return new ArrayList<>();
+    }
+
+    @Override
+    public void saveItem(Item item) {
+        item.setModified(LocalDate.now());
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Item> responseEntity = restTemplate.postForEntity(url, item, Item.class);
     }
 }
 
