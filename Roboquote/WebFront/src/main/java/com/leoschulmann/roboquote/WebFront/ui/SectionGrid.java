@@ -10,6 +10,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.textfield.IntegerField;
 
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
@@ -28,7 +29,7 @@ public class SectionGrid extends Grid<ItemPosition> {
 
         removeAllColumns();
         addColumn("name").setHeader("Item name").setAutoWidth(true);
-        addColumn("qty").setHeader("Quantity");
+        addComponentColumn(this::getQuantityField).setKey("qty").setHeader("Quantity");
         addColumn("partNo").setHeader("Part No");
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setKey("price");
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum()))
@@ -45,6 +46,21 @@ public class SectionGrid extends Grid<ItemPosition> {
         getColumnByKey("delete").setAutoWidth(true);
         recalculateColumnWidths();
         footer = new Footer(this, currencyFormatter);
+    }
+
+    private Component getQuantityField(ItemPosition itemPosition) {
+        IntegerField field = new IntegerField();
+        field.setMax(99);
+        field.setMin(1);
+        field.setHasControls(true);
+        field.setValue(itemPosition.getQty());
+        field.addValueChangeListener(event -> {
+            sectionHandler.setQty(quoteSection, itemPosition, field.getValue());
+            renderItems();
+            refreshSubtotals();
+            composePage.refreshTotal();
+        });
+        return field;
     }
 
     private Component createDeleteButton(ItemPosition itemPosition) {

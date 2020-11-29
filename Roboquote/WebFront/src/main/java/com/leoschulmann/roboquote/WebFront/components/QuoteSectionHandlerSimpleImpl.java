@@ -21,7 +21,18 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
 
     @Override
     public void deletePosition(QuoteSection quoteSection, ItemPosition itemPosition) {
-        Optional<ItemPosition> opt = quoteSection.getPositions().stream().filter(ip -> ip == itemPosition).findFirst();
-        opt.ifPresent(p -> quoteSection.getPositions().remove(p));
+        getOptionalItemPosition(quoteSection, itemPosition).ifPresent(p -> quoteSection.getPositions().remove(p));
+    }
+
+    @Override
+    public void setQty(QuoteSection quoteSection, ItemPosition itemPosition, Integer value) {
+        getOptionalItemPosition(quoteSection, itemPosition).ifPresent(p -> {
+            p.setQty(value);
+            p.setSellingSum(p.getSellingPrice().multiply(value));
+        });
+    }
+
+    private Optional<ItemPosition> getOptionalItemPosition(QuoteSection quoteSection, ItemPosition itemPosition) {
+        return quoteSection.getPositions().stream().filter(ip -> ip == itemPosition).findFirst();
     }
 }
