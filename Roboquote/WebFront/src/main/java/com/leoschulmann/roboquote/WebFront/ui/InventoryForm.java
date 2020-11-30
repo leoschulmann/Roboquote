@@ -3,15 +3,22 @@ package com.leoschulmann.roboquote.WebFront.ui;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
 
 import javax.money.NumberValue;
@@ -21,66 +28,63 @@ import java.util.List;
 
 public class InventoryForm extends FormLayout {
     private Item item;
-    private IntegerField idField = new IntegerField("id");
-    private TextField brandField = new TextField("Brand");
-    private TextField partNoField = new TextField("Part No");
-    private TextField nameRusField = new TextField("Название");
-    private TextField nameEngField = new TextField("Name");
-    private NumberField buyingAmountField = new NumberField("Buying price");
-    private ComboBox<String> buyingCurrencyCombo = new ComboBox<>("Currency", List.of("EUR", "USD", "RUB", "JPY"));
-    private NumberField marginField = new NumberField("Selling margin, %");
+    private final IntegerField idField = new IntegerField("id");
+    private final DatePicker createdField = new DatePicker("Created on");
+    private final DatePicker modifiedField = new DatePicker("Modified on");
+    private final TextField brandField = new TextField("Brand");
+    private final TextField partNoField = new TextField("Part No");
+    private final TextArea nameRusField = new TextArea("Name (rus)");
+    private final TextArea nameEngField = new TextArea("Name (eng)");
+    private final NumberField buyingAmountField = new NumberField("Buying price");
+    private final ComboBox<String> buyingCurrencyCombo = getBuyingCurrencyComboBox();
+    private final NumberField marginField = new NumberField("Selling margin, %");
 
-    private NumberField sellingAmountField = new NumberField("Override selling price");
-    private ComboBox<String> sellingCurrencyCombo = new ComboBox<>("Override selling currency", List.of("EUR", "USD", "RUB", "JPY"));
-    private Checkbox overrideSellPriceCheckbox;
+    private final NumberField sellingAmountField = new NumberField("Override selling price");
+    private final ComboBox<String> sellingCurrencyCombo = getSellingCurrencyComboBox();
+    private Checkbox overrideSellPriceCheckbox = createCheckbox();
 
-    private Button saveBtn;
-    private Button delete;
-    private Button close;
-
-    private Binder<Item> itemBinder = new Binder<>(Item.class);
-
+    private final Binder<Item> itemBinder = new Binder<>(Item.class);
     ItemService itemService;
 
     public InventoryForm(ItemService itemService) {
         this.itemService = itemService;
 
-        add(idField, brandField,
-                partNoField,
-                nameRusField,
-                nameEngField,
-                buyingAmountField,
-                buyingCurrencyCombo,
-                marginField,
+        setResponsiveSteps(
+                new ResponsiveStep("25em", 1),
+                new ResponsiveStep("32em", 2),
+                new ResponsiveStep("40em", 3));
 
-                sellingAmountField,
-                sellingCurrencyCombo,
-                createCheckbox(),
-                createSaveButton()
-//                delete,
-//                close
-        );
+
+        add(idField, createdField, modifiedField);
+        add(brandField, partNoField);
+        add(nameRusField, 3);
+        add(nameEngField, 3);
+        add(buyingAmountField, buyingCurrencyCombo, marginField);
+        add(sellingAmountField, sellingCurrencyCombo, overrideSellPriceCheckbox);
+        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), createCloseButton()), 2);
+
+        nameRusField.setMaxHeight("200px");
+        nameEngField.setMaxHeight("200px");
 
         idField.setEnabled(false);
-        sellingAmountField.setEnabled(false);
-        sellingCurrencyCombo.setEnabled(false);
-        overrideSellPriceCheckbox.setValue(false);
-
+        createdField.setEnabled(false);
+        modifiedField.setEnabled(false);
 
         prepBinder();
         itemBinder.bindInstanceFields(this);
-
     }
 
     private Component createSaveButton() {
-        saveBtn = new Button("Save");
+        Button saveBtn = new Button("Save");
+        saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
         saveBtn.addClickListener(click ->
                 {
                     try {
-
                         itemBinder.writeBean(item);
                         item.setCreated(LocalDate.now());
                         itemService.saveItem(item);
+                        fireEvent(new CloseEvent(this, false));
                     } catch (ValidationException e) {
                         e.printStackTrace();
                     }
@@ -89,18 +93,38 @@ public class InventoryForm extends FormLayout {
         return saveBtn;
     }
 
+    private ComboBox<String> getBuyingCurrencyComboBox() {
+        return new ComboBox<>("Currency", List.of("EUR", "USD", "RUB", "JPY"));
+    }
+
+    private ComboBox<String> getSellingCurrencyComboBox() {
+        return new ComboBox<>("Override selling currency", List.of("EUR", "USD", "RUB", "JPY"));
+    }
+
+    private Component createDeleteButton() {
+        Button b = new Button("Delete");
+        b.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        b.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        return b;
+    }
+
+    private Component createCloseButton() {
+        Button b = new Button("Close");
+        b.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        return b;
+    }
+
 
     private Checkbox createCheckbox() {
         overrideSellPriceCheckbox = new Checkbox("Override selling price");
-
+        overrideSellPriceCheckbox.setValue(true);
 
         overrideSellPriceCheckbox.addValueChangeListener(event -> {
             sellingAmountField.setEnabled(event.getValue());
             sellingCurrencyCombo.setEnabled(event.getValue());
-            if (!event.getValue()) {
-                sellingAmountField.clear();
-                sellingCurrencyCombo.clear();
-            }
+            buyingCurrencyCombo.setEnabled(!event.getValue());
+            buyingAmountField.setEnabled(!event.getValue());
+            marginField.setEnabled(!event.getValue());
         });
 
         return overrideSellPriceCheckbox;
@@ -108,6 +132,8 @@ public class InventoryForm extends FormLayout {
 
     private void prepBinder() {
         itemBinder.bind(idField, Item::getId, null);
+        itemBinder.bind(createdField, Item::getCreated, null);
+        itemBinder.bind(modifiedField, Item::getModified, null);
         itemBinder.bind(brandField, Item::getBrand, Item::setBrand);
         itemBinder.bind(partNoField, Item::getPartno, Item::setPartno);
         itemBinder.bind(nameRusField, Item::getNameRus, Item::setNameRus);
@@ -141,32 +167,31 @@ public class InventoryForm extends FormLayout {
                 }
         );
 
-//todo make binding magic for checkbox
-
+        itemBinder.forField(overrideSellPriceCheckbox).bind(Item::isOverridden, Item::setOverridden);
 
         itemBinder.forField(sellingAmountField).bind(
                 item -> {
-                    if (item.getSellingPriceAsOverriddenValue() != null)
-                        item.getSellingPriceAsOverriddenValue().getNumber().doubleValueExact();
-                    return null;
+                    if (item.isOverridden())
+                        return item.getSellingPrice().getNumber().doubleValueExact();
+                    else return 0.;
                 },
                 (item, aDouble) -> {
-                    if (item.getSellingPriceAsOverriddenValue() != null) {
-                        String cur = item.getSellingPriceAsOverriddenValue().getCurrency().getCurrencyCode();
+                    if (item.isOverridden()) {
+                        String cur = item.getSellingPrice().getCurrency().getCurrencyCode(); //todo check for bugs
                         item.setSellingPrice(Money.of(aDouble, cur));
-                    } else item.setSellingPrice(Money.of(aDouble, "EUR"));
+                    } else item.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
                 }
         );
 
         itemBinder.forField(sellingCurrencyCombo).bind(
                 item -> {
-                    if (item.getSellingPriceAsOverriddenValue() != null) {
-                        return item.getSellingPriceAsOverriddenValue().getCurrency().getCurrencyCode();
-                    } else return null;
+                    if (item.isOverridden()) {
+                        return item.getSellingPrice().getCurrency().getCurrencyCode();
+                    } else return "EUR";
                 },
                 (item, cur) -> {
-                    if (item.getSellingPriceAsOverriddenValue() != null) {
-                        NumberValue nv = item.getSellingPriceAsOverriddenValue().getNumber();
+                    if (item.isOverridden()) {
+                        NumberValue nv = item.getSellingPrice().getNumber();  //todo check for bugs
                         item.setSellingPrice(Money.of(nv, cur));
                     } else item.setSellingPrice(Money.of(BigDecimal.ZERO, cur));
                 }
@@ -176,5 +201,16 @@ public class InventoryForm extends FormLayout {
     public void setItem(Item item) {
         this.item = item;
         itemBinder.readBean(item);
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener
+            (Class<T> eventType, ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
+    }
+}
+
+class CloseEvent extends ComponentEvent<Component> {
+    public CloseEvent(Component source, boolean fromClient) {
+        super(source, fromClient);
     }
 }

@@ -38,6 +38,7 @@ public class ItemDeserializer extends JsonDeserializer<Item> {
         if (node.has("date-modified")) {
             item.setModified(LocalDate.parse(node.get("date-modified").textValue(), DateTimeFormatter.ISO_DATE));
         }
+        item.setOverridden(node.get("overridden-sell-price").booleanValue());
         return item;
     }
 }

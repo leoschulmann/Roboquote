@@ -55,6 +55,9 @@ public class Item {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     LocalDate modified;
 
+    @Column(name = "overridden_sell_price")
+    boolean overridden;
+
     public Item() {
     }
 
@@ -103,12 +106,8 @@ public class Item {
     }
 
     public Money getSellingPrice() {
-        if (sellingPrice.isNegativeOrZero()) sellingPrice = buyingPrice.divide((100 - margin) / 100.);
-        return sellingPrice.with(Monetary.getDefaultRounding());
-    }
-
-    public Money getSellingPriceAsOverriddenValue() {
-        return sellingPrice;
+        return isOverridden() ? sellingPrice.with(Monetary.getDefaultRounding()) :
+                buyingPrice.divide((100 - margin) / 100.).with(Monetary.getDefaultRounding());
     }
 
     public void setSellingPrice(Money sellingPrice) {
@@ -141,5 +140,13 @@ public class Item {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public boolean isOverridden() {
+        return overridden;
+    }
+
+    public void setOverridden(boolean overridden) {
+        this.overridden = overridden;
     }
 }

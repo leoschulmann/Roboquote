@@ -25,6 +25,7 @@ public class ItemSerializer extends JsonSerializer<Item> {
         jsonGenerator.writeNumberField("amount-selling", item.getSellingPrice().getNumberStripped());
         jsonGenerator.writeStringField("date-created", item.getCreated().format(DateTimeFormatter.ISO_DATE));
         jsonGenerator.writeStringField("date-modified", item.getModified().format(DateTimeFormatter.ISO_DATE));
+        jsonGenerator.writeBooleanField("overridden-sell-price", item.isOverridden());
         jsonGenerator.writeEndObject();
     }
 }

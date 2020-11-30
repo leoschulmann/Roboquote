@@ -7,17 +7,20 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import org.javamoney.moneta.Money;
+
+import java.math.BigDecimal;
 
 @Route(value = "inventory", layout = MainLayout.class)
 public class InventoryView extends VerticalLayout {
     private final ItemService itemService;
-    private CurrencyFormatService currencyFormatService;
+    private final CurrencyFormatService currencyFormatService;
     private Grid<Item> grid;
-    private InventoryForm form;
-    private Dialog dialog;
-    private Button newItemBtn;
+    private final InventoryForm form;
+    private final Dialog dialog;
 
     public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService) {
         this.itemService = itemService;
@@ -27,6 +30,10 @@ public class InventoryView extends VerticalLayout {
         form = new InventoryForm(itemService);
         dialog = new Dialog(form);
         dialog.setWidth("66%");
+        form.addListener(CloseEvent.class, event -> {
+            closeDialog();
+            updateList();
+        });
 
         add(createNewItem(), drawGrid());
 
@@ -40,6 +47,8 @@ public class InventoryView extends VerticalLayout {
         grid.addColumns("brand", "partno", "nameRus", "nameEng");
         grid.addColumn(item -> currencyFormatService.formatMoney(item.getSellingPrice())).setHeader("Selling Price");
         grid.addColumns("margin", "modified");
+        grid.addComponentColumn(item -> item.isOverridden() ?
+                VaadinIcon.CHECK_SQUARE_O.create() : VaadinIcon.THIN_SQUARE.create()).setHeader("Override");
 
         grid.getColumns().forEach(col -> col.setAutoWidth(true));
 
@@ -48,11 +57,15 @@ public class InventoryView extends VerticalLayout {
     }
 
     private Button createNewItem() {
-        newItemBtn = new Button("Create new item");
+        Button newItemBtn = new Button("Create new item");
         newItemBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         newItemBtn.addClickListener(c -> {
             grid.asSingleSelect().clear();
-            form.setItem(new Item());
+            Item i = new Item();
+            i.setOverridden(false);
+            i.setBuyingPrice(Money.of(BigDecimal.ZERO, "EUR"));
+            i.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
+            form.setItem(i);
             dialog.open();
         });
         return newItemBtn;
@@ -67,4 +80,7 @@ public class InventoryView extends VerticalLayout {
         grid.setItems(itemService.findAll());
     }
 
+    private void closeDialog() {
+        dialog.close();
+    }
 }
