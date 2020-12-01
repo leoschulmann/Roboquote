@@ -34,4 +34,14 @@ public class ItemServiceImpl implements ItemService {
                 findAllByNameRusContainingIgnoreCaseOrNameEngContainingIgnoreCaseOrPartnoContainingIgnoreCase
                         (str, str, str);
     }
+
+    @Override
+    public void deleteItemById(int id) {
+        itemRepository.deleteById(id);
+    }
+
+    @Override
+    public Item updateItem(Item item) {
+        return itemRepository.save(item);
+    }
 }

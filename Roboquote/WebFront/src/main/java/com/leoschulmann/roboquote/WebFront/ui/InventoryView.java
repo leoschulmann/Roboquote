@@ -2,6 +2,10 @@ package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
+import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -19,21 +23,22 @@ public class InventoryView extends VerticalLayout {
     private final ItemService itemService;
     private final CurrencyFormatService currencyFormatService;
     private Grid<Item> grid;
-    private final InventoryForm form;
-    private final Dialog dialog;
+    private InventoryForm form;
+    private Dialog dialog;
 
     public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService) {
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
         drawGrid();
 
-        form = new InventoryForm(itemService);
+        form = new InventoryForm();
         dialog = new Dialog(form);
         dialog.setWidth("66%");
-        form.addListener(CloseEvent.class, event -> {
-            closeDialog();
-            updateList();
-        });
+
+        form.addListener(InventoryFormCloseEvent.class, event -> closeDialog());
+        form.addListener(InventoryDeleteItemEvent.class, this::delete);
+        form.addListener(InventoryUpdateItemEvent.class, this::update);
+        form.addListener(InventoryCreateItemEvent.class, this::create);
 
         add(createNewItem(), drawGrid());
 
@@ -65,6 +70,7 @@ public class InventoryView extends VerticalLayout {
             i.setOverridden(false);
             i.setBuyingPrice(Money.of(BigDecimal.ZERO, "EUR"));
             i.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
+            form.mode(false);
             form.setItem(i);
             dialog.open();
         });
@@ -72,6 +78,7 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void editItem(Item value) {
+        form.mode(true);
         form.setItem(value);
         dialog.open();
     }
@@ -82,5 +89,23 @@ public class InventoryView extends VerticalLayout {
 
     private void closeDialog() {
         dialog.close();
+    }
+
+    private void create(InventoryCreateItemEvent event) {
+        itemService.saveItem(event.getEventItem());
+        closeDialog();
+        updateList();
+    }
+
+    private void update(InventoryUpdateItemEvent event) {
+        itemService.updateItem(event.getEventItem());
+        updateList();
+        closeDialog();
+    }
+
+    private void delete(InventoryDeleteItemEvent event) { //todo add confirmation dialog
+        itemService.deleteItem(event.getEventItem());
+        updateList();
+        closeDialog();
     }
 }

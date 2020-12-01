@@ -8,4 +8,8 @@ public interface ItemService {
     List<Item> findAll();
 
     void saveItem(Item item);
+
+    void deleteItem(Item eventItem);
+
+    void updateItem(Item eventItem);
 }

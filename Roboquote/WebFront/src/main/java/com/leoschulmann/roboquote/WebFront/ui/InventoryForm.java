@@ -1,6 +1,9 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.ItemService;
+import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
@@ -23,7 +26,6 @@ import org.javamoney.moneta.Money;
 
 import javax.money.NumberValue;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 public class InventoryForm extends FormLayout {
@@ -42,13 +44,12 @@ public class InventoryForm extends FormLayout {
     private final NumberField sellingAmountField = new NumberField("Override selling price");
     private final ComboBox<String> sellingCurrencyCombo = getSellingCurrencyComboBox();
     private Checkbox overrideSellPriceCheckbox = createCheckbox();
+    private Button saveBtn;
+    private Button deleteBtn;
 
     private final Binder<Item> itemBinder = new Binder<>(Item.class);
-    ItemService itemService;
 
-    public InventoryForm(ItemService itemService) {
-        this.itemService = itemService;
-
+    public InventoryForm() {
         setResponsiveSteps(
                 new ResponsiveStep("25em", 1),
                 new ResponsiveStep("32em", 2),
@@ -75,21 +76,10 @@ public class InventoryForm extends FormLayout {
     }
 
     private Component createSaveButton() {
-        Button saveBtn = new Button("Save");
+        saveBtn = new Button();
+        saveBtn.setText("You shouldn't see this");
         saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        saveBtn.addClickListener(click ->
-                {
-                    try {
-                        itemBinder.writeBean(item);
-                        item.setCreated(LocalDate.now());
-                        itemService.saveItem(item);
-                        fireEvent(new CloseEvent(this, false));
-                    } catch (ValidationException e) {
-                        e.printStackTrace();
-                    }
-                }
-        );
         return saveBtn;
     }
 
@@ -102,18 +92,19 @@ public class InventoryForm extends FormLayout {
     }
 
     private Component createDeleteButton() {
-        Button b = new Button("Delete");
-        b.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        b.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        return b;
+        deleteBtn = new Button("Delete");
+        deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        deleteBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        deleteBtn.addClickListener(event -> fireEvent(new InventoryDeleteItemEvent(this, item)));
+        return deleteBtn;
     }
 
     private Component createCloseButton() {
         Button b = new Button("Close");
         b.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        b.addClickListener(event -> fireEvent(new InventoryFormCloseEvent(this, false)));
         return b;
     }
-
 
     private Checkbox createCheckbox() {
         overrideSellPriceCheckbox = new Checkbox("Override selling price");
@@ -207,10 +198,30 @@ public class InventoryForm extends FormLayout {
             (Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
     }
-}
 
-class CloseEvent extends ComponentEvent<Component> {
-    public CloseEvent(Component source, boolean fromClient) {
-        super(source, fromClient);
+    public void mode(boolean edit) {
+        saveBtn.addClickListener(edit ?
+                click -> {
+                    try {
+                        itemBinder.writeBean(item);
+                        fireEvent(new InventoryUpdateItemEvent(this, item));
+                    } catch (ValidationException e) {
+                        e.printStackTrace();
+                    }
+                }
+                :
+                click -> {
+                    try {
+                        itemBinder.writeBean(item);
+                        fireEvent(new InventoryCreateItemEvent(this, item));
+                    } catch (ValidationException e) {
+                        e.printStackTrace();
+                    }
+                }
+        );
+
+        saveBtn.setText(edit ? "Update" : "Create");
+        deleteBtn.setEnabled(edit);
+
     }
 }
