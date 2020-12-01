@@ -13,7 +13,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
@@ -46,6 +49,7 @@ public class InventoryForm extends FormLayout {
     private Checkbox overrideSellPriceCheckbox = createCheckbox();
     private Button saveBtn;
     private Button deleteBtn;
+    private Registration saveButtonListener;
 
     private final Binder<Item> itemBinder = new Binder<>(Item.class);
 
@@ -95,7 +99,23 @@ public class InventoryForm extends FormLayout {
         deleteBtn = new Button("Delete");
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        deleteBtn.addClickListener(event -> fireEvent(new InventoryDeleteItemEvent(this, item)));
+
+        Div text = new Div(new Span ("Delete item?"));
+        Button ok = new Button("Confirm");
+        ok.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button cancel = new Button("Cancel");
+        Dialog confirmDialog = new Dialog(text, new HorizontalLayout(ok, cancel));
+        confirmDialog.setDraggable(true);
+        confirmDialog.setModal(true);
+        confirmDialog.setResizable(false);
+
+        deleteBtn.addClickListener(event -> confirmDialog.open());
+        cancel.addClickListener(event -> confirmDialog.close());
+        ok.addClickListener(event -> {
+            confirmDialog.close();
+            fireEvent(new InventoryDeleteItemEvent(this, item));
+        });
         return deleteBtn;
     }
 
@@ -200,8 +220,8 @@ public class InventoryForm extends FormLayout {
     }
 
     public void mode(boolean edit) {
-        saveBtn.addClickListener(edit ?
-                click -> {
+        if (saveButtonListener != null) saveButtonListener.remove();
+        if (edit) saveButtonListener = saveBtn.addClickListener(click -> {
                     try {
                         itemBinder.writeBean(item);
                         fireEvent(new InventoryUpdateItemEvent(this, item));
@@ -209,8 +229,8 @@ public class InventoryForm extends FormLayout {
                         e.printStackTrace();
                     }
                 }
-                :
-                click -> {
+        );
+        else saveButtonListener = saveBtn.addClickListener(click -> {
                     try {
                         itemBinder.writeBean(item);
                         fireEvent(new InventoryCreateItemEvent(this, item));

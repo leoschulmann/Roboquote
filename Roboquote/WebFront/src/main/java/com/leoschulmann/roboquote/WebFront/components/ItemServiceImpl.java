@@ -49,7 +49,7 @@ public class ItemServiceImpl implements ItemService {
         item.setModified(LocalDate.now());
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<Item> httpEntity = new HttpEntity<>(item, new HttpHeaders());
-        restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Item.class);
+        ResponseEntity<Item> responseEntity = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Item.class);
     }
 }
 

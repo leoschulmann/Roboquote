@@ -103,7 +103,7 @@ public class InventoryView extends VerticalLayout {
         closeDialog();
     }
 
-    private void delete(InventoryDeleteItemEvent event) { //todo add confirmation dialog
+    private void delete(InventoryDeleteItemEvent event) {
         itemService.deleteItem(event.getEventItem());
         updateList();
         closeDialog();

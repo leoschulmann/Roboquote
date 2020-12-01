@@ -9,11 +9,9 @@ public interface ItemService {
 
     List<Item> getAll();
 
-    void addNewItem(Item item);
-
     List<Item> searchBy(String str);
 
     void deleteItemById(int id);
 
-    Item updateItem(Item item);
+    Item saveItem(Item item);
 }

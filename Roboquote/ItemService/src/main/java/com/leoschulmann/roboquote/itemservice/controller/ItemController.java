@@ -27,8 +27,9 @@ public class ItemController {
     }
 
     @PostMapping("/")
-    void addNewItem(@RequestBody Item item) {
-        itemService.addNewItem(item);
+    ResponseEntity<Item> addNewItem(@RequestBody Item item) {
+       Item i =  itemService.saveItem(item);
+        return new ResponseEntity<>(i, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
@@ -39,7 +40,7 @@ public class ItemController {
 
     @PutMapping("/")
     ResponseEntity<Item> updateItem(@RequestBody Item item) {
-        Item anItem = itemService.updateItem(item);
+        Item anItem = itemService.saveItem(item);
         return new ResponseEntity<>(anItem, HttpStatus.OK);
     }
 

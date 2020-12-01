@@ -24,11 +24,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public void addNewItem(Item item) {
-        itemRepository.save(item);
-    }
-
-    @Override
     public List<Item> searchBy(String str) {
         return itemRepository.
                 findAllByNameRusContainingIgnoreCaseOrNameEngContainingIgnoreCaseOrPartnoContainingIgnoreCase
@@ -41,7 +36,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Item updateItem(Item item) {
-        return itemRepository.save(item);
+    public Item saveItem(Item item) {
+        return itemRepository.saveAndFlush(item);
     }
 }
