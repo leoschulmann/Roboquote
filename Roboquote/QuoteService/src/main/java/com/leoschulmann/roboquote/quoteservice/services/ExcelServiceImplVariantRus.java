@@ -16,9 +16,14 @@ import org.javamoney.moneta.function.MonetaryFunctions;
 import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @Service
@@ -29,19 +34,37 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     private CellStyle subTotalStyle;
     private CellStyle regularStyle;
     private CellStyle regularStyleCentered;
-    private CellStyle currencyStyle;
     private CellStyle regularStyleUnderlined;
     private CellStyle regularStyleCenteredUnderlined;
-    private CellStyle currencyStyleUnderlined;
-    private CellStyle currencySubtotalStyle;
     private CellStyle totalStyle;
-    private CellStyle currencyTotalStyle;
+    private CellStyle titleStyle;
+    private CellStyle titleStyleUnderlined;
+    private Map<String, CellStyle> currencyStyleMap;
+    private Map<String, CellStyle> currencyUnderlinedStyleMap;
+    private Map<String, CellStyle> currencySubtotalStyleMap;
+    private Map<String, CellStyle> currencyTotalStyleMap;
 
     @Override
-    public byte[] generateFile(Quote quote)  {
+    public byte[] generateFile(Quote quote) {
 
         workbook = new XSSFWorkbook();
         sheet = workbook.createSheet(quote.getNumber());
+
+        currencyStyleMap = new HashMap<>();
+        currencyUnderlinedStyleMap = new HashMap<>();
+        currencySubtotalStyleMap = new HashMap<>();
+        currencyTotalStyleMap = new HashMap<>();
+
+        titleStyle = getTitleStyle();
+        titleStyleUnderlined = getTitleUnderlinedStyle();
+        subheaderStyle = getSubheaderStyle();
+        subTotalStyle = getSubtotalStyle();
+        regularStyle = getRegularStyle();
+        regularStyleCentered = getRegularStyleCentered();
+        regularStyleUnderlined = getRegularStyleUnderlined();
+        regularStyleCenteredUnderlined = getRegularStyleCenteredUnderlined();
+        totalStyle = getTotalStyle();
+
         sheet.setColumnWidth(0, 19400); //75
         sheet.setColumnWidth(1, 1907);  //6.67
         sheet.setColumnWidth(2, 4252);  //15,83
@@ -54,8 +77,8 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             Row r = sheet.createRow(i);
             for (int j = 0; j < 5; j++) {
                 Cell c = r.createCell(j);
-                c.setCellStyle(getTitleStyle());
-                if (i == 8 && j < 2) c.getCellStyle().setBorderBottom(BorderStyle.THIN);
+                c.setCellStyle(titleStyle);
+                if (i == 8 && j < 2) c.setCellStyle(titleStyleUnderlined);
             }
         }
 
@@ -82,7 +105,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         createBlankRows(1);
         Row r = sheet.getRow(sheet.getLastRowNum());
         createBlankCells(r);
-        IntStream.range(0, 5).forEach(i -> r.getCell(i).setCellStyle(getRegularStyleCentered()));
+        IntStream.range(0, 5).forEach(i -> r.getCell(i).setCellStyle(regularStyleCentered));
         r.getCell(1).setCellValue("Кол-во");
         r.getCell(2).setCellValue("Арт.");
         r.getCell(3).setCellValue("Цена");
@@ -123,8 +146,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             anchor.setRow1(row1);
             Picture picture = drawing.createPicture(anchor, pictureId);
             picture.resize();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new CreatingXlsxFileException(file);
         }
     }
@@ -151,7 +173,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         CellRangeAddress region = new CellRangeAddress(subheaderRowNum, subheaderRowNum, 0, 4);
         sheet.addMergedRegion(region);
         subheaderRow.getCell(0).setCellValue(section.getName());
-        subheaderRow.getCell(0).setCellStyle(getSubheaderStyle());
+        subheaderRow.getCell(0).setCellStyle(subheaderStyle);
         RegionUtil.setBorderTop(BorderStyle.MEDIUM, region, sheet);
     }
 
@@ -165,7 +187,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
                 "ВСЕГО " + name);
         row.getCell(0).setCellValue(content);
         row.getCell(4).setCellValue(money.getNumber().doubleValue());
-        row.getCell(0).setCellStyle(getSubtotalStyle());
+        row.getCell(0).setCellStyle(subTotalStyle);
         row.getCell(4).setCellStyle(getCurrencySubtotalStyle(money.getCurrency().getCurrencyCode().toLowerCase()));
     }
 
@@ -186,9 +208,9 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         row.getCell(3).setCellValue(pos.getSellingPrice().getNumberStripped().doubleValue());
         row.getCell(4).setCellValue(pos.getSellingSum().getNumberStripped().doubleValue());
 
-        row.getCell(0).setCellStyle(isLast ? getRegularStyleUnderlined() : getRegularStyle());
-        row.getCell(1).setCellStyle(isLast ? getRegularStyleCenteredUnderlined() : getRegularStyleCentered());
-        row.getCell(2).setCellStyle(isLast ? getRegularStyleCenteredUnderlined() : getRegularStyleCentered());
+        row.getCell(0).setCellStyle(isLast ? regularStyleUnderlined : regularStyle);
+        row.getCell(1).setCellStyle(isLast ? regularStyleCenteredUnderlined : regularStyleCentered);
+        row.getCell(2).setCellStyle(isLast ? regularStyleCenteredUnderlined : regularStyleCentered);
         row.getCell(3).setCellStyle(isLast ? getCurrencyStyleUnderlined(
                 pos.getSellingPrice().getCurrency().getCurrencyCode().toLowerCase()) :
                 getCurrencyStyle(pos.getSellingPrice().getCurrency().getCurrencyCode().toLowerCase()));
@@ -213,7 +235,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
 
         row.getCell(4).setCellValue(sum.getNumber().doubleValue());
 
-        row.getCell(0).setCellStyle(getTotalStyle());
+        row.getCell(0).setCellStyle(totalStyle);
         row.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
 
         if (quote.getDiscount() != null && quote.getDiscount() > 0) {
@@ -224,7 +246,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             sheet.addMergedRegion(discoRegion);
             discoRow.getCell(0).setCellValue("ИТОГО (со скидкой " + quote.getDiscount() + "%):");
             discoRow.getCell(4).setCellValue(sum.multiply((100 - quote.getDiscount()) / 100.).getNumber().doubleValue());
-            discoRow.getCell(0).setCellStyle(getTotalStyle());
+            discoRow.getCell(0).setCellStyle(totalStyle);
             discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
         }
 
@@ -235,7 +257,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         sheet.addMergedRegion(taxRegion);
         taxRow.getCell(0).setCellValue("в т.ч. НДС " + quote.getVat() + "%):");
         taxRow.getCell(4).setCellValue(getTaxSum(sum, quote.getDiscount(), quote.getVat()));
-        taxRow.getCell(0).setCellStyle(getTotalStyle());
+        taxRow.getCell(0).setCellStyle(totalStyle);
         taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
     }
 
@@ -245,7 +267,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         if (discount != null && discount > 0) {
             source = sum.multiply((100 - discount) / 100.);
         } else source = sum;
-        return source.multiply(vat/100.).divide(vat/100. + 1).getNumber().doubleValueExact();
+        return source.multiply(vat / 100.).divide(vat / 100. + 1).getNumber().doubleValueExact();
     }
 
     private byte[] writeFileToByteArray() {
@@ -268,190 +290,179 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         return titleStyle;
     }
 
-    private CellStyle getRegularStyle() {
-        if (regularStyle == null) {
-            regularStyle = workbook.createCellStyle();
-            XSSFFont arial10 = (XSSFFont) workbook.createFont();
-            arial10.setBold(false);
-            arial10.setFontHeight(10);
-            arial10.setFontName("Arial");
+    private CellStyle getTitleUnderlinedStyle() {
+        CellStyle cs = workbook.createCellStyle();
+        XSSFFont titleFont = (XSSFFont) workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeight(11);
+        titleFont.setFontName("Calibri");
+        cs.setFont(titleFont);
+        cs.setBorderBottom(BorderStyle.THIN);
+        return cs;
+    }
 
-            regularStyle.setFont(arial10);
-            regularStyle.setAlignment(HorizontalAlignment.LEFT);
-        }
-        return regularStyle;
+    private CellStyle getRegularStyle() {
+        CellStyle style = workbook.createCellStyle();
+        XSSFFont arial10 = (XSSFFont) workbook.createFont();
+        arial10.setBold(false);
+        arial10.setFontHeight(10);
+        arial10.setFontName("Arial");
+        style.setFont(arial10);
+        style.setWrapText(true);
+        style.setAlignment(HorizontalAlignment.LEFT);
+        return style;
     }
 
     private CellStyle getSubheaderStyle() {
-        if (subheaderStyle == null) {
-            subheaderStyle = workbook.createCellStyle();
-            XSSFFont boldArial10 = (XSSFFont) workbook.createFont();
-            boldArial10.setBold(true);
-            boldArial10.setFontHeight(10);
-            boldArial10.setFontName("Arial");
-            subheaderStyle.setFont(boldArial10);
-            subheaderStyle.setAlignment(HorizontalAlignment.CENTER);
-            subheaderStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            subheaderStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        }
-        return subheaderStyle;
+        CellStyle style = workbook.createCellStyle();
+        XSSFFont boldArial10 = (XSSFFont) workbook.createFont();
+        boldArial10.setBold(true);
+        boldArial10.setFontHeight(10);
+        boldArial10.setFontName("Arial");
+        style.setFont(boldArial10);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return style;
     }
 
     private CellStyle getRegularStyleCentered() {
-        if (regularStyleCentered == null) {
-            regularStyleCentered = workbook.createCellStyle();
-            XSSFFont arial10 = (XSSFFont) workbook.createFont();
-            arial10.setBold(false);
-            arial10.setFontHeight(10);
-            arial10.setFontName("Arial");
-
-            regularStyleCentered.setFont(arial10);
-            regularStyleCentered.setAlignment(HorizontalAlignment.CENTER);
-        }
+        CellStyle regularStyleCentered = workbook.createCellStyle();
+        XSSFFont arial10 = (XSSFFont) workbook.createFont();
+        arial10.setBold(false);
+        arial10.setFontHeight(10);
+        arial10.setFontName("Arial");
+        regularStyleCentered.setFont(arial10);
+        regularStyleCentered.setAlignment(HorizontalAlignment.CENTER);
         return regularStyleCentered;
     }
 
     private CellStyle getCurrencyStyle(String currency) {
-        if (currencyStyle == null) {
-            currencyStyle = workbook.createCellStyle();
+        return currencyStyleMap.computeIfAbsent(currency, s -> {
+            CellStyle cs = workbook.createCellStyle();
             XSSFFont arial10 = (XSSFFont) workbook.createFont();
             arial10.setBold(false);
             arial10.setFontHeight(10);
             arial10.setFontName("Arial");
-
-            currencyStyle.setFont(arial10);
-            currencyStyle.setAlignment(HorizontalAlignment.RIGHT);
-            DataFormat dataFormat = workbook.createDataFormat();
-
-            format(currency, currencyStyle, dataFormat);
-        }
-        return currencyStyle;
+            cs.setFont(arial10);
+            cs.setAlignment(HorizontalAlignment.RIGHT);
+            applyFormat(currency, cs);
+            return cs;
+        });
     }
 
     private CellStyle getRegularStyleUnderlined() {
-        if (regularStyleUnderlined == null) {
-            regularStyleUnderlined = workbook.createCellStyle();
-            XSSFFont arial10 = (XSSFFont) workbook.createFont();
-            arial10.setBold(false);
-            arial10.setFontHeight(10);
-            arial10.setFontName("Arial");
+        CellStyle cs = workbook.createCellStyle();
+        XSSFFont arial10 = (XSSFFont) workbook.createFont();
+        arial10.setBold(false);
+        arial10.setFontHeight(10);
+        arial10.setFontName("Arial");
 
-            regularStyleUnderlined.setFont(arial10);
-            regularStyleUnderlined.setAlignment(HorizontalAlignment.LEFT);
-            regularStyleUnderlined.setBorderBottom(BorderStyle.MEDIUM);
-        }
-        return regularStyleUnderlined;
+        cs.setFont(arial10);
+        cs.setWrapText(true);
+        cs.setAlignment(HorizontalAlignment.LEFT);
+        cs.setBorderBottom(BorderStyle.MEDIUM);
+        return cs;
     }
 
     private CellStyle getRegularStyleCenteredUnderlined() {
-        if (regularStyleCenteredUnderlined == null) {
-            regularStyleCenteredUnderlined = workbook.createCellStyle();
-            XSSFFont arial10 = (XSSFFont) workbook.createFont();
-            arial10.setBold(false);
-            arial10.setFontHeight(10);
-            arial10.setFontName("Arial");
+        CellStyle regularStyleCenteredUnderlined = workbook.createCellStyle();
+        XSSFFont arial10 = (XSSFFont) workbook.createFont();
+        arial10.setBold(false);
+        arial10.setFontHeight(10);
+        arial10.setFontName("Arial");
 
-            regularStyleCenteredUnderlined.setFont(arial10);
-            regularStyleCenteredUnderlined.setAlignment(HorizontalAlignment.CENTER);
-            regularStyleCenteredUnderlined.setBorderBottom(BorderStyle.MEDIUM);
-
-        }
+        regularStyleCenteredUnderlined.setFont(arial10);
+        regularStyleCenteredUnderlined.setAlignment(HorizontalAlignment.CENTER);
+        regularStyleCenteredUnderlined.setBorderBottom(BorderStyle.MEDIUM);
         return regularStyleCenteredUnderlined;
     }
 
     private CellStyle getCurrencyStyleUnderlined(String currency) {
-        if (currencyStyleUnderlined == null) {
-            currencyStyleUnderlined = workbook.createCellStyle();
+        return currencyUnderlinedStyleMap.computeIfAbsent(currency, s -> {
+            CellStyle cs = workbook.createCellStyle();
             XSSFFont arial10 = (XSSFFont) workbook.createFont();
             arial10.setBold(false);
             arial10.setFontHeight(10);
             arial10.setFontName("Arial");
-
-            currencyStyleUnderlined.setFont(arial10);
-            currencyStyleUnderlined.setAlignment(HorizontalAlignment.RIGHT);
-            currencyStyleUnderlined.setBorderBottom(BorderStyle.MEDIUM);
-            DataFormat dataFormat = workbook.createDataFormat();
-
-            format(currency, currencyStyleUnderlined, dataFormat);
-        }
-        return currencyStyleUnderlined;
+            cs.setFont(arial10);
+            cs.setAlignment(HorizontalAlignment.RIGHT);
+            cs.setBorderBottom(BorderStyle.MEDIUM);
+            applyFormat(currency, cs);
+            return cs;
+        });
     }
 
     private CellStyle getSubtotalStyle() {
-        if (subTotalStyle == null) {
-            subTotalStyle = workbook.createCellStyle();
-            XSSFFont xssfFont = (XSSFFont) workbook.createFont();
-            xssfFont.setBold(true);
-            xssfFont.setFontHeight(11);
-            xssfFont.setFontName("Arial");
-            xssfFont.setBold(true);
-            subTotalStyle.setFont(xssfFont);
-            subTotalStyle.setAlignment(HorizontalAlignment.RIGHT);
-        }
-        return subTotalStyle;
+        CellStyle cs = workbook.createCellStyle();
+        XSSFFont xssfFont = (XSSFFont) workbook.createFont();
+        xssfFont.setBold(true);
+        xssfFont.setFontHeight(11);
+        xssfFont.setFontName("Arial");
+        xssfFont.setBold(true);
+        cs.setFont(xssfFont);
+        cs.setAlignment(HorizontalAlignment.RIGHT);
+        return cs;
     }
 
     private CellStyle getCurrencySubtotalStyle(String currencyCode) {
-        if (currencySubtotalStyle == null) {
-            currencySubtotalStyle = workbook.createCellStyle();
+        return currencySubtotalStyleMap.computeIfAbsent(currencyCode, s -> {
+            CellStyle cs = workbook.createCellStyle();
             XSSFFont font = (XSSFFont) workbook.createFont();
             font.setFontHeight(11);
             font.setBold(true);
             font.setFontName("Arial");
-            currencySubtotalStyle.setFont(font);
-            currencySubtotalStyle.setAlignment(HorizontalAlignment.RIGHT);
+            cs.setFont(font);
+            cs.setAlignment(HorizontalAlignment.RIGHT);
             DataFormat dataFormat = workbook.createDataFormat();
-            format(currencyCode, currencySubtotalStyle, dataFormat);
-
-        }
-        return currencySubtotalStyle;
+            applyFormat(currencyCode, cs);
+            return cs;
+        });
     }
 
     private CellStyle getTotalStyle() {
-        if (totalStyle == null) {
-            totalStyle = workbook.createCellStyle();
-            XSSFFont xssfFont = (XSSFFont) workbook.createFont();
-            xssfFont.setBold(true);
-            xssfFont.setFontHeight(12);
-            xssfFont.setFontName("Arial");
-            xssfFont.setBold(true);
-            totalStyle.setFont(xssfFont);
-            totalStyle.setAlignment(HorizontalAlignment.RIGHT);
-        }
-        return totalStyle;
+        CellStyle cs = workbook.createCellStyle();
+        XSSFFont xssfFont = (XSSFFont) workbook.createFont();
+        xssfFont.setBold(true);
+        xssfFont.setFontHeight(12);
+        xssfFont.setFontName("Arial");
+        xssfFont.setBold(true);
+        cs.setFont(xssfFont);
+        cs.setAlignment(HorizontalAlignment.RIGHT);
+        return cs;
     }
 
     private CellStyle getTotalCurrencyStyle(String currencyCode) {
-        if (currencyTotalStyle == null) {
-            currencyTotalStyle = workbook.createCellStyle();
+        return currencyTotalStyleMap.computeIfAbsent(currencyCode, s -> {
+            CellStyle cs = workbook.createCellStyle();
             XSSFFont font = (XSSFFont) workbook.createFont();
             font.setFontHeight(12);
             font.setBold(true);
             font.setFontName("Arial");
-            currencyTotalStyle.setFont(font);
-            currencyTotalStyle.setAlignment(HorizontalAlignment.RIGHT);
+            cs.setFont(font);
+            cs.setAlignment(HorizontalAlignment.RIGHT);
             DataFormat dataFormat = workbook.createDataFormat();
-            format(currencyCode, currencyTotalStyle, dataFormat);
-        }
-        return currencyTotalStyle;
+            applyFormat(currencyCode, cs);
+            return cs;
+        });
     }
 
-    private void format(String currency, CellStyle currStyle, DataFormat dataFormat) {
+    private void applyFormat(String currency, CellStyle currStyle) {
         switch (currency) {
             case ("usd"):
-                currStyle.setDataFormat(dataFormat.getFormat(// this alien crap is right outta MS Excel
+                currStyle.setDataFormat(workbook.createDataFormat().getFormat(// this alien crap is right outta MS Excel
                         "_-[$$-en-US]* # ##0.00_ ;_-[$$-en-US]* -# ##0.00\\ ;_-[$$-en-US]* \"-\"??_ ;_-@_ "));
                 break;
             case ("eur"):
-                currStyle.setDataFormat(dataFormat.getFormat(
+                currStyle.setDataFormat(workbook.createDataFormat().getFormat(
                         "_-[$€-x-euro2] * # ##0.00_-;-[$€-x-euro2] * # ##0.00_-;_-[$€-x-euro2] * \"-\"??_-;_-@_-"));
                 break;
             case ("jpy"):
-                currStyle.setDataFormat(dataFormat.getFormat(
+                currStyle.setDataFormat(workbook.createDataFormat().getFormat(
                         "_-* # ##0.00\\ [$JPY]_-;-* # ##0.00\\ [$JPY]_-;_-* \"-\"??\\ [$JPY]_-;_-@_-"));
                 break;
             case ("rub"):
-                currStyle.setDataFormat(dataFormat.getFormat(
+                currStyle.setDataFormat(workbook.createDataFormat().getFormat(
                         "_-* # ##0.00\\ [$₽-ru-RU]_-;-* # ##0.00\\ [$₽-ru-RU]_-;_-* \"-\"??\\ [$₽-ru-RU]_-;_-@_-"));
         }
     }
