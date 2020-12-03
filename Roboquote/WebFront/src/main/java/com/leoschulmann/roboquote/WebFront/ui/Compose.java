@@ -9,6 +9,7 @@ import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -19,9 +20,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.*;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
@@ -46,6 +45,7 @@ public class Compose extends VerticalLayout {
     private QuoteSectionHandler sectionHandler;
     private QuoteAssembler assembler;
     private DownloadService downloadService;
+    private CurrencyRatesService currencyRatesService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -60,12 +60,14 @@ public class Compose extends VerticalLayout {
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
     static final Integer DEFAULT_VAT = 20;
+    static final String DEFAULT_CURRENCY = "EUR";
 
     public Compose(ItemService itemService,
                    CurrencyFormatService currencyFormatter,
                    InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
-                   QuoteAssembler assembler, DownloadService downloadService) {
+                   QuoteAssembler assembler, DownloadService downloadService,
+                   CurrencyRatesService currencyRatesService) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
@@ -73,6 +75,7 @@ public class Compose extends VerticalLayout {
         this.sectionHandler = sectionHandler;
         this.assembler = assembler;
         this.downloadService = downloadService;
+        this.currencyRatesService = currencyRatesService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
 
@@ -125,6 +128,7 @@ public class Compose extends VerticalLayout {
         columnLayout.add(dealer);
         columnLayout.add(dealerInfo, 2);
         columnLayout.add(paymentTerms, shippingTerms, warranty, validThru);
+        columnLayout.add(createRatesBlock(), 3);
         add(columnLayout);
 
         detailsBinder.bind(customer, QuoteDetails::getCustomer, QuoteDetails::setCustomer);
@@ -140,6 +144,43 @@ public class Compose extends VerticalLayout {
         accordion.setWidthFull();
         accordion.add("Quote details", columnLayout);
         return accordion;
+    }
+
+    private HorizontalLayout createRatesBlock() {
+        Button update = new Button("Get rates");
+        update.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        BigDecimalField euro = new BigDecimalField();
+        BigDecimalField dollar = new BigDecimalField();
+        BigDecimalField yen = new BigDecimalField();
+        NumberField conversionRate = new NumberField();
+        euro.setPrefixComponent(VaadinIcon.EURO.create());
+        euro.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
+        dollar.setPrefixComponent(VaadinIcon.DOLLAR.create());
+        dollar.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
+        yen.setPrefixComponent(new Span("¥"));
+        yen.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
+
+        conversionRate.setSuffixComponent(new Span("%"));
+        conversionRate.setValue(2.);
+
+        conversionRate.setMin(-99.);
+        conversionRate.setMax(99.);
+        conversionRate.setHasControls(true);
+        conversionRate.setStep(0.5);
+
+        update.addClickListener(event -> {
+            euro.setValue(currencyRatesService.getRubEurRate());
+            dollar.setValue(currencyRatesService.getRubUSDRate());
+            yen.setValue(currencyRatesService.getRubJPYRate());
+        });
+
+        euro.addValueChangeListener(e ->{}); //todo implement
+        dollar.addValueChangeListener(e ->{});
+        yen.addValueChangeListener(e ->{});
+        conversionRate.addValueChangeListener(e ->{});
+
+        return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
     }
 
     private Accordion getInventoryLookupAccordeon() {
@@ -230,6 +271,8 @@ public class Compose extends VerticalLayout {
         Button showDiscountFieldButton = new Button("%");
         IntegerField vatField = new IntegerField();
         Button showVatFieldButton = new Button(VaadinIcon.PIGGY_BANK_COIN.create());
+        Button showCurrencyComboButton = new Button(VaadinIcon.DOLLAR.create());
+        ComboBox<String> currencyCombo = new ComboBox<>("Currency", "EUR", "USD", "RUB", "JPY");
         Button postQuote = new Button("Save to DB");
         Button dlButt = new Button("Download .xlsx");
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
@@ -239,6 +282,7 @@ public class Compose extends VerticalLayout {
         addToClickableComponents(discountField);
         addToClickableComponents(vatField);
         addToClickableComponents(postQuote);
+        addToClickableComponents(currencyCombo);
 
         discountField.setValue(0);
         discountField.setVisible(false);
@@ -264,6 +308,14 @@ public class Compose extends VerticalLayout {
         });
         showVatFieldButton.addClickListener(c -> vatField.setVisible(!vatField.isVisible()));
 
+        currencyCombo.setValue(DEFAULT_CURRENCY);
+        currencyCombo.setVisible(false);
+        currencyCombo.addValueChangeListener(event -> {
+            // refresh grids subtotals
+            //refreshTotal();//todo implement
+        });
+        showCurrencyComboButton.addClickListener(c -> currencyCombo.setVisible(!currencyCombo.isVisible()));
+
         wrapper.wrapComponent(dlButt);
         wrapper.setVisible(false);
 
@@ -271,7 +323,8 @@ public class Compose extends VerticalLayout {
         detailsBinder.bind(vatField, QuoteDetails::getVat, QuoteDetails::setVat);
 
         HorizontalLayout layout = new HorizontalLayout(
-                discountField, showDiscountFieldButton, vatField, showVatFieldButton, postQuote, wrapper);
+                discountField, showDiscountFieldButton, vatField, showVatFieldButton,
+                currencyCombo, showCurrencyComboButton, postQuote, wrapper);
 
         layout.setAlignItems(Alignment.END);
         postQuote.addClickListener(click -> {
@@ -350,8 +403,6 @@ public class Compose extends VerticalLayout {
         Button discountBtn = new Button("%");
         discountBtn.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
-        Button currencyBtn = new Button(VaadinIcon.DOLLAR.create()); //todo implement
-
         Button deleteBtn = new Button(VaadinIcon.TRASH.create());
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
@@ -361,7 +412,7 @@ public class Compose extends VerticalLayout {
         });
         addToClickableComponents(deleteBtn);
 
-        head.add(nameField, editNameBtn, discountField, discountBtn, currencyBtn, deleteBtn);
+        head.add(nameField, editNameBtn, discountField, discountBtn, deleteBtn);
 
         return head;
     }
