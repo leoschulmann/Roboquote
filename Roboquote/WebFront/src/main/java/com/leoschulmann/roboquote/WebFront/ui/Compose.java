@@ -1,10 +1,13 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.*;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.accordion.Accordion;
@@ -25,12 +28,14 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 import org.vaadin.olli.FileDownloadWrapper;
 
 import javax.money.MonetaryAmount;
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -57,6 +62,10 @@ public class Compose extends VerticalLayout {
     private Integer discount = 0;
     private Integer vat = DEFAULT_VAT;
     private Set<HasEnabled> clickableComponents;
+    private BigDecimalField euro;
+    private BigDecimalField dollar;
+    private BigDecimalField yen;
+    private NumberField conversionRate;
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
     static final Integer DEFAULT_VAT = 20;
@@ -150,10 +159,13 @@ public class Compose extends VerticalLayout {
         Button update = new Button("Get rates");
         update.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        BigDecimalField euro = new BigDecimalField();
-        BigDecimalField dollar = new BigDecimalField();
-        BigDecimalField yen = new BigDecimalField();
-        NumberField conversionRate = new NumberField();
+        euro = new BigDecimalField();
+        dollar = new BigDecimalField();
+        yen = new BigDecimalField();
+        euro.setValue(BigDecimal.ONE);
+        dollar.setValue(BigDecimal.ONE);
+        yen.setValue(BigDecimal.ONE);
+        conversionRate = new NumberField();
         euro.setPrefixComponent(VaadinIcon.EURO.create());
         euro.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
         dollar.setPrefixComponent(VaadinIcon.DOLLAR.create());
@@ -175,10 +187,14 @@ public class Compose extends VerticalLayout {
             yen.setValue(currencyRatesService.getRubJPYRate());
         });
 
-        euro.addValueChangeListener(e ->{}); //todo implement
-        dollar.addValueChangeListener(e ->{});
-        yen.addValueChangeListener(e ->{});
-        conversionRate.addValueChangeListener(e ->{});
+        euro.addValueChangeListener(e -> {
+        }); //todo implement
+        dollar.addValueChangeListener(e -> {
+        });
+        yen.addValueChangeListener(e -> {
+        });
+        conversionRate.addValueChangeListener(e -> {
+        });
 
         return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
     }
@@ -188,14 +204,14 @@ public class Compose extends VerticalLayout {
         layout.setWidthFull();
         ComboBox<Item> searchBox = getItemComboBox();
         avaiableGridsBox = new ComboBox<>();
-        avaiableGridsBox.setItems(gridList);
+        resetAvailableGridsCombobox();
         Button addToGridBtn = new Button(VaadinIcon.PLUS.create());
         addToGridBtn.addClickListener(click -> {
             if (searchBox.getValue() != null && avaiableGridsBox.getValue() != null) {
                 ItemPosition ip = converter.convert(searchBox.getValue());
-                sectionHandler.putToSection(avaiableGridsBox.getValue().getQuoteSection(), ip);
-                avaiableGridsBox.getValue().renderItems();
-                avaiableGridsBox.getValue().refreshSubtotals();
+                QuoteSection qs = avaiableGridsBox.getValue().getQuoteSection();
+                sectionHandler.putToSection(qs, ip);
+                fireEvent(new ComposeSectionGridAddNewItemEvent(this, ip));
                 refreshTotal();
             }
         });
@@ -212,7 +228,7 @@ public class Compose extends VerticalLayout {
         return accordion;
     }
 
-     void refreshTotal() {
+    void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
         totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
         totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
@@ -224,7 +240,7 @@ public class Compose extends VerticalLayout {
                         am.multiply((100.0 - discount) / 100)
                                 .multiply(vat / 100.)
                                 .divide((vat + 100) / 100.))
-        +")");
+                + ")");
     }
 
     private MonetaryAmount getTotalMoney() {
@@ -311,8 +327,13 @@ public class Compose extends VerticalLayout {
         currencyCombo.setValue(DEFAULT_CURRENCY);
         currencyCombo.setVisible(false);
         currencyCombo.addValueChangeListener(event -> {
-            // refresh grids subtotals
-            //refreshTotal();//todo implement
+            gridList.stream()
+                    .map(SectionGrid::getQuoteSection)
+                    //todo rewrite as event
+                    .forEach(qs -> sectionHandler.setCurrency(qs, event.getValue(),
+                            euro.getValue(), dollar.getValue(), yen.getValue(), conversionRate.getValue()));
+            fireEvent(new ComposeQuoteCurrencyChangedEvent(this, event.getValue()));
+            refreshTotal();
         });
         showCurrencyComboButton.addClickListener(c -> currencyCombo.setVisible(!currencyCombo.isVisible()));
 
@@ -356,30 +377,38 @@ public class Compose extends VerticalLayout {
         accordion.setWidthFull();
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
-        SectionGrid sg = new SectionGrid(name, currencyFormatter, sectionHandler, this);
+        SectionGrid sg = new SectionGrid(name, currencyFormatter);
+
+        sg.addListener(ComposeDeleteItemPositionEvent.class, this::itemPositionDeleted);
+        sg.addListener(ComposeItemPositionQuantityEvent.class, this::itemPositionQuantityChanged);
+
+        addListener(ComposeSectionGridRenamed.class, sg::gridRenamedEvent);
+        addListener(ComposeSectionGridDiscountChangedEvent.class, sg::gridDiscountChangedEvent);
+        addListener(ComposeSectionGridAddNewItemEvent.class, sg::gridNewItemAdded);
+        addListener(ComposeQuoteCurrencyChangedEvent.class, sg::currencyChanged);
 
         gridList.add(sg);
-        avaiableGridsBox.setItems(gridList);
+        resetAvailableGridsCombobox();
 
-        layout.add(getGridHeaderPanel(accordion, sg), sg, sg.getFooter());
+        layout.add(getGridHeaderPanel(accordion, name, sg), sg, sg.getFooter());
         accordion.add(name, layout);
         gridsBlock.add(accordion);
-        sg.refreshSubtotals();
+        sg.redrawFooter();
     }
 
-    private HorizontalLayout getGridHeaderPanel(Accordion acc, SectionGrid grid) {
+    private HorizontalLayout getGridHeaderPanel(Accordion acc, String name, SectionGrid grid) {
         HorizontalLayout head = new HorizontalLayout();
         head.setWidthFull();
         TextField nameField = new TextField();
         addToClickableComponents(nameField);
         nameField.setWidth("50%");
-        nameField.setValue(grid.getName());
+        nameField.setValue(name);
         nameField.setVisible(false);
 
         nameField.addValueChangeListener(event -> {
-            grid.setName(event.getValue());
-            grid.refreshSubtotals();
-            avaiableGridsBox.setItems(gridList);
+            sectionHandler.setSectionName(grid.getQuoteSection(), event.getValue());
+            fireEvent(new ComposeSectionGridRenamed(this, event.getValue()));
+            resetAvailableGridsCombobox();
             acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
         });
 
@@ -393,8 +422,8 @@ public class Compose extends VerticalLayout {
         discountField.setMin(0);
         discountField.setMax(100);
         discountField.addValueChangeListener(c -> {
-            grid.getQuoteSection().setDiscount(c.getValue());
-            grid.refreshSubtotals();
+            sectionHandler.setSectionDiscount(grid.getQuoteSection(), c.getValue());
+            fireEvent(new ComposeSectionGridDiscountChangedEvent(this, c.getValue()));
             refreshTotal();
         });
         addToClickableComponents(discountField);
@@ -407,7 +436,7 @@ public class Compose extends VerticalLayout {
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
             gridList.remove(grid);
-            avaiableGridsBox.setItems(gridList); //todo refactor as method
+            resetAvailableGridsCombobox();
             refreshTotal();
         });
         addToClickableComponents(deleteBtn);
@@ -443,5 +472,24 @@ public class Compose extends VerticalLayout {
 
     private void disableClickableComponents() {
         clickableComponents.forEach(c -> c.setEnabled(false));
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
+    }
+
+    private void itemPositionDeleted(ComposeDeleteItemPositionEvent event) {
+        sectionHandler.deletePosition(event.getGrid().getQuoteSection(), event.getItemPosition());
+        refreshTotal();
+    }
+
+    private void itemPositionQuantityChanged(ComposeItemPositionQuantityEvent ev) {
+        sectionHandler.setQty(ev.getGrid().getQuoteSection(), ev.getItemPosition(), ev.getQty());
+        refreshTotal();
+    }
+
+
+    private void resetAvailableGridsCombobox() {
+        avaiableGridsBox.setItems(gridList);
     }
 }

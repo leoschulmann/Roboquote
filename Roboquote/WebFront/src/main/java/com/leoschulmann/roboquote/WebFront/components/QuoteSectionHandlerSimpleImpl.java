@@ -2,8 +2,11 @@ package com.leoschulmann.roboquote.WebFront.components;
 
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import org.javamoney.moneta.Money;
 import org.springframework.stereotype.Service;
 
+import javax.money.MonetaryAmount;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -30,6 +33,72 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
             p.setQty(value);
             p.setSellingSum(p.getSellingPrice().multiply(value));
         });
+    }
+
+    @Override
+    public void setSectionDiscount(QuoteSection quoteSection, Integer discount) {
+        quoteSection.setDiscount(discount);
+    }
+
+    @Override
+    public void setSectionName(QuoteSection quoteSection, String value) {
+        quoteSection.setName(value);
+    }
+
+    @Override
+    public void setCurrency(QuoteSection qs, String currency,
+                            BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
+
+        MonetaryAmount euros = qs.getEuros();
+        MonetaryAmount dollars = qs.getDollars();
+        MonetaryAmount yens = qs.getYens();
+        MonetaryAmount roubles = qs.getRubles();
+        double charge = conv / 100 + 1.;
+
+        switch (currency) {
+            case "RUB":
+                qs.setTotal(roubles.add(convertToRouble(euros, euroRate, charge))
+                        .add(convertToRouble(dollars, dollarRate, charge))
+                        .add(convertToRouble(yens, yenRate, charge)));
+                break;
+            case "EUR":
+                qs.setTotal(euros.add(convertFromRouble(roubles, "EUR", euroRate, charge))
+                        .add(crossExchange(dollars, "EUR", dollarRate, euroRate, charge))
+                        .add(crossExchange(yens, "EUR", yenRate, euroRate, charge)));
+                break;
+            case "USD":
+                qs.setTotal(dollars.add(convertFromRouble(roubles, "USD", dollarRate, charge))
+                        .add(crossExchange(euros, "USD", euroRate, dollarRate, charge))
+                        .add(crossExchange(yens, "USD", yenRate, dollarRate, charge)));
+                break;
+            case "JPY":
+                qs.setTotal(yens.add(convertFromRouble(roubles, "JPY", yenRate, charge))
+                        .add(crossExchange(euros, "JPY", euroRate, yenRate, charge))
+                        .add(crossExchange(dollars, "JPY", dollarRate, yenRate, charge)));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + currency);
+        }
+    }
+
+    private MonetaryAmount convertToRouble(MonetaryAmount monetaryAmount, BigDecimal rate, double charge) {
+        if (monetaryAmount.isZero()) return Money.of(BigDecimal.ZERO, "RUB");
+        if (monetaryAmount.getCurrency().getCurrencyCode().equals("RUB")) return monetaryAmount;
+        return Money.of(monetaryAmount.multiply(rate).multiply(charge).getNumber(), "RUB");
+    }
+
+    private MonetaryAmount convertFromRouble(MonetaryAmount rubles, String targetCurrency, BigDecimal rate, double charge) {
+        if (rubles.isZero()) return Money.of(BigDecimal.ZERO, targetCurrency);
+        if (targetCurrency.equals("RUB")) return rubles;
+        return Money.of(rubles.divide(rate).multiply(charge).getNumber(), targetCurrency);
+    }
+
+    private MonetaryAmount crossExchange(MonetaryAmount source, String target, BigDecimal sourceRate,
+                                         BigDecimal targetRate, double charge) {
+        if (source.isZero()) return Money.of(BigDecimal.ZERO, target);
+        if (source.getCurrency().getCurrencyCode().equals(target)) return source;
+        MonetaryAmount rubs = convertToRouble(source, sourceRate, 1.);
+        return convertFromRouble(rubs, target, targetRate, charge);
     }
 
     private Optional<ItemPosition> getOptionalItemPosition(QuoteSection quoteSection, ItemPosition itemPosition) {

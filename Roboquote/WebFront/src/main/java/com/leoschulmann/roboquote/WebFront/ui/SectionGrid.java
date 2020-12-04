@@ -1,29 +1,26 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
-import com.leoschulmann.roboquote.WebFront.components.QuoteSectionHandler;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.shared.Registration;
 
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
-    static private CurrencyFormatService currencyFormatter;
     private Footer footer;
-    QuoteSectionHandler sectionHandler;
-    Compose composePage;
 
-    public SectionGrid(String name, CurrencyFormatService currencyFormatter, QuoteSectionHandler sectionHandler, Compose compose) {
+    public SectionGrid(String name, CurrencyFormatService currencyFormatter) {
         super(ItemPosition.class);
-        this.currencyFormatter = currencyFormatter;
-        this.sectionHandler = sectionHandler;
-        composePage = compose;
         this.quoteSection = new QuoteSection(name);
         setItems(quoteSection.getPositions());
 
@@ -55,28 +52,26 @@ public class SectionGrid extends Grid<ItemPosition> {
         field.setHasControls(true);
         field.setValue(itemPosition.getQty());
         field.addValueChangeListener(event -> {
-            sectionHandler.setQty(quoteSection, itemPosition, field.getValue());
-            renderItems();
-            refreshSubtotals();
-            composePage.refreshTotal();
+            fireEvent(new ComposeItemPositionQuantityEvent(this, itemPosition, field.getValue()));
+            gridResetItems();
+            redrawFooter();
         });
         return field;
     }
 
     private Component createDeleteButton(ItemPosition itemPosition) {
-        Button b = new Button(VaadinIcon.CLOSE_SMALL.create());
+        Button deleteItemPositionBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
 
-        b.addClickListener(c -> {
-            sectionHandler.deletePosition(quoteSection, itemPosition);
-            renderItems();
-            refreshSubtotals();
-            composePage.refreshTotal();
+        deleteItemPositionBtn.addClickListener(c -> {
+            fireEvent(new ComposeDeleteItemPositionEvent(this, itemPosition));
+            gridResetItems();
+            redrawFooter();
         });
 
-        return b;
+        return deleteItemPositionBtn;
     }
 
-    public void renderItems() {
+    public void gridResetItems() {
         setItems(quoteSection.getPositions());
     }
 
@@ -101,9 +96,31 @@ public class SectionGrid extends Grid<ItemPosition> {
         return footer;
     }
 
-    public void refreshSubtotals() {
+    public void redrawFooter() {
 //        getColumnByKey("total").setFooter("Subtotal: " + currencyFormatter.formatMoney(quoteSection.getTotal()));
         footer.update();
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
+    }
+
+    public void gridRenamedEvent(ComposeSectionGridRenamed event) { //todo merge events
+        //todo maybe pass data from event to footer, instead of asking quoteSection ..?
+        redrawFooter();
+    }
+
+    public void gridDiscountChangedEvent(ComposeSectionGridDiscountChangedEvent event) { //todo merge events??
+        redrawFooter();
+    }
+
+    public void gridNewItemAdded(ComposeSectionGridAddNewItemEvent event) {
+        gridResetItems();
+        redrawFooter();
+    }
+
+    public  void currencyChanged(ComposeQuoteCurrencyChangedEvent event) {
+        redrawFooter();
     }
 }
 

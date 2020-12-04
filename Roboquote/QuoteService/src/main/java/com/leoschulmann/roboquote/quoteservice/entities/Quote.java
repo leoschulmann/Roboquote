@@ -1,8 +1,16 @@
 package com.leoschulmann.roboquote.quoteservice.entities;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
+import org.hibernate.annotations.Columns;
+import org.hibernate.annotations.Type;
+import org.javamoney.moneta.Money;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +65,26 @@ public class Quote {
 
     @Column(name = "vat")
     private Integer vat;
+
+    @Column(name = "euro_rate")
+    private BigDecimal eurRate;
+
+    @Column(name = "usd_rate")
+    private BigDecimal usdRate;
+
+    @Column(name = "jpy_rate")
+    private BigDecimal jpyRate;
+
+    @Column(name = "conversion_rate")
+    private BigDecimal conversionRate;
+
+    @Columns(columns = {
+            @Column(name = "final_price_currency", nullable = false),
+            @Column(name = "final_price_amount", nullable = false)})
+    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
+    @JsonDeserialize(using = MoneyDeserializer.class)
+    @JsonSerialize(using = MoneySerializer.class)
+    private Money finalPrice;
 
     //todo make overridable price
 
@@ -182,6 +210,46 @@ public class Quote {
 
     public void setVat(Integer vat) {
         this.vat = vat;
+    }
+
+    public BigDecimal getEurRate() {
+        return eurRate;
+    }
+
+    public void setEurRate(BigDecimal eurRate) {
+        this.eurRate = eurRate;
+    }
+
+    public BigDecimal getUsdRate() {
+        return usdRate;
+    }
+
+    public void setUsdRate(BigDecimal usdRate) {
+        this.usdRate = usdRate;
+    }
+
+    public BigDecimal getJpyRate() {
+        return jpyRate;
+    }
+
+    public void setJpyRate(BigDecimal jpyRate) {
+        this.jpyRate = jpyRate;
+    }
+
+    public BigDecimal getConversionRate() {
+        return conversionRate;
+    }
+
+    public void setConversionRate(BigDecimal conversionRate) {
+        this.conversionRate = conversionRate;
+    }
+
+    public Money getFinalPrice() {
+        return finalPrice;
+    }
+
+    public void setFinalPrice(Money finalPrice) {
+        this.finalPrice = finalPrice;
     }
 
     public Quote(String number, LocalDate validThru, String customer, String dealer, String customerInfo, String dealerInfo) {
