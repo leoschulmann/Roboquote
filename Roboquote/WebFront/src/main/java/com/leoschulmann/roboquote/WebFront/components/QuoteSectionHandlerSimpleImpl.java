@@ -1,12 +1,15 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import org.javamoney.moneta.Money;
+import org.javamoney.moneta.function.MonetaryFunctions;
 import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -46,13 +49,13 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
     }
 
     @Override
-    public void setCurrency(QuoteSection qs, String currency,
-                            BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
+    public void updateSubtotalToCurrency(QuoteSection qs, String currency,
+                                         BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
 
-        MonetaryAmount euros = qs.getEuros();
-        MonetaryAmount dollars = qs.getDollars();
-        MonetaryAmount yens = qs.getYens();
-        MonetaryAmount roubles = qs.getRubles();
+        MonetaryAmount euros = calcSumByCurrency(qs.getPositions(), "EUR");;
+        MonetaryAmount dollars = calcSumByCurrency(qs.getPositions(), "USD");;
+        MonetaryAmount yens = calcSumByCurrency(qs.getPositions(), "JPY");;
+        MonetaryAmount roubles = calcSumByCurrency(qs.getPositions(), "RUB");
         double charge = conv / 100 + 1.;
 
         switch (currency) {
@@ -79,6 +82,14 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
             default:
                 throw new IllegalStateException("Unexpected value: " + currency);
         }
+    }
+
+    private static MonetaryAmount calcSumByCurrency(List<ItemPosition> positions, String currency) {
+        return positions.stream()
+                .map(ipos -> (MonetaryAmount) ipos.getSellingSum())
+                .filter(mon -> mon.getCurrency().getCurrencyCode().equals(currency))
+                .reduce(MonetaryFunctions.sum())
+                .orElseGet(() -> Money.of(BigDecimal.ZERO, currency));
     }
 
     private MonetaryAmount convertToRouble(MonetaryAmount monetaryAmount, BigDecimal rate, double charge) {

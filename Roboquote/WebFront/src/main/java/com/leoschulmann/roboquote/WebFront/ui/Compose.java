@@ -6,10 +6,7 @@ import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
-import com.vaadin.flow.component.ComponentEvent;
-import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.HasEnabled;
-import com.vaadin.flow.component.ItemLabelGenerator;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -62,14 +59,15 @@ public class Compose extends VerticalLayout {
     private Integer discount = 0;
     private Integer vat = DEFAULT_VAT;
     private Set<HasEnabled> clickableComponents;
-    private BigDecimalField euro;
-    private BigDecimalField dollar;
-    private BigDecimalField yen;
-    private NumberField conversionRate;
 
     static final String DEFAULT_SECTION_NAME = "New quote section";
     static final Integer DEFAULT_VAT = 20;
-    static final String DEFAULT_CURRENCY = "EUR";
+
+    private String currency = "EUR";
+    private BigDecimal euroRate = new BigDecimal(100);
+    private BigDecimal dollarRate = new BigDecimal(100);
+    private BigDecimal yenRate = BigDecimal.ONE;
+    private double exchangeConversionFee = 2.;
 
     public Compose(ItemService itemService,
                    CurrencyFormatService currencyFormatter,
@@ -159,13 +157,13 @@ public class Compose extends VerticalLayout {
         Button update = new Button("Get rates");
         update.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        euro = new BigDecimalField();
-        dollar = new BigDecimalField();
-        yen = new BigDecimalField();
-        euro.setValue(BigDecimal.ONE);
-        dollar.setValue(BigDecimal.ONE);
-        yen.setValue(BigDecimal.ONE);
-        conversionRate = new NumberField();
+        BigDecimalField euro = new BigDecimalField();
+        BigDecimalField dollar = new BigDecimalField();
+        BigDecimalField yen = new BigDecimalField();
+        euro.setValue(euroRate);
+        dollar.setValue(dollarRate);
+        yen.setValue(yenRate);
+        NumberField conversionRate = new NumberField();
         euro.setPrefixComponent(VaadinIcon.EURO.create());
         euro.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
         dollar.setPrefixComponent(VaadinIcon.DOLLAR.create());
@@ -174,7 +172,7 @@ public class Compose extends VerticalLayout {
         yen.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
 
         conversionRate.setSuffixComponent(new Span("%"));
-        conversionRate.setValue(2.);
+        conversionRate.setValue(exchangeConversionFee);
 
         conversionRate.setMin(-99.);
         conversionRate.setMax(99.);
@@ -188,12 +186,24 @@ public class Compose extends VerticalLayout {
         });
 
         euro.addValueChangeListener(e -> {
-        }); //todo implement
+            euroRate = e.getValue();
+            refreshAll();
+            fireEvent(new UniversalSectionChangedEvent(this));
+        });
         dollar.addValueChangeListener(e -> {
+            dollarRate = e.getValue();
+            refreshAll();
+            fireEvent(new UniversalSectionChangedEvent(this));
         });
         yen.addValueChangeListener(e -> {
+            yenRate = e.getValue();
+            refreshAll();
+            fireEvent(new UniversalSectionChangedEvent(this));
         });
         conversionRate.addValueChangeListener(e -> {
+            exchangeConversionFee = e.getValue();
+            refreshAll();
+            fireEvent(new UniversalSectionChangedEvent(this));
         });
 
         return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
@@ -211,7 +221,8 @@ public class Compose extends VerticalLayout {
                 ItemPosition ip = converter.convert(searchBox.getValue());
                 QuoteSection qs = avaiableGridsBox.getValue().getQuoteSection();
                 sectionHandler.putToSection(qs, ip);
-                fireEvent(new ComposeSectionGridAddNewItemEvent(this, ip));
+                refreshSectionSubtotal(currency, qs);
+                fireEvent(new UniversalSectionChangedEvent(this));
                 refreshTotal();
             }
         });
@@ -228,7 +239,7 @@ public class Compose extends VerticalLayout {
         return accordion;
     }
 
-    void refreshTotal() {
+    private void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
         totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
         totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
@@ -243,6 +254,17 @@ public class Compose extends VerticalLayout {
                 + ")");
     }
 
+    private void refreshSectionSubtotal(String currency, QuoteSection qs) {
+        sectionHandler.updateSubtotalToCurrency(qs, currency,
+                euroRate, dollarRate, yenRate, exchangeConversionFee);
+    }
+
+    private void refreshAll() {
+        gridList.stream().map(SectionGrid::getQuoteSection)
+                .forEach(qs -> refreshSectionSubtotal(currency, qs));
+        refreshTotal();
+    }
+
     private MonetaryAmount getTotalMoney() {
         return gridList.stream()
                 .map(gr -> gr.getQuoteSection().getTotalDiscounted())
@@ -251,8 +273,7 @@ public class Compose extends VerticalLayout {
     }
 
     private VerticalLayout createGridsBlock() {
-        VerticalLayout layout = new VerticalLayout();
-        return layout;
+        return new VerticalLayout();
     }
 
     private VerticalLayout createFinishBlock() {
@@ -324,16 +345,12 @@ public class Compose extends VerticalLayout {
         });
         showVatFieldButton.addClickListener(c -> vatField.setVisible(!vatField.isVisible()));
 
-        currencyCombo.setValue(DEFAULT_CURRENCY);
+        currencyCombo.setValue(currency);
         currencyCombo.setVisible(false);
         currencyCombo.addValueChangeListener(event -> {
-            gridList.stream()
-                    .map(SectionGrid::getQuoteSection)
-                    //todo rewrite as event
-                    .forEach(qs -> sectionHandler.setCurrency(qs, event.getValue(),
-                            euro.getValue(), dollar.getValue(), yen.getValue(), conversionRate.getValue()));
-            fireEvent(new ComposeQuoteCurrencyChangedEvent(this, event.getValue()));
-            refreshTotal();
+            currency = event.getValue();
+            refreshAll();
+            fireEvent(new UniversalSectionChangedEvent(this));
         });
         showCurrencyComboButton.addClickListener(c -> currencyCombo.setVisible(!currencyCombo.isVisible()));
 
@@ -381,11 +398,7 @@ public class Compose extends VerticalLayout {
 
         sg.addListener(ComposeDeleteItemPositionEvent.class, this::itemPositionDeleted);
         sg.addListener(ComposeItemPositionQuantityEvent.class, this::itemPositionQuantityChanged);
-
-        addListener(ComposeSectionGridRenamed.class, sg::gridRenamedEvent);
-        addListener(ComposeSectionGridDiscountChangedEvent.class, sg::gridDiscountChangedEvent);
-        addListener(ComposeSectionGridAddNewItemEvent.class, sg::gridNewItemAdded);
-        addListener(ComposeQuoteCurrencyChangedEvent.class, sg::currencyChanged);
+        addListener(UniversalSectionChangedEvent.class, sg::sectionChangedEvent);
 
         gridList.add(sg);
         resetAvailableGridsCombobox();
@@ -393,7 +406,9 @@ public class Compose extends VerticalLayout {
         layout.add(getGridHeaderPanel(accordion, name, sg), sg, sg.getFooter());
         accordion.add(name, layout);
         gridsBlock.add(accordion);
-        sg.redrawFooter();
+        refreshSectionSubtotal(currency, sg.getQuoteSection());
+        refreshTotal();
+        fireEvent(new UniversalSectionChangedEvent(this));
     }
 
     private HorizontalLayout getGridHeaderPanel(Accordion acc, String name, SectionGrid grid) {
@@ -407,7 +422,7 @@ public class Compose extends VerticalLayout {
 
         nameField.addValueChangeListener(event -> {
             sectionHandler.setSectionName(grid.getQuoteSection(), event.getValue());
-            fireEvent(new ComposeSectionGridRenamed(this, event.getValue()));
+            fireEvent(new UniversalSectionChangedEvent(this));
             resetAvailableGridsCombobox();
             acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
         });
@@ -423,8 +438,9 @@ public class Compose extends VerticalLayout {
         discountField.setMax(100);
         discountField.addValueChangeListener(c -> {
             sectionHandler.setSectionDiscount(grid.getQuoteSection(), c.getValue());
-            fireEvent(new ComposeSectionGridDiscountChangedEvent(this, c.getValue()));
+            refreshSectionSubtotal(currency, grid.getQuoteSection());
             refreshTotal();
+            fireEvent(new UniversalSectionChangedEvent(this));
         });
         addToClickableComponents(discountField);
 
@@ -480,14 +496,15 @@ public class Compose extends VerticalLayout {
 
     private void itemPositionDeleted(ComposeDeleteItemPositionEvent event) {
         sectionHandler.deletePosition(event.getGrid().getQuoteSection(), event.getItemPosition());
+        refreshSectionSubtotal(currency, event.getGrid().getQuoteSection());
         refreshTotal();
     }
 
     private void itemPositionQuantityChanged(ComposeItemPositionQuantityEvent ev) {
         sectionHandler.setQty(ev.getGrid().getQuoteSection(), ev.getItemPosition(), ev.getQty());
+        refreshSectionSubtotal(currency, ev.getGrid().getQuoteSection());
         refreshTotal();
     }
-
 
     private void resetAvailableGridsCombobox() {
         avaiableGridsBox.setItems(gridList);

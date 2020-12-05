@@ -17,9 +17,9 @@ import com.vaadin.flow.shared.Registration;
 
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
-    private Footer footer;
+    private final Footer footer;
 
-    public SectionGrid(String name, CurrencyFormatService currencyFormatter) {
+    SectionGrid(String name, CurrencyFormatService currencyFormatter) {
         super(ItemPosition.class);
         this.quoteSection = new QuoteSection(name);
         setItems(quoteSection.getPositions());
@@ -32,7 +32,6 @@ public class SectionGrid extends Grid<ItemPosition> {
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum()))
                 .setKey("total")
                 .setHeader("Sum");
-//                .setFooter("Subtotal:  " + currencyFormatter.formatMoney(quoteSection.getTotal()));
         addComponentColumn(this::createDeleteButton).setKey("delete");
         setHeightByRows(true);
         getColumnByKey("name").setAutoWidth(true);
@@ -71,7 +70,7 @@ public class SectionGrid extends Grid<ItemPosition> {
         return deleteItemPositionBtn;
     }
 
-    public void gridResetItems() {
+    private void gridResetItems() {
         setItems(quoteSection.getPositions());
     }
 
@@ -84,52 +83,34 @@ public class SectionGrid extends Grid<ItemPosition> {
         return quoteSection.getName();
     }
 
-    public String getName() {
+    String getName() {
         return quoteSection.getName();
     }
 
-    public void setName(String name) {
-        quoteSection.setName(name);
-    }
-
-    public Footer getFooter() {
+    Footer getFooter() {
         return footer;
     }
 
-    public void redrawFooter() {
-//        getColumnByKey("total").setFooter("Subtotal: " + currencyFormatter.formatMoney(quoteSection.getTotal()));
+    private void redrawFooter() {
         footer.update();
     }
 
-    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+    protected <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
     }
 
-    public void gridRenamedEvent(ComposeSectionGridRenamed event) { //todo merge events
-        //todo maybe pass data from event to footer, instead of asking quoteSection ..?
-        redrawFooter();
-    }
-
-    public void gridDiscountChangedEvent(ComposeSectionGridDiscountChangedEvent event) { //todo merge events??
-        redrawFooter();
-    }
-
-    public void gridNewItemAdded(ComposeSectionGridAddNewItemEvent event) {
+    void sectionChangedEvent(UniversalSectionChangedEvent event) {
         gridResetItems();
-        redrawFooter();
-    }
-
-    public  void currencyChanged(ComposeQuoteCurrencyChangedEvent event) {
         redrawFooter();
     }
 }
 
 class Footer extends Div {
-    private Paragraph total;
-    private Paragraph totalDiscounted;
-    private CurrencyFormatService currencyFormatter;
+    private final Paragraph total;
+    private final Paragraph totalDiscounted;
+    private final CurrencyFormatService currencyFormatter;
 
-    public Footer(SectionGrid grid, CurrencyFormatService currencyFormatter) {
+    Footer(SectionGrid grid, CurrencyFormatService currencyFormatter) {
         this.currencyFormatter = currencyFormatter;
         this.grid = grid;
         total = new Paragraph();
@@ -137,13 +118,12 @@ class Footer extends Div {
         add(total, totalDiscounted);
     }
 
-    private SectionGrid grid;
+    private final SectionGrid grid;
 
-    public void update() {
+    void update() {
         total.setText("Subotal " + grid.getName() + " " + currencyFormatter.formatMoney(grid.getQuoteSection().getTotal()));
-        totalDiscounted.setText(
-                grid.getQuoteSection().getDiscount() <= 0 ? "" :
-                        "Subtotal " + grid.getName() + " (disc. " + grid.getQuoteSection().getDiscount() + "%) " +
-                                currencyFormatter.formatMoney(grid.getQuoteSection().getTotalDiscounted()));
+        totalDiscounted.setText(grid.getQuoteSection().getDiscount() <= 0 ? "" :
+                "Subtotal " + grid.getName() + " (disc. " + grid.getQuoteSection().getDiscount() + "%) " +
+                        currencyFormatter.formatMoney(grid.getQuoteSection().getTotalDiscounted()));
     }
 }

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
-
 
 import javax.money.MonetaryAmount;
 import javax.persistence.*;
@@ -57,10 +55,6 @@ public class QuoteSection {
         return positions;
     }
 
-    public void setPositions(List<ItemPosition> positions) {
-        this.positions = positions;
-    }
-
     public String getName() {
         return name;
     }
@@ -104,35 +98,6 @@ public class QuoteSection {
             itemPosition.setSection(this);
             positions.add(itemPosition);
         });
-    }
-
-    @JsonIgnore
-    public MonetaryAmount getEuros() {
-        return calcSumByCurrency(getPositions(), "EUR");
-    }
-
-    @JsonIgnore
-    public MonetaryAmount getDollars() {
-        return calcSumByCurrency(getPositions(), "USD");
-    }
-
-    @JsonIgnore
-    public MonetaryAmount getYens() {
-        return calcSumByCurrency(getPositions(), "JPY");
-    }
-
-    @JsonIgnore
-    public MonetaryAmount getRubles() {
-        return calcSumByCurrency(getPositions(), "RUB");
-    }
-
-    @JsonIgnore
-    private static MonetaryAmount calcSumByCurrency(List<ItemPosition> positions, String currency) {
-        return positions.stream()
-                .map(ipos -> (MonetaryAmount) ipos.getSellingSum())
-                .filter(mon -> mon.getCurrency().getCurrencyCode().equals(currency))
-                .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(BigDecimal.ZERO, currency));
     }
 
     @JsonIgnore
