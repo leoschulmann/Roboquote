@@ -79,8 +79,8 @@ public class Quote {
     private BigDecimal conversionRate;
 
     @Columns(columns = {
-            @Column(name = "final_price_currency", nullable = false),
-            @Column(name = "final_price_amount", nullable = false)})
+            @Column(name = "final_price_currency"), //todo add 'nullable'
+            @Column(name = "final_price_amount")})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     @JsonDeserialize(using = MoneyDeserializer.class)
     @JsonSerialize(using = MoneySerializer.class)

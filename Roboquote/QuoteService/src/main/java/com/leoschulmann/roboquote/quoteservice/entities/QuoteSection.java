@@ -3,6 +3,12 @@ package com.leoschulmann.roboquote.quoteservice.entities;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
+import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
+import org.hibernate.annotations.Columns;
+import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
@@ -31,8 +37,12 @@ public class QuoteSection {
     @Column(name = "discount", columnDefinition = "decimal(3,1) default 0.0")
     private Integer discount;
 
-    @Transient
-    @JsonIgnore
+    @Columns(columns = {
+            @Column(name = "subtotal_currency"),  //todo add 'nullable'
+            @Column(name = "subtotal_amount")})
+    @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
+    @JsonDeserialize(using = MoneyDeserializer.class)
+    @JsonSerialize(using = MoneySerializer.class)
     private Money total = Money.of(BigDecimal.ZERO, "EUR");
 
     @ManyToOne
@@ -84,7 +94,7 @@ public class QuoteSection {
     }
 
     public void setTotal(MonetaryAmount total) {
-        this.total = (Money)total;
+        this.total = (Money) total;
     }
 
     public QuoteSection(String name) {

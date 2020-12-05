@@ -206,6 +206,11 @@ public class Compose extends VerticalLayout {
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
+        detailsBinder.bind(conversionRate, QuoteDetails::getConversionRate, QuoteDetails::setConversionRate);
+        detailsBinder.bind(euro, QuoteDetails::getEurRate, QuoteDetails::setEurRate);
+        detailsBinder.bind(dollar, QuoteDetails::getUsdRate, QuoteDetails::setUsdRate);
+        detailsBinder.bind(yen, QuoteDetails::getJpyRate, QuoteDetails::setJpyRate);
+
         return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
     }
 
@@ -269,7 +274,7 @@ public class Compose extends VerticalLayout {
         return gridList.stream()
                 .map(gr -> gr.getQuoteSection().getTotalDiscounted())
                 .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(0, "EUR"));
+                .orElseGet(() -> Money.of(0, currency));
     }
 
     private VerticalLayout createGridsBlock() {
@@ -381,6 +386,7 @@ public class Compose extends VerticalLayout {
         try {
             QuoteDetails quoteDetails = new QuoteDetails();
             detailsBinder.writeBean(quoteDetails);
+            quoteDetails.setFinalPrice(getTotalMoney().multiply((100.0 - discount) / 100));
             List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
             return assembler.assembleAndPostNew(quoteDetails, sections);
         } catch (ValidationException e) {

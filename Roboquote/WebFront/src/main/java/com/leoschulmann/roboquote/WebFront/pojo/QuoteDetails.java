@@ -1,5 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.pojo;
 
+import javax.money.MonetaryAmount;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class QuoteDetails {
@@ -14,6 +16,11 @@ public class QuoteDetails {
     private LocalDate validThru;
     private Integer discount;
     private Integer vat;
+    private double conversionRate;
+    private BigDecimal eurRate;
+    private BigDecimal usdRate;
+    private BigDecimal jpyRate;
+    private MonetaryAmount finalPrice;
 
     public QuoteDetails() {
     }
@@ -104,5 +111,45 @@ public class QuoteDetails {
 
     public void setVat(Integer vat) {
         this.vat = vat;
+    }
+
+    public double getConversionRate() {
+        return conversionRate;
+    }
+
+    public void setConversionRate(double conversionRate) {
+        this.conversionRate = conversionRate;
+    }
+
+    public BigDecimal getEurRate() {
+        return eurRate;
+    }
+
+    public void setEurRate(BigDecimal eurRate) {
+        this.eurRate = eurRate;
+    }
+
+    public BigDecimal getUsdRate() {
+        return usdRate;
+    }
+
+    public void setUsdRate(BigDecimal usdRate) {
+        this.usdRate = usdRate;
+    }
+
+    public BigDecimal getJpyRate() {
+        return jpyRate;
+    }
+
+    public void setJpyRate(BigDecimal jpyRate) {
+        this.jpyRate = jpyRate;
+    }
+
+    public MonetaryAmount getFinalPrice() {
+        return finalPrice;
+    }
+
+    public void setFinalPrice(MonetaryAmount finalPrice) {
+        this.finalPrice = finalPrice;
     }
 }
