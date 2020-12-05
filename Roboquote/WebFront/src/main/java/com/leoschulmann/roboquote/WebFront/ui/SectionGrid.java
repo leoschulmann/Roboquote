@@ -7,6 +7,7 @@ import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -15,9 +16,15 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.shared.Registration;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
     private final Footer footer;
+    private IntegerField field;
+    private List<HasEnabled> clickables = new ArrayList<>();
 
     SectionGrid(String name, CurrencyFormatService currencyFormatter) {
         super(ItemPosition.class);
@@ -45,7 +52,7 @@ public class SectionGrid extends Grid<ItemPosition> {
     }
 
     private Component getQuantityField(ItemPosition itemPosition) {
-        IntegerField field = new IntegerField();
+        field = new IntegerField();
         field.setMax(99);
         field.setMin(1);
         field.setHasControls(true);
@@ -55,6 +62,7 @@ public class SectionGrid extends Grid<ItemPosition> {
             gridResetItems();
             redrawFooter();
         });
+        clickables.add(field);
         return field;
     }
 
@@ -66,8 +74,12 @@ public class SectionGrid extends Grid<ItemPosition> {
             gridResetItems();
             redrawFooter();
         });
-
+        clickables.add(deleteItemPositionBtn);
         return deleteItemPositionBtn;
+    }
+
+    public void disableClickables() {
+        clickables.stream().filter(Objects::nonNull).forEach(c -> c.setEnabled(false));
     }
 
     private void gridResetItems() {

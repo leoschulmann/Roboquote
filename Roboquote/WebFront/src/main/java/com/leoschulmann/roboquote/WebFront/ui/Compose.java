@@ -1,12 +1,17 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.*;
-import com.leoschulmann.roboquote.WebFront.events.*;
+import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent;
+import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
+import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
 import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
-import com.vaadin.flow.component.*;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.HasEnabled;
+import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -103,32 +108,25 @@ public class Compose extends VerticalLayout {
                 new ResponsiveStep("40em", 3));
         TextField customer = new TextField(); //todo lookup in DB
         customer.setPlaceholder("Customer");
-        addToClickableComponents(customer);
         EmailField customerInfo = new EmailField();
         customerInfo.setPlaceholder("Customer info");
-        addToClickableComponents(customerInfo);
 
         TextField dealer = new TextField();
         dealer.setPlaceholder("Dealer");
-        addToClickableComponents(dealer);
         EmailField dealerInfo = new EmailField();
         dealerInfo.setPlaceholder("Dealer info");
-        addToClickableComponents(dealerInfo);
-
         TextField paymentTerms = new TextField();
         paymentTerms.setPlaceholder("Payment Terms");  //todo make selectable from list
-        addToClickableComponents(paymentTerms);
         TextField shippingTerms = new TextField();
         shippingTerms.setPlaceholder("Shipping Terms");  //todo make selectable from list
-        addToClickableComponents(shippingTerms);
         TextField warranty = new TextField();
         warranty.setPlaceholder("Warranty");    //todo make selectable from list
-        addToClickableComponents(warranty);
 
         DatePicker validThru = new DatePicker();
         validThru.setLabel("Valid through date");
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
-        addToClickableComponents(validThru);
+        addToClickableComponents(validThru, warranty, customer, customerInfo, dealer,
+                dealerInfo, paymentTerms, shippingTerms);
 
         columnLayout.add(customer);
         columnLayout.add(customerInfo, 2);
@@ -170,6 +168,8 @@ public class Compose extends VerticalLayout {
         dollar.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
         yen.setPrefixComponent(new Span("¥"));
         yen.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
+
+        addToClickableComponents(update, euro, dollar, yen, conversionRate);
 
         conversionRate.setSuffixComponent(new Span("%"));
         conversionRate.setValue(exchangeConversionFee);
@@ -296,8 +296,7 @@ public class Compose extends VerticalLayout {
             gridNameInputField.clear();
         });
 
-        addToClickableComponents(gridNameInputField);
-        addToClickableComponents(addNewGridButton);
+        addToClickableComponents(gridNameInputField, addNewGridButton);
         addNewGridButton.setWidth("10%");
 
         controlSublayout.add(gridNameInputField, addNewGridButton);
@@ -321,10 +320,7 @@ public class Compose extends VerticalLayout {
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
 
-        addToClickableComponents(discountField);
-        addToClickableComponents(vatField);
-        addToClickableComponents(postQuote);
-        addToClickableComponents(currencyCombo);
+        addToClickableComponents(discountField, vatField, postQuote, currencyCombo);
 
         discountField.setValue(0);
         discountField.setVisible(false);
@@ -421,7 +417,6 @@ public class Compose extends VerticalLayout {
         HorizontalLayout head = new HorizontalLayout();
         head.setWidthFull();
         TextField nameField = new TextField();
-        addToClickableComponents(nameField);
         nameField.setWidth("50%");
         nameField.setValue(name);
         nameField.setVisible(false);
@@ -448,7 +443,6 @@ public class Compose extends VerticalLayout {
             refreshTotal();
             fireEvent(new UniversalSectionChangedEvent(this));
         });
-        addToClickableComponents(discountField);
 
 
         Button discountBtn = new Button("%");
@@ -461,7 +455,7 @@ public class Compose extends VerticalLayout {
             resetAvailableGridsCombobox();
             refreshTotal();
         });
-        addToClickableComponents(deleteBtn);
+        addToClickableComponents(deleteBtn, discountField, nameField);
 
         head.add(nameField, editNameBtn, discountField, discountBtn, deleteBtn);
 
@@ -488,12 +482,13 @@ public class Compose extends VerticalLayout {
         return filteringComboBox;
     }
 
-    private void addToClickableComponents(HasEnabled component) {
-        clickableComponents.add(component);
+    private void addToClickableComponents(HasEnabled... components) {
+        clickableComponents.addAll(Arrays.asList(components));
     }
 
     private void disableClickableComponents() {
-        clickableComponents.forEach(c -> c.setEnabled(false));
+        clickableComponents.stream().filter(Objects::nonNull).forEach(c -> c.setEnabled(false));
+        gridList.forEach(SectionGrid::disableClickables);
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
