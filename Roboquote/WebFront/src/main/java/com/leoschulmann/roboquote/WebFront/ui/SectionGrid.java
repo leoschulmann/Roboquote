@@ -58,7 +58,7 @@ public class SectionGrid extends Grid<ItemPosition> {
         field.setHasControls(true);
         field.setValue(itemPosition.getQty());
         field.addValueChangeListener(event -> {
-            fireEvent(new ComposeItemPositionQuantityEvent(this, itemPosition, field.getValue()));
+            fireEvent(new ComposeItemPositionQuantityEvent(this, itemPosition, event.getValue()));
             gridResetItems();
             redrawFooter();
         });
