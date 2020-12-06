@@ -1,6 +1,5 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import org.javamoney.moneta.Money;

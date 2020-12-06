@@ -11,6 +11,7 @@ import org.javamoney.moneta.Money;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ExcelFileTest {  // removing 'public' prevents junit vintage to start and complain
 
     Quote quote;
+    @Qualifier("nameGeneratingServiceImpl")
     @Autowired
     public NameGeneratingService nameGenerator;
 
@@ -61,6 +63,10 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
         qs2.setDiscount(95);
         quote.addSections(qs2, qs1);
         quote.setDiscount(15);
+
+        qs1.setTotal(Money.of(160, "USD"));
+        qs2.setTotal(Money.of(320, "USD"));
+        quote.setVat(20);
     }
 
     @Test
@@ -90,7 +96,7 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
     public void excelContents() throws Exception {
         try (XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream("./test.xlsx"));) {
             Sheet sheet = workbook.getSheetAt(0);
-            assertEquals(136., sheet.getRow(sheet.getLastRowNum()-1).getCell(4).getNumericCellValue());
+            assertEquals(136., sheet.getRow(sheet.getLastRowNum() - 1).getCell(4).getNumericCellValue());
         }
     }
 

@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface QuoteRepo extends JpaRepository<Quote, Integer> {
     Optional<Quote> findDistinctById(Integer id);
+
+    boolean existsByNumber(String serialNumber);
 }
