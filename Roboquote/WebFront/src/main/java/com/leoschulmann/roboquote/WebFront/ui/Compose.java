@@ -17,17 +17,15 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
-import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.H5;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.*;
-import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.*;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
@@ -95,35 +93,26 @@ public class Compose extends VerticalLayout {
         gridsBlock = createGridsBlock();
         addNewGrid(DEFAULT_SECTION_NAME);
 
-        add(quoteInfoBlock());
+        add(createQuoteInfoBlock());
         add(gridsBlock);
         add(createFinishBlock());
     }
 
-    private Accordion quoteInfoBlock() {
+    private Accordion createQuoteInfoBlock() {
         FormLayout columnLayout = new FormLayout();
         columnLayout.setResponsiveSteps(
                 new ResponsiveStep("25em", 1),
                 new ResponsiveStep("32em", 2),
                 new ResponsiveStep("40em", 3));
-        TextField customer = new TextField(); //todo lookup in DB
-        customer.setPlaceholder("Customer");
-        EmailField customerInfo = new EmailField();
-        customerInfo.setPlaceholder("Customer info");
+        TextField customer = new TextField("Customer"); //todo lookup in DB
+        TextField customerInfo = new TextField("Customer info");
+        TextField dealer = new TextField("Dealer");
+        TextField dealerInfo = new TextField("Dealer info");
+        TextField paymentTerms = new TextField("Payment Terms");
+        TextField shippingTerms = new TextField("Shipping Terms");
+        TextField warranty = new TextField("Warranty");
 
-        TextField dealer = new TextField();
-        dealer.setPlaceholder("Dealer");
-        EmailField dealerInfo = new EmailField();
-        dealerInfo.setPlaceholder("Dealer info");
-        TextField paymentTerms = new TextField();
-        paymentTerms.setPlaceholder("Payment Terms");  //todo make selectable from list
-        TextField shippingTerms = new TextField();
-        shippingTerms.setPlaceholder("Shipping Terms");  //todo make selectable from list
-        TextField warranty = new TextField();
-        warranty.setPlaceholder("Warranty");    //todo make selectable from list
-
-        DatePicker validThru = new DatePicker();
-        validThru.setLabel("Valid through date");
+        DatePicker validThru = new DatePicker("Valid through date");
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
         addToClickableComponents(validThru, warranty, customer, customerInfo, dealer,
                 dealerInfo, paymentTerms, shippingTerms);
@@ -136,14 +125,14 @@ public class Compose extends VerticalLayout {
         columnLayout.add(createRatesBlock(), 3);
         add(columnLayout);
 
-        detailsBinder.bind(customer, QuoteDetails::getCustomer, QuoteDetails::setCustomer);
+        detailsBinder.forField(customer).asRequired().bind(QuoteDetails::getCustomer, QuoteDetails::setCustomer);
         detailsBinder.bind(customerInfo, QuoteDetails::getCustomerInfo, QuoteDetails::setCustomerInfo);
         detailsBinder.bind(dealer, QuoteDetails::getDealer, QuoteDetails::setDealer);
         detailsBinder.bind(dealerInfo, QuoteDetails::getDealerInfo, QuoteDetails::setDealerInfo);
         detailsBinder.bind(paymentTerms, QuoteDetails::getPaymentTerms, QuoteDetails::setPaymentTerms);
         detailsBinder.bind(shippingTerms, QuoteDetails::getShippingTerms, QuoteDetails::setShippingTerms);
         detailsBinder.bind(warranty, QuoteDetails::getWarranty, QuoteDetails::setWarranty);
-        detailsBinder.bind(validThru, QuoteDetails::getValidThru, QuoteDetails::setValidThru);
+        detailsBinder.forField(validThru).asRequired().bind(QuoteDetails::getValidThru, QuoteDetails::setValidThru);
 
         Accordion accordion = new Accordion();
         accordion.setWidthFull();
@@ -206,10 +195,10 @@ public class Compose extends VerticalLayout {
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
-        detailsBinder.bind(conversionRate, QuoteDetails::getConversionRate, QuoteDetails::setConversionRate);
-        detailsBinder.bind(euro, QuoteDetails::getEurRate, QuoteDetails::setEurRate);
-        detailsBinder.bind(dollar, QuoteDetails::getUsdRate, QuoteDetails::setUsdRate);
-        detailsBinder.bind(yen, QuoteDetails::getJpyRate, QuoteDetails::setJpyRate);
+        detailsBinder.forField(conversionRate).asRequired().bind(QuoteDetails::getConversionRate, QuoteDetails::setConversionRate);
+        detailsBinder.forField(euro).asRequired().bind(QuoteDetails::getEurRate, QuoteDetails::setEurRate);
+        detailsBinder.forField(dollar).asRequired().bind(QuoteDetails::getUsdRate, QuoteDetails::setUsdRate);
+        detailsBinder.forField(yen).asRequired().bind(QuoteDetails::getJpyRate, QuoteDetails::setJpyRate);
 
         return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
     }
@@ -286,13 +275,15 @@ public class Compose extends VerticalLayout {
         HorizontalLayout controlSublayout = new HorizontalLayout();
         TextField gridNameInputField = new TextField();  //todo add validation (non-empty, non-duplicating, etc)
         Button addNewGridButton = new Button(VaadinIcon.PLUS.create());
+        addNewGridButton.setEnabled(false);
+        gridNameInputField.addValueChangeListener(event -> addNewGridButton.setEnabled(!event.getValue().isBlank()));
 
         layout.setWidthFull();
         controlSublayout.setWidthFull();
         gridNameInputField.setPlaceholder("Add new section ");
         gridNameInputField.setWidth("50%");
         addNewGridButton.addClickListener(click -> {
-            addNewGrid(gridNameInputField.getValue());
+            addNewGrid(gridNameInputField.getValue().trim());
             gridNameInputField.clear();
         });
 
@@ -319,6 +310,17 @@ public class Compose extends VerticalLayout {
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
+
+        Div text = new Div(new Span("Validation failed"));
+        Button ok = new Button("OK");
+        ok.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Dialog errorDialog = new Dialog(text, ok);
+        ok.addClickListener(c -> errorDialog.close());
+        errorDialog.setDraggable(true);
+        errorDialog.setModal(true);
+        errorDialog.setResizable(false);
+
 
         addToClickableComponents(discountField, vatField, postQuote, currencyCombo);
 
@@ -366,16 +368,26 @@ public class Compose extends VerticalLayout {
                 currencyCombo, showCurrencyComboButton, postQuote, wrapper);
 
         layout.setAlignItems(Alignment.END);
+        postQuote.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+        postQuote.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         postQuote.addClickListener(click -> {
-            int id = postToDbAndGetID();
-            byte[] bytes = downloadService.downloadXlsx(id);
-            wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
-                    () -> new ByteArrayInputStream(bytes)));
-            wrapper.setVisible(true);
+            if (detailsBinder.validate().isOk() && gridsNotEmpty()) {
+                int id = postToDbAndGetID();
+                byte[] bytes = downloadService.downloadXlsx(id);
+                wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
+                        () -> new ByteArrayInputStream(bytes)));
+                wrapper.setVisible(true);
 
-            disableClickableComponents();
+                disableClickableComponents();
+            } else {
+                errorDialog.open();
+            }
         });
         return layout;
+    }
+
+    private boolean gridsNotEmpty() {
+        return gridList.stream().noneMatch(s -> s.getQuoteSection().getPositions().size() == 0);
     }
 
     private int postToDbAndGetID() {
@@ -422,10 +434,12 @@ public class Compose extends VerticalLayout {
         nameField.setVisible(false);
 
         nameField.addValueChangeListener(event -> {
-            sectionHandler.setSectionName(grid.getQuoteSection(), event.getValue());
-            fireEvent(new UniversalSectionChangedEvent(this));
-            resetAvailableGridsCombobox();
-            acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue())));
+            if (!event.getValue().isBlank()) {
+                sectionHandler.setSectionName(grid.getQuoteSection(), event.getValue().trim());
+                fireEvent(new UniversalSectionChangedEvent(this));
+                resetAvailableGridsCombobox();
+                acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue().trim())));
+            }
         });
 
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
