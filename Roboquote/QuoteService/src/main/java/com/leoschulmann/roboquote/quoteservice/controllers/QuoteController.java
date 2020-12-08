@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class QuoteController {
 
@@ -37,4 +39,8 @@ public class QuoteController {
         }
         return new ResponseEntity<>(i, HttpStatus.OK);
     }
-}
+
+    @GetMapping("/quote")
+    public List<Quote> findAll() {
+        return quoteService.findAll();
+    }}

@@ -23,8 +23,10 @@ public class MainLayout extends AppLayout {
 
         RouterLink linkToCompose = new RouterLink("Compose", Compose.class);
         RouterLink lingToInventory = new RouterLink("Inventory", InventoryView.class);
+        RouterLink lingToQuotes = new RouterLink("Quotes", QuotesView.class);
         linkToCompose.setHighlightCondition(HighlightConditions.sameLocation());
         lingToInventory.setHighlightCondition(HighlightConditions.sameLocation());
-        addToDrawer(new VerticalLayout(linkToCompose, lingToInventory));
+        lingToQuotes.setHighlightCondition(HighlightConditions.sameLocation());
+        addToDrawer(new VerticalLayout(linkToCompose, lingToInventory, lingToQuotes));
     }
 }

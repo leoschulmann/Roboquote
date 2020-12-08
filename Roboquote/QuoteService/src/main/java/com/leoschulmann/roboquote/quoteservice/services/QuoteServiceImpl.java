@@ -6,6 +6,8 @@ import com.leoschulmann.roboquote.quoteservice.exceptions.NoQuoteFoundException;
 import com.leoschulmann.roboquote.quoteservice.repositories.QuoteRepo;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class QuoteServiceImpl implements QuoteService {
 
@@ -25,5 +27,10 @@ public class QuoteServiceImpl implements QuoteService {
     public Quote getQuote(Integer id) {
         return quoteRepo.findDistinctById(id).orElseThrow(() -> new NoQuoteFoundException(id));
 //        return quoteRepo.findById(id).orElseThrow(() -> new NoQuoteFoundException(id)); //produces duplicates :(
+    }
+
+    @Override
+    public List<Quote> findAll() {
+        return quoteRepo.findAll();
     }
 }

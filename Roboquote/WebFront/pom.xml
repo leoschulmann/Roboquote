@@ -28,6 +28,11 @@
             <artifactId>file-download-wrapper</artifactId>
             <version>3.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.vaadin.klaudeta</groupId>
+            <artifactId>grid-pagination</artifactId>
+            <version>2.0.10</version>
+        </dependency>
 
         <dependency>
             <groupId>com.leoschulmann</groupId>
