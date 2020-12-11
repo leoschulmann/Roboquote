@@ -36,6 +36,7 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
         q.setUsdRate(details.getUsdRate());
         q.setJpyRate(details.getJpyRate());
         q.setFinalPrice((Money) details.getFinalPrice());
+        q.setInstallation(details.getInstallation());
 
         sections.forEach(sect -> sect.getPositions().forEach(pos -> pos.setSection(sect)));
         sections.forEach(q::addSections);

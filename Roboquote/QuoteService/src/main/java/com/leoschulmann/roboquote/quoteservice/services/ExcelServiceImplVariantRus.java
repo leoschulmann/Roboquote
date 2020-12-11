@@ -29,7 +29,7 @@ import java.util.stream.IntStream;
 @Service
 public class ExcelServiceImplVariantRus implements ExcelService {
     private Sheet sheet;
-    private Workbook workbook;
+    private XSSFWorkbook workbook;
     private CellStyle subheaderStyle;
     private CellStyle subTotalStyle;
     private CellStyle regularStyle;
@@ -48,6 +48,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     public byte[] generateFile(Quote quote) {
 
         workbook = new XSSFWorkbook();
+        workbook.getProperties().getExtendedProperties().setApplication("");
         sheet = workbook.createSheet(quote.getNumber());
 
         currencyStyleMap = new HashMap<>();
@@ -124,7 +125,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
                 new StringBuilder("Заказчик: ")
                         .append(quote.getDealer().isBlank() ? quote.getCustomer() : quote.getDealer()).toString(),
 
-                //todo impl shipping terms (ddp, etc)
+                new StringBuilder("Условия поставки: ").append(quote.getInstallation()).toString(),
 
                 new StringBuilder("Условия оплаты: ").append(quote.getPaymentTerms()).toString(),
 

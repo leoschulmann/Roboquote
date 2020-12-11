@@ -63,6 +63,9 @@ public class Quote {
     @Column(name = "warranty")
     private String warranty;
 
+    @Column(name = "installation")
+    private String installation;
+
     @Column(name = "vat")
     private Integer vat;
 
@@ -72,7 +75,7 @@ public class Quote {
     @Column(name = "usd_rate")
     private BigDecimal usdRate;
 
-    @Column(name = "jpy_rate")
+    @Column(name = "jpy_rate", columnDefinition = "decimal(19,4)")
     private BigDecimal jpyRate;
 
     @Column(name = "conversion_rate")
@@ -202,6 +205,14 @@ public class Quote {
 
     public void setWarranty(String warranty) {
         this.warranty = warranty;
+    }
+
+    public String getInstallation() {
+        return installation;
+    }
+
+    public void setInstallation(String installation) {
+        this.installation = installation;
     }
 
     public Integer getVat() {

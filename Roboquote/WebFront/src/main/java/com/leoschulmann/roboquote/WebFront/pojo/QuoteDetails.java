@@ -13,6 +13,7 @@ public class QuoteDetails {
     private String paymentTerms;
     private String shippingTerms;
     private String warranty;
+    private String installation;
     private LocalDate validThru;
     private Integer discount;
     private Integer vat;
@@ -79,6 +80,14 @@ public class QuoteDetails {
 
     public void setWarranty(String warranty) {
         this.warranty = warranty;
+    }
+
+    public String getInstallation() {
+        return installation;
+    }
+
+    public void setInstallation(String installation) {
+        this.installation = installation;
     }
 
     public LocalDate getValidThru() {

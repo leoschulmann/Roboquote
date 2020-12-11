@@ -28,7 +28,7 @@ public class QuoteViewer extends VerticalLayout {
         add(new Span("Created: " + q.getCreated().format(DateTimeFormatter.ISO_LOCAL_DATE) +
                 ";\tValid: " + q.getValidThru().format(DateTimeFormatter.ISO_LOCAL_DATE)));
         add(new Span("Payment: " + q.getPaymentTerms() + ";\t" + "Shipping: " + q.getShippingTerms()));
-        add(new Span("Warranty: " + q.getWarranty()));
+        add(new Span("Installation: " + q.getInstallation() + ";\tWarranty: " + q.getWarranty()));
         add(new Span("EUR: " + q.getEurRate().toString() + ";\tUSD: " + q.getUsdRate().toString() +
                 ";\tJPY: " + q.getJpyRate().toString() + ";\t(+" + q.getConversionRate().toString() + "%)"));
         add(new Hr());
@@ -40,7 +40,7 @@ public class QuoteViewer extends VerticalLayout {
             Span subtotalDiscountedSpan = new Span("Subtotal " + sect.getName() + " (incl. discount " + sect.getDiscount() + "%) "
                     + currencyService.formatMoney(sect.getTotalDiscounted()));
 
-            if (q.getDiscount() != 0) {
+            if (sect.getDiscount() != 0) {
                 alignRight(subtotalSpan);
                 alignRightAndBolden(subtotalDiscountedSpan);
                 add(subtotalSpan, subtotalDiscountedSpan);

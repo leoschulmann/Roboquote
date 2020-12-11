@@ -115,17 +115,18 @@ public class Compose extends VerticalLayout {
         TextField paymentTerms = new TextField("Payment Terms");
         TextField shippingTerms = new TextField("Shipping Terms");
         TextField warranty = new TextField("Warranty");
+        TextField installation = new TextField("Installation");
 
         DatePicker validThru = new DatePicker("Valid through date");
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
         addToClickableComponents(validThru, warranty, customer, customerInfo, dealer,
-                dealerInfo, paymentTerms, shippingTerms);
+                dealerInfo, paymentTerms, shippingTerms, installation);
 
         columnLayout.add(customer);
         columnLayout.add(customerInfo, 2);
         columnLayout.add(dealer);
         columnLayout.add(dealerInfo, 2);
-        columnLayout.add(paymentTerms, shippingTerms, warranty, validThru);
+        columnLayout.add(paymentTerms, shippingTerms, warranty, installation,  validThru);
         columnLayout.add(createRatesBlock(), 3);
         add(columnLayout);
 
@@ -136,6 +137,7 @@ public class Compose extends VerticalLayout {
         detailsBinder.bind(paymentTerms, QuoteDetails::getPaymentTerms, QuoteDetails::setPaymentTerms);
         detailsBinder.bind(shippingTerms, QuoteDetails::getShippingTerms, QuoteDetails::setShippingTerms);
         detailsBinder.bind(warranty, QuoteDetails::getWarranty, QuoteDetails::setWarranty);
+        detailsBinder.bind(installation, QuoteDetails::getInstallation, QuoteDetails::setInstallation);
         detailsBinder.forField(validThru).asRequired().bind(QuoteDetails::getValidThru, QuoteDetails::setValidThru);
 
         Accordion accordion = new Accordion();
