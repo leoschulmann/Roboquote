@@ -1,27 +1,25 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
+import com.leoschulmann.roboquote.WebFront.components.MoneyMathService;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
 
 import javax.money.MonetaryAmount;
-import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
 
 public class QuoteViewer extends VerticalLayout {
     private CurrencyFormatService currencyService;
 
-    public QuoteViewer(Quote q, CurrencyFormatService currencyService) {
+    public QuoteViewer(Quote q, CurrencyFormatService currencyService, MoneyMathService moneyMathService) {
         this.currencyService = currencyService;
-        add(new Span("id: " + q.getId() + ";\tQuote #" + q.getNumber() + "-" + q.getVersion() +
+        add(new Span("id: " + q.getId() + ";\tQuote No: " + q.getNumber() + "-" + q.getVersion() +
                 "\t(" + q.getFinalPrice().getCurrency().getCurrencyCode() + ")"));
         add(new Span("Customer: " + q.getCustomer() +
                 (q.getCustomerInfo().isBlank() ? "" : " (" + q.getCustomerInfo() + ")")));
@@ -32,47 +30,73 @@ public class QuoteViewer extends VerticalLayout {
         add(new Span("Payment: " + q.getPaymentTerms() + ";\t" + "Shipping: " + q.getShippingTerms()));
         add(new Span("Warranty: " + q.getWarranty()));
         add(new Span("EUR: " + q.getEurRate().toString() + ";\tUSD: " + q.getUsdRate().toString() +
-                "\tJPY: " + q.getJpyRate().toString() + ";\t(+" + q.getConversionRate().toString() + "%)"));
+                ";\tJPY: " + q.getJpyRate().toString() + ";\t(+" + q.getConversionRate().toString() + "%)"));
+        add(new Hr());
 
         q.getSections().forEach(sect -> {
             add(new Span(sect.getName()));
             add(placeSection(sect));
-            add(new Span("Subtotal " + sect.getName() + " " + currencyService.formatMoney(sect.getTotal())));
-            if (sect.getDiscount() != null && sect.getDiscount() != 0) {
-                add(new Span("Subtotal " + sect.getName() + " (incl. discount " + sect.getDiscount() + "%) "
-                        + currencyService.formatMoney(sect.getTotalDiscounted())));
+            Span subtotalSpan = new Span("Subtotal " + sect.getName() + " " + currencyService.formatMoney(sect.getTotal()));
+            Span subtotalDiscountedSpan = new Span("Subtotal " + sect.getName() + " (incl. discount " + sect.getDiscount() + "%) "
+                    + currencyService.formatMoney(sect.getTotalDiscounted()));
+
+            if (q.getDiscount() != 0) {
+                alignRight(subtotalSpan);
+                alignRightAndBolden(subtotalDiscountedSpan);
+                add(subtotalSpan, subtotalDiscountedSpan);
+            } else {
+                alignRightAndBolden(subtotalSpan);
+                add(subtotalSpan);
             }
+
+            add(new Hr());
         });
 
-        MonetaryAmount ma = q.getSections().stream()
-                .map(QuoteSection::getTotalDiscounted)
-                .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(BigDecimal.ZERO, "EUR"));
+        MonetaryAmount sum = moneyMathService.getSum(q.getSections().stream().
+                map(QuoteSection::getTotalDiscounted).collect(Collectors.toList()));
+        MonetaryAmount discounted = moneyMathService.calculateDiscountedPrice(sum, q.getDiscount());
+        MonetaryAmount vat = moneyMathService.calculateIncludedTax(discounted, q.getVat());
 
-        MonetaryAmount vat = ma.multiply(q.getVat() / 100.)
-                .divide((q.getVat() + 100) / 100.);
+        Span totalSpan = new Span("TOTAL: " + currencyService.formatMoney(sum));
+        Span discountedTotalSpan = new Span("TOTAL (" +
+                (q.getDiscount() < 0 ? "with premium +" : "with discount -") +
+                q.getDiscount() + "%): " + currencyService.formatMoney(discounted));
+        Span vatSpan = new Span("(incl. VAT " + q.getVat() + "%: " + currencyService.formatMoney(vat) + ")");
 
-
-        if (!ma.isEqualTo(q.getFinalPrice())) {
-            Icon icon = VaadinIcon.WARNING.create();
-            icon.setSize("20px");
-            icon.setColor("Red");
-            add(icon);
+        add(totalSpan);
+        if (q.getDiscount() != 0) {
+            alignRight(totalSpan);
+            alignRight(vatSpan);
+            alignRightAndBolden(discountedTotalSpan);
+            add(totalSpan, discountedTotalSpan, vatSpan);
+        } else {
+            alignRightAndBolden(totalSpan);
+            alignRight(vatSpan);
+            add(totalSpan, vatSpan);
         }
-        add(new Span("TOTAL " + currencyService.formatMoney(ma)));
-        add(new Span("(incl. VAT " + q.getVat() + "%)" + currencyService.formatMoney(vat)));
     }
 
     private Grid<ItemPosition> placeSection(QuoteSection sect) {
         Grid<ItemPosition> grid = new Grid<>(ItemPosition.class);
         grid.removeAllColumns();
-        grid.addColumns("itemId", "name", "partNo", "qty");
+        grid.addColumn("itemId");
+        grid.addColumn("name");
+        grid.addColumn("partNo");
+        grid.addColumn("qty");
         grid.addColumn(item -> currencyService.formatMoney(item.getSellingPrice())).setHeader("Price");
         grid.addColumn(item -> currencyService.formatMoney(item.getSellingSum())).setHeader("Sum");
-
+        //todo fix word wrap
         grid.setItems(sect.getPositions());
         grid.setHeightByRows(true);
         grid.getColumns().forEach(col -> col.setSortable(false));
         return grid;
+    }
+
+    private void alignRightAndBolden(Span span) {
+        span.getElement().getStyle().set("margin-left", "auto").set("font-weight", "bold");
+    }
+
+    private void alignRight(Span span) {
+        span.getElement().getStyle().set("margin-left", "auto");
     }
 }

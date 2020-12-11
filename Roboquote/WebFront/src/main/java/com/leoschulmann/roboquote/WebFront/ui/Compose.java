@@ -51,6 +51,8 @@ public class Compose extends VerticalLayout {
     private QuoteAssembler assembler;
     private DownloadService downloadService;
     private CurrencyRatesService currencyRatesService;
+    private MoneyMathService moneyMathService;
+
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -77,7 +79,8 @@ public class Compose extends VerticalLayout {
                    InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
                    QuoteAssembler assembler, DownloadService downloadService,
-                   CurrencyRatesService currencyRatesService) {
+                   CurrencyRatesService currencyRatesService,
+                   MoneyMathService moneyMathService) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
@@ -86,6 +89,7 @@ public class Compose extends VerticalLayout {
         this.assembler = assembler;
         this.downloadService = downloadService;
         this.currencyRatesService = currencyRatesService;
+        this.moneyMathService = moneyMathService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
 
@@ -237,14 +241,12 @@ public class Compose extends VerticalLayout {
         MonetaryAmount am = getTotalMoney();
         totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
         totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
-                + currencyFormatter.formatMoney(am.multiply((100.0 - discount) / 100)));
+                + currencyFormatter.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount)));
         totalWithDiscountString.setVisible(discount > 0);
 
         includingVatValue.setText("(incl. VAT " + vat + "% " +
-                currencyFormatter.formatMoney(
-                        am.multiply((100.0 - discount) / 100)
-                                .multiply(vat / 100.)
-                                .divide((vat + 100) / 100.))
+                currencyFormatter.formatMoney(moneyMathService.calculateIncludedTax(
+                        moneyMathService.calculateDiscountedPrice(am, discount), vat))
                 + ")");
     }
 
