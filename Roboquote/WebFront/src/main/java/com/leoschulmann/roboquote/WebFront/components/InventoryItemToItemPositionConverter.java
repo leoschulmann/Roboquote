@@ -5,4 +5,6 @@ import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 
 public interface InventoryItemToItemPositionConverter {
     ItemPosition convert(Item inventoryItem);
+
+    ItemPosition createItemPositionByItemId(Integer itemId, Integer qty);
 }

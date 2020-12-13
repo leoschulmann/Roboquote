@@ -4,9 +4,9 @@ import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent;
 import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
 import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
-import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -20,12 +20,18 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.H5;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.*;
-import com.vaadin.flow.data.binder.*;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
@@ -39,11 +45,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Route(value = "compose", layout = MainLayout.class)
-public class Compose extends VerticalLayout {
+public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private ItemService itemService;
     private CurrencyFormatService currencyFormatter;
     private InventoryItemToItemPositionConverter converter;
@@ -53,26 +58,23 @@ public class Compose extends VerticalLayout {
     private CurrencyRatesService currencyRatesService;
     private MoneyMathService moneyMathService;
 
-
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
-    private Binder<QuoteDetails> detailsBinder = new Binder<>(QuoteDetails.class);
+    private Binder<Quote> quoteBinder = new Binder<>(Quote.class);
+    private Quote quote;
     private final H4 totalString = new H4();
     private final H4 totalWithDiscountString = new H4();
     private final H5 includingVatValue = new H5();
     private Integer discount = 0;
-    private Integer vat = DEFAULT_VAT;
+    private Integer vat = 20;
     private Set<HasEnabled> clickableComponents;
 
-    static final String DEFAULT_SECTION_NAME = "New quote section";
-    static final Integer DEFAULT_VAT = 20;
-
     private String currency = "EUR";
-    private BigDecimal euroRate = new BigDecimal(100);
-    private BigDecimal dollarRate = new BigDecimal(100);
-    private BigDecimal yenRate = BigDecimal.ONE;
-    private double exchangeConversionFee = 2.;
+    private BigDecimal euroRate;
+    private BigDecimal dollarRate;
+    private BigDecimal yenRate;
+    private double exchangeConversionFee;
 
     public Compose(ItemService itemService,
                    CurrencyFormatService currencyFormatter,
@@ -95,11 +97,31 @@ public class Compose extends VerticalLayout {
 
         add(getInventoryLookupAccordeon());
         gridsBlock = createGridsBlock();
-        addNewGrid(DEFAULT_SECTION_NAME);
 
         add(createQuoteInfoBlock());
         add(gridsBlock);
         add(createFinishBlock());
+    }
+
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+
+        getUI().ifPresent(ui -> {
+            quote = Objects.requireNonNullElseGet(ui.getSession().getAttribute(Quote.class),
+                    () -> {
+                        //empty quote with default rates, vat, discount and one empty quote section
+                        Quote q =  new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
+                                BigDecimal.ONE, BigDecimal.valueOf(2));
+                        q.addSections(new QuoteSection("New quote section"));
+                        return q;
+                    });
+
+            quote.setValidThru(LocalDate.now().plus(3, ChronoUnit.MONTHS));
+
+            ui.getSession().setAttribute(Quote.class, null); //delete session payload if any
+            quoteBinder.readBean(quote);
+            quote.getSections().forEach(this::addNewGrid);
+        });
     }
 
     private Accordion createQuoteInfoBlock() {
@@ -126,19 +148,19 @@ public class Compose extends VerticalLayout {
         columnLayout.add(customerInfo, 2);
         columnLayout.add(dealer);
         columnLayout.add(dealerInfo, 2);
-        columnLayout.add(paymentTerms, shippingTerms, warranty, installation,  validThru);
+        columnLayout.add(paymentTerms, shippingTerms, warranty, installation, validThru);
         columnLayout.add(createRatesBlock(), 3);
         add(columnLayout);
 
-        detailsBinder.forField(customer).asRequired().bind(QuoteDetails::getCustomer, QuoteDetails::setCustomer);
-        detailsBinder.bind(customerInfo, QuoteDetails::getCustomerInfo, QuoteDetails::setCustomerInfo);
-        detailsBinder.bind(dealer, QuoteDetails::getDealer, QuoteDetails::setDealer);
-        detailsBinder.bind(dealerInfo, QuoteDetails::getDealerInfo, QuoteDetails::setDealerInfo);
-        detailsBinder.bind(paymentTerms, QuoteDetails::getPaymentTerms, QuoteDetails::setPaymentTerms);
-        detailsBinder.bind(shippingTerms, QuoteDetails::getShippingTerms, QuoteDetails::setShippingTerms);
-        detailsBinder.bind(warranty, QuoteDetails::getWarranty, QuoteDetails::setWarranty);
-        detailsBinder.bind(installation, QuoteDetails::getInstallation, QuoteDetails::setInstallation);
-        detailsBinder.forField(validThru).asRequired().bind(QuoteDetails::getValidThru, QuoteDetails::setValidThru);
+        quoteBinder.forField(customer).asRequired().bind(Quote::getCustomer, Quote::setCustomer);
+        quoteBinder.bind(customerInfo, Quote::getCustomerInfo, Quote::setCustomerInfo);
+        quoteBinder.bind(dealer, Quote::getDealer, Quote::setDealer);
+        quoteBinder.bind(dealerInfo, Quote::getDealerInfo, Quote::setDealerInfo);
+        quoteBinder.bind(paymentTerms, Quote::getPaymentTerms, Quote::setPaymentTerms);
+        quoteBinder.bind(shippingTerms, Quote::getShippingTerms, Quote::setShippingTerms);
+        quoteBinder.bind(warranty, Quote::getWarranty, Quote::setWarranty);
+        quoteBinder.bind(installation, Quote::getInstallation, Quote::setInstallation);
+        quoteBinder.forField(validThru).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
 
         Accordion accordion = new Accordion();
         accordion.setWidthFull();
@@ -201,10 +223,11 @@ public class Compose extends VerticalLayout {
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
-        detailsBinder.forField(conversionRate).asRequired().bind(QuoteDetails::getConversionRate, QuoteDetails::setConversionRate);
-        detailsBinder.forField(euro).asRequired().bind(QuoteDetails::getEurRate, QuoteDetails::setEurRate);
-        detailsBinder.forField(dollar).asRequired().bind(QuoteDetails::getUsdRate, QuoteDetails::setUsdRate);
-        detailsBinder.forField(yen).asRequired().bind(QuoteDetails::getJpyRate, QuoteDetails::setJpyRate);
+        quoteBinder.forField(euro).asRequired().bind(Quote::getEurRate, Quote::setEurRate);
+        quoteBinder.forField(dollar).asRequired().bind(Quote::getUsdRate, Quote::setUsdRate);
+        quoteBinder.forField(yen).asRequired().bind(Quote::getJpyRate, Quote::setJpyRate);
+        quoteBinder.forField(conversionRate).asRequired().bind(quote -> quote.getConversionRate().doubleValue(),
+                (quote1, conversionRate1) -> quote1.setConversionRate(BigDecimal.valueOf(conversionRate1)));
 
         return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
     }
@@ -287,7 +310,9 @@ public class Compose extends VerticalLayout {
         gridNameInputField.setPlaceholder("Add new section ");
         gridNameInputField.setWidth("50%");
         addNewGridButton.addClickListener(click -> {
-            addNewGrid(gridNameInputField.getValue().trim());
+            QuoteSection qs = new QuoteSection(gridNameInputField.getValue().trim());
+            quote.addSections(qs);  //todo make with service ?..
+            addNewGrid(qs);
             gridNameInputField.clear();
         });
 
@@ -340,7 +365,7 @@ public class Compose extends VerticalLayout {
         });
         showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
-        vatField.setValue(DEFAULT_VAT);
+        vatField.setValue(20);
         vatField.setVisible(false);
         vatField.setHasControls(true);
         vatField.setMin(0);
@@ -364,8 +389,8 @@ public class Compose extends VerticalLayout {
         wrapper.wrapComponent(dlButt);
         wrapper.setVisible(false);
 
-        detailsBinder.bind(discountField, QuoteDetails::getDiscount, QuoteDetails::setDiscount);
-        detailsBinder.bind(vatField, QuoteDetails::getVat, QuoteDetails::setVat);
+        quoteBinder.bind(discountField, Quote::getDiscount, Quote::setDiscount);
+        quoteBinder.bind(vatField, Quote::getVat, Quote::setVat);
 
         HorizontalLayout layout = new HorizontalLayout(
                 discountField, showDiscountFieldButton, vatField, showVatFieldButton,
@@ -375,7 +400,7 @@ public class Compose extends VerticalLayout {
         postQuote.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
         postQuote.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         postQuote.addClickListener(click -> {
-            if (detailsBinder.validate().isOk() && gridsNotEmpty()) {
+            if (quoteBinder.validate().isOk() && gridsNotEmpty()) {
                 int id = postToDbAndGetID();
                 byte[] bytes = downloadService.downloadXlsx(id);
                 wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
@@ -396,23 +421,21 @@ public class Compose extends VerticalLayout {
 
     private int postToDbAndGetID() {
         try {
-            QuoteDetails quoteDetails = new QuoteDetails();
-            detailsBinder.writeBean(quoteDetails);
-            quoteDetails.setFinalPrice(getTotalMoney().multiply((100.0 - discount) / 100));
-            List<QuoteSection> sections = gridList.stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList());
-            return assembler.assembleAndPostNew(quoteDetails, sections);
+            quoteBinder.writeBean(quote);
+            quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
+            return assembler.postNew(quote);
         } catch (ValidationException e) {
             e.printStackTrace();
             return -1;
         }
     }
 
-    private void addNewGrid(String name) {
+    private void addNewGrid(QuoteSection quoteSection) {
         Accordion accordion = new Accordion();
         accordion.setWidthFull();
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
-        SectionGrid sg = new SectionGrid(name, currencyFormatter);
+        SectionGrid sg = new SectionGrid(quoteSection, currencyFormatter);
 
         sg.addListener(ComposeDeleteItemPositionEvent.class, this::itemPositionDeleted);
         sg.addListener(ComposeItemPositionQuantityEvent.class, this::itemPositionQuantityChanged);
@@ -421,8 +444,8 @@ public class Compose extends VerticalLayout {
         gridList.add(sg);
         resetAvailableGridsCombobox();
 
-        layout.add(getGridHeaderPanel(accordion, name, sg), sg, sg.getFooter());
-        accordion.add(name, layout);
+        layout.add(getGridHeaderPanel(accordion, quoteSection.getName(), sg), sg, sg.getFooter());
+        accordion.add(quoteSection.getName(), layout);
         gridsBlock.add(accordion);
         refreshSectionSubtotal(currency, sg.getQuoteSection());
         refreshTotal();

@@ -26,9 +26,9 @@ public class SectionGrid extends Grid<ItemPosition> {
     private IntegerField field;
     private List<HasEnabled> clickables = new ArrayList<>();
 
-    SectionGrid(String name, CurrencyFormatService currencyFormatter) {
+    SectionGrid(QuoteSection qs, CurrencyFormatService currencyFormatter) {
         super(ItemPosition.class);
-        this.quoteSection = new QuoteSection(name);
+        this.quoteSection = qs;
         setItems(quoteSection.getPositions());
 
         removeAllColumns();

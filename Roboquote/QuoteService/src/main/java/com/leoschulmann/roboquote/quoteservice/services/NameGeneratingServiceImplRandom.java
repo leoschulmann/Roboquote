@@ -18,4 +18,9 @@ public class NameGeneratingServiceImplRandom implements NameGeneratingService {
     public String generate() {
         return LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + random.nextInt(10);
     }
+
+    @Override
+    public Integer generateVer(String serial) {
+        return random.nextInt(20);
+    }
 }

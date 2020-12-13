@@ -32,7 +32,7 @@ public class QuotesView extends VerticalLayout {
     private final QuoteService quoteService;
     private final CurrencyFormatService currencyFormatService;
     private final DownloadService downloadService;
-    private MoneyMathService moneyMathService;
+    private final MoneyMathService moneyMathService;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService) {
@@ -50,49 +50,68 @@ public class QuotesView extends VerticalLayout {
         grid = new PaginatedGrid<>(Quote.class);
         setSizeFull();
         grid.removeAllColumns();
-        grid.addColumns("number", "customer", "dealer", "created");
+        grid.addColumns("number", "version", "customer", "dealer", "created");
         grid.addColumn(q -> {
 
             Money m = q.getFinalPrice();
 
             return currencyFormatService.formatMoney(m == null ? Money.of(BigDecimal.ZERO, "EUR") : m);
         }).setHeader("Quote Price");
+        grid.setMultiSort(true);
 
         grid.setPageSize(15);
         grid.setPaginatorSize(5);
-        GridSortOrder<Quote> gridSortOrder = new GridSortOrder<>(grid.getColumnByKey("created"), SortDirection.DESCENDING);
-        GridSortOrder<Quote> gridSortOrder1 = new GridSortOrder<>(grid.getColumnByKey("number"), SortDirection.DESCENDING);
-        grid.sort(List.of(gridSortOrder, gridSortOrder1));
+        GridSortOrder<Quote> byCreated = new GridSortOrder<>(grid.getColumnByKey("created"), SortDirection.DESCENDING);
+        GridSortOrder<Quote> byNum = new GridSortOrder<>(grid.getColumnByKey("number"), SortDirection.DESCENDING);
+        GridSortOrder<Quote> byVer = new GridSortOrder<>(grid.getColumnByKey("version"), SortDirection.DESCENDING);
+        grid.sort(List.of(byCreated, byNum, byVer));
     }
 
     private void updateGrid() {
         grid.setItems(quoteService.findAll());
     }
 
-    private void editQuote(Quote value) {
+    private void editQuote(Quote quote) {
         try {
-            Button downloadXlsxBtn = new Button("Download " + value.getNumber() + "-" + value.getVersion() + ".xlsx");
+            Button downloadXlsxBtn = new Button("Download " + quote.getNumber() + "-" + quote.getVersion() + ".xlsx");
             FileDownloadWrapper downloadXlsxWrapper = new FileDownloadWrapper(
-                    new StreamResource(value.getNumber() + "-" + value.getVersion() + ".xlsx",
-                            () -> new ByteArrayInputStream(downloadService.downloadXlsx(value.getId()))));
+                    new StreamResource(quote.getNumber() + "-" + quote.getVersion() + ".xlsx",
+                            () -> new ByteArrayInputStream(downloadService.downloadXlsx(quote.getId()))));
             downloadXlsxWrapper.wrapComponent(downloadXlsxBtn);
             Button closeBtn = new Button("Close");
             Button asTemplateBtn = new Button("Use as a template");
-            Button appendNewVersionBtn = new Button("Create new version of " + value.getNumber() + "-" + (value.getVersion()));
+            Button appendNewVersionBtn = new Button("Create new version of " + quote.getNumber() + "-" + (quote.getVersion()));
             downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
             closeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
             asTemplateBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_CONTRAST);
             appendNewVersionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-            Dialog dialog = new Dialog(new VerticalLayout(new QuoteViewer(value, currencyFormatService, moneyMathService),
+
+            Dialog dialog = new Dialog(new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService),
                     new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn, closeBtn)));
             closeBtn.addClickListener(click -> dialog.close());
-            asTemplateBtn.addClickListener(click -> new Dialog(new Span("Under construction")).open()); //todo implement
-            appendNewVersionBtn.addClickListener(click -> new Dialog(new Span("Under construction")).open());
+
+
+            asTemplateBtn.addClickListener(click -> getUI().ifPresent(ui -> {
+                Quote templatedQuote = quoteService.createNewFromTemplate(quote);
+
+                ui.getSession().setAttribute(Quote.class, templatedQuote);
+                dialog.close();
+                ui.navigate(Compose.class);
+            }));
+
+            appendNewVersionBtn.addClickListener(click -> getUI().ifPresent(ui -> {
+                Quote newVerQuote = quoteService.createNewVersion(quote);
+
+                ui.getSession().setAttribute(Quote.class, newVerQuote);
+                dialog.close();
+                ui.navigate(Compose.class);
+            }));
 
             dialog.setWidth("80%");
             dialog.open();
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             Icon i = VaadinIcon.WARNING.create();
             i.setColor("Red");
             i.setSize("50px");

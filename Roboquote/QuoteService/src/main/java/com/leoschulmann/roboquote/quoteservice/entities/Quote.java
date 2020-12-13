@@ -274,6 +274,42 @@ public class Quote {
         this.created = LocalDate.now();
     }
 
+    public Quote(String number, Integer version, String customer, String customerInfo,
+                 String dealer, String dealerInfo, String paymentTerms, String shippingTerms,
+                 String warranty, String installation, Integer vat, Integer discount, BigDecimal eurRate,
+                 BigDecimal usdRate, BigDecimal jpyRate, BigDecimal conversionRate) {
+        this.number = number;
+        this.version = version;
+        this.customer = customer;
+        this.discount = discount;
+        this.dealer = dealer;
+        this.customerInfo = customerInfo;
+        this.dealerInfo = dealerInfo;
+        this.paymentTerms = paymentTerms;
+        this.shippingTerms = shippingTerms;
+        this.warranty = warranty;
+        this.installation = installation;
+        this.vat = vat;
+        this.eurRate = eurRate;
+        this.usdRate = usdRate;
+        this.jpyRate = jpyRate;
+        this.conversionRate = conversionRate;
+        this.sections = new ArrayList<>();
+        this.created = LocalDate.now();
+    }
+
+    public Quote(Integer discount, Integer vat, BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate,
+                 BigDecimal conversionRate) {
+        this.discount = discount;
+        this.vat = vat;
+        this.eurRate = eurRate;
+        this.usdRate = usdRate;
+        this.jpyRate = jpyRate;
+        this.conversionRate = conversionRate;
+        this.sections = new ArrayList<>();
+        this.created = LocalDate.now();
+    }
+
     public void addSections(QuoteSection... sec) {
         Arrays.stream(sec).forEach(quoteSection -> {
             sections.add(quoteSection);

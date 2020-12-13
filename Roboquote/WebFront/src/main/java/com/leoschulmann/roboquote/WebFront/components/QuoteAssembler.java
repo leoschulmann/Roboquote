@@ -1,10 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
-import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
-import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
-
-import java.util.List;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 
 public interface QuoteAssembler {
-    int assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections);
+    int postNew(Quote quote);
 }

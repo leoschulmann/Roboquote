@@ -1,16 +1,10 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
-import com.leoschulmann.roboquote.WebFront.pojo.QuoteDetails;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
-import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
-import org.javamoney.moneta.Money;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public class QuoteAssemblerImpl implements QuoteAssembler {
@@ -20,27 +14,17 @@ public class QuoteAssemblerImpl implements QuoteAssembler {
     @Value("${quoteservice.save.url}")
     String saveQuoteUrl;
 
-
     @Override
-    public int assembleAndPostNew(QuoteDetails details, List<QuoteSection> sections) {
-        Quote q = new Quote(getNameFromService(), details.getValidThru(), details.getCustomer(), details.getDealer(),
-                details.getCustomerInfo(), details.getDealerInfo());
-        q.setVersion(1);
-        q.setShippingTerms(details.getShippingTerms());
-        q.setPaymentTerms(details.getPaymentTerms());
-        q.setWarranty(details.getWarranty());
-        q.setDiscount(details.getDiscount());
-        q.setVat(details.getVat());
-        q.setConversionRate(BigDecimal.valueOf(details.getConversionRate()));
-        q.setEurRate(details.getEurRate());
-        q.setUsdRate(details.getUsdRate());
-        q.setJpyRate(details.getJpyRate());
-        q.setFinalPrice((Money) details.getFinalPrice());
-        q.setInstallation(details.getInstallation());
+    public int postNew(Quote quote) {
+        if (quote.getNumber() == null) quote.setNumber(getNameFromService());
+        if (quote.getVersion() == null) quote.setVersion(getVersionFromService(quote.getNumber()));
+        return postQuote(quote);
+    }
 
-        sections.forEach(sect -> sect.getPositions().forEach(pos -> pos.setSection(sect)));
-        sections.forEach(q::addSections);
-        return postQuote(q);
+    private Integer getVersionFromService(String number) {
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Integer> responseEntity = restTemplate.getForEntity(getNameUrl + "/" + number, Integer.class);
+        return responseEntity.getBody();
     }
 
     private String getNameFromService() {

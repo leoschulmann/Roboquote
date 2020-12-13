@@ -6,4 +6,8 @@ import java.util.List;
 
 public interface QuoteService {
     List<Quote> findAll();
+
+    Quote createNewVersion(Quote quote);
+
+    Quote createNewFromTemplate(Quote quote);
 }

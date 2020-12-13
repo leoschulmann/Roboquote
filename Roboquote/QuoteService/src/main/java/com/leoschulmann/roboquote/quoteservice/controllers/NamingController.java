@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +23,10 @@ public class NamingController {
     @GetMapping
     public ResponseEntity<String> generateName() {
         return new ResponseEntity<>(generatingService.generate(), HttpStatus.OK);
+    }
+
+    @GetMapping("/{serial}")
+    public ResponseEntity<Integer> generateVersion(@PathVariable Integer serial) {
+        return new ResponseEntity<>(generatingService.generateVer(String.valueOf(serial)), HttpStatus.OK);
     }
 }
