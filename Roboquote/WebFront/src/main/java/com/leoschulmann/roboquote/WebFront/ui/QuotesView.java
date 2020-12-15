@@ -43,7 +43,7 @@ public class QuotesView extends VerticalLayout {
         createGrid();
         updateGrid();
         add(grid);
-        grid.asSingleSelect().addValueChangeListener(event -> editQuote(event.getValue()));
+        grid.addItemClickListener(event -> editQuote(event.getItem()));
     }
 
     private void createGrid() {
@@ -73,43 +73,19 @@ public class QuotesView extends VerticalLayout {
 
     private void editQuote(Quote quote) {
         try {
-            Button downloadXlsxBtn = new Button("Download " + quote.getNumber() + "-" + quote.getVersion() + ".xlsx");
-            FileDownloadWrapper downloadXlsxWrapper = new FileDownloadWrapper(
-                    new StreamResource(quote.getNumber() + "-" + quote.getVersion() + ".xlsx",
-                            () -> new ByteArrayInputStream(downloadService.downloadXlsx(quote.getId()))));
-            downloadXlsxWrapper.wrapComponent(downloadXlsxBtn);
-            Button closeBtn = new Button("Close");
-            Button asTemplateBtn = new Button("Use as a template");
-            Button appendNewVersionBtn = new Button("Create new version of " + quote.getNumber() + "-" + (quote.getVersion()));
-            downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-            closeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
-            asTemplateBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_CONTRAST);
-            appendNewVersionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Dialog qViewerDialog = new Dialog(
+                    new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService)));
 
-
-            Dialog dialog = new Dialog(new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService),
-                    new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn, closeBtn)));
-            closeBtn.addClickListener(click -> dialog.close());
-
-
-            asTemplateBtn.addClickListener(click -> getUI().ifPresent(ui -> {
-                Quote templatedQuote = quoteService.createNewFromTemplate(quote);
-
-                ui.getSession().setAttribute(Quote.class, templatedQuote);
-                dialog.close();
-                ui.navigate(Compose.class);
-            }));
-
-            appendNewVersionBtn.addClickListener(click -> getUI().ifPresent(ui -> {
-                Quote newVerQuote = quoteService.createNewVersion(quote);
-
-                ui.getSession().setAttribute(Quote.class, newVerQuote);
-                dialog.close();
-                ui.navigate(Compose.class);
-            }));
-
-            dialog.setWidth("80%");
-            dialog.open();
+            FileDownloadWrapper downloadXlsxWrapper = createDownloadWrapper(quote.getNumber(), quote.getVersion(), quote.getId());
+            Button asTemplateBtn = createAsTemplateBtn(quote, qViewerDialog);
+            Button appendNewVersionBtn = createNewQuoteVersion(quote.getNumber(), quote.getVersion(), quote, qViewerDialog);
+            Button closeBtn = createCloseBtn(qViewerDialog);
+            HorizontalLayout btnPanel = new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn, closeBtn);
+            btnPanel.setJustifyContentMode(JustifyContentMode.CENTER);
+            btnPanel.setAlignItems(Alignment.CENTER);
+            qViewerDialog.add(btnPanel);
+            qViewerDialog.setWidth("80%");
+            qViewerDialog.open();
         } catch (
                 Exception e) {
             Icon i = VaadinIcon.WARNING.create();
@@ -120,5 +96,46 @@ public class QuotesView extends VerticalLayout {
             new Dialog(vl).open();
             e.printStackTrace();
         }
+    }
+
+    private FileDownloadWrapper createDownloadWrapper(String serialNumber, Integer version, int id) {
+        Button downloadXlsxBtn = new Button("Download " + serialNumber + "-" + version + ".xlsx");
+        downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        FileDownloadWrapper wrapper = new FileDownloadWrapper(
+                new StreamResource(serialNumber + "-" + version + ".xlsx",
+                        () -> new ByteArrayInputStream(downloadService.downloadXlsx(id))));
+        wrapper.wrapComponent(downloadXlsxBtn);
+        return wrapper;
+    }
+
+    private Button createAsTemplateBtn(Quote quote, Dialog qViewerDialog) {
+        Button btn = new Button("Use as a template");
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_CONTRAST);
+        btn.addClickListener(click -> getUI().ifPresent(ui -> {
+            Quote templatedQuote = quoteService.createNewFromTemplate(quote);
+            ui.getSession().setAttribute(Quote.class, templatedQuote);
+            qViewerDialog.close();
+            ui.navigate(Compose.class);
+        }));
+        return btn;
+    }
+
+    private Button createNewQuoteVersion(String serialNumber, Integer version, Quote quote, Dialog qViewerDialog) {
+        Button btn = new Button("Create new version of " + serialNumber + "-" + version);
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(click -> getUI().ifPresent(ui -> {
+            Quote newVerQuote = quoteService.createNewVersion(quote);
+            ui.getSession().setAttribute(Quote.class, newVerQuote);
+            qViewerDialog.close();
+            ui.navigate(Compose.class);
+        }));
+        return btn;
+    }
+
+    private Button createCloseBtn(Dialog qViewerDialog) {
+        Button btn = new Button("Close");
+        btn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(click -> qViewerDialog.close());
+        return btn;
     }
 }

@@ -20,10 +20,10 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -172,18 +172,15 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         Button update = new Button("Get rates");
         update.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        BigDecimalField euro = new BigDecimalField();
-        BigDecimalField dollar = new BigDecimalField();
-        BigDecimalField yen = new BigDecimalField();
+        BigDecimalField euro = new BigDecimalField("₽/€");
+        BigDecimalField dollar = new BigDecimalField("₽/$");
+        BigDecimalField yen = new BigDecimalField("¥/₽");
         euro.setValue(euroRate);
         dollar.setValue(dollarRate);
         yen.setValue(yenRate);
-        NumberField conversionRate = new NumberField();
-        euro.setPrefixComponent(VaadinIcon.EURO.create());
+        NumberField conversionRate = new NumberField("Conversion rate");
         euro.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
-        dollar.setPrefixComponent(VaadinIcon.DOLLAR.create());
         dollar.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
-        yen.setPrefixComponent(new Span("¥"));
         yen.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
 
         addToClickableComponents(update, euro, dollar, yen, conversionRate);
@@ -229,7 +226,9 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         quoteBinder.forField(conversionRate).asRequired().bind(quote -> quote.getConversionRate().doubleValue(),
                 (quote1, conversionRate1) -> quote1.setConversionRate(BigDecimal.valueOf(conversionRate1)));
 
-        return new HorizontalLayout(update, conversionRate, euro, dollar, yen);
+        HorizontalLayout hl = new HorizontalLayout(update, conversionRate, euro, dollar, yen);
+        hl.setAlignItems(Alignment.END);
+        return hl;
     }
 
     private Accordion getInventoryLookupAccordeon() {
@@ -265,9 +264,10 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
         totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
-        totalWithDiscountString.setText("TOTAL (discounted " + discount + "%) "
-                + currencyFormatter.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount)));
-        totalWithDiscountString.setVisible(discount > 0);
+        totalWithDiscountString.setText(
+                (discount < 0 ? "TOTAL (with premium " + Math.abs(discount) + "%) " : "TOTAL (discounted " + discount + "%) ")
+                        + currencyFormatter.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount)));
+        totalWithDiscountString.setVisible(discount != 0);
 
         includingVatValue.setText("(incl. VAT " + vat + "% " +
                 currencyFormatter.formatMoney(moneyMathService.calculateIncludedTax(
@@ -340,26 +340,17 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
 
-        Div text = new Div(new Span("Validation failed"));
-        Button ok = new Button("OK");
-        ok.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Dialog errorDialog = new Dialog(text, ok);
-        ok.addClickListener(c -> errorDialog.close());
-        errorDialog.setDraggable(true);
-        errorDialog.setModal(true);
-        errorDialog.setResizable(false);
-
-
         addToClickableComponents(discountField, vatField, postQuote, currencyCombo);
 
         discountField.setValue(0);
         discountField.setVisible(false);
         discountField.setHasControls(true);
-        discountField.setMin(0);
+        discountField.setMin(-99);
         discountField.setMax(99);
         discountField.setLabel("Discount, %");
         discountField.addValueChangeListener(c -> {
+            if (c.getValue() < 0) discountField.setLabel("Premium, %");
+            else discountField.setLabel("Discount, %");
             discount = c.getValue();
             refreshTotal();
         });
@@ -409,10 +400,21 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
                 disableClickableComponents();
             } else {
-                errorDialog.open();
+                showValidationErrorDialog();
             }
         });
         return layout;
+    }
+
+    private void showValidationErrorDialog() {
+        Icon i = VaadinIcon.WARNING.create();
+        i.setColor("Red");
+        i.setSize("50px");
+        VerticalLayout vl = new VerticalLayout(i);
+        if (!quoteBinder.validate().isOk()) vl.add(new Span("Please fill marked fields"));
+        if (!gridsNotEmpty()) vl.add(new Span("Some sections are empty"));
+        vl.setAlignItems(Alignment.CENTER);
+        new Dialog(vl).open();
     }
 
     private boolean gridsNotEmpty() {

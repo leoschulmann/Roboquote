@@ -41,7 +41,7 @@ public class QuoteViewer extends VerticalLayout {
                     + currencyService.formatMoney(sect.getTotalDiscounted()));
 
             if (sect.getDiscount() != 0) {
-                alignRight(subtotalSpan);
+                alignRightAndStrikethrough(subtotalSpan);
                 alignRightAndBolden(subtotalDiscountedSpan);
                 add(subtotalSpan, subtotalDiscountedSpan);
             } else {
@@ -60,12 +60,12 @@ public class QuoteViewer extends VerticalLayout {
         Span totalSpan = new Span("TOTAL: " + currencyService.formatMoney(sum));
         Span discountedTotalSpan = new Span("TOTAL (" +
                 (q.getDiscount() < 0 ? "with premium +" : "with discount -") +
-                q.getDiscount() + "%): " + currencyService.formatMoney(discounted));
+                Math.abs(q.getDiscount()) + "%): " + currencyService.formatMoney(discounted));
         Span vatSpan = new Span("(incl. VAT " + q.getVat() + "%: " + currencyService.formatMoney(vat) + ")");
 
         add(totalSpan);
         if (q.getDiscount() != 0) {
-            alignRight(totalSpan);
+            alignRightAndStrikethrough(totalSpan);
             alignRight(vatSpan);
             alignRightAndBolden(discountedTotalSpan);
             add(totalSpan, discountedTotalSpan, vatSpan);
@@ -94,6 +94,10 @@ public class QuoteViewer extends VerticalLayout {
 
     private void alignRightAndBolden(Span span) {
         span.getElement().getStyle().set("margin-left", "auto").set("font-weight", "bold");
+    }
+
+    private void alignRightAndStrikethrough(Span span) {
+        span.getElement().getStyle().set("margin-left", "auto").set("text-decoration", "line-through");
     }
 
     private void alignRight(Span span) {
