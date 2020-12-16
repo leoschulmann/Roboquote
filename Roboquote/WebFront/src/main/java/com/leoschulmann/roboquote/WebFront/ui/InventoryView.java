@@ -10,26 +10,29 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import org.javamoney.moneta.Money;
+import org.vaadin.klaudeta.PaginatedGrid;
 
 import java.math.BigDecimal;
+
+import static com.vaadin.flow.component.grid.GridVariant.*;
 
 @Route(value = "inventory", layout = MainLayout.class)
 public class InventoryView extends VerticalLayout {
     private final ItemService itemService;
     private final CurrencyFormatService currencyFormatService;
-    private Grid<Item> grid;
+    private PaginatedGrid<Item> grid;
     private InventoryForm form;
     private Dialog dialog;
 
     public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService) {
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
-        drawGrid();
+        grid = drawGrid();
 
         form = new InventoryForm();
         dialog = new Dialog(form);
@@ -45,20 +48,40 @@ public class InventoryView extends VerticalLayout {
         updateList();
     }
 
-    private Grid<Item> drawGrid() {
-        grid = new Grid<>(Item.class);
-        setSizeFull();
+    private PaginatedGrid<Item> drawGrid() {
+        grid = new PaginatedGrid<>(Item.class);
         grid.removeAllColumns();
-        grid.addColumns("brand", "partno", "nameRus", "nameEng");
-        grid.addColumn(item -> currencyFormatService.formatMoney(item.getSellingPrice())).setHeader("Selling Price");
-        grid.addColumns("margin", "modified");
-        grid.addComponentColumn(item -> item.isOverridden() ?
-                VaadinIcon.CHECK_SQUARE_O.create() : VaadinIcon.THIN_SQUARE.create()).setHeader("Override");
-
-        grid.getColumns().forEach(col -> col.setAutoWidth(true));
+        grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        grid.addColumn(Item::getId).setHeader("Id").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Item::getBrand).setHeader("Brand").setKey("brand").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Item::getPartno).setHeader("Part No").setKey("partno").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(item -> trim(item.getNameRus(), 75)).setHeader("Name RUS").setSortable(true).setResizable(true).setFlexGrow(1);
+        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
+        grid.addColumn(i -> currencyFormatService.formatMoney(
+                i.getSellingPrice() == null ? Money.of(0, "EUR") : i.getSellingPrice()))
+                .setHeader("Selling price").setSortable(true)
+                .setComparator(i -> i.getSellingPrice() == null ? 0. : i.getSellingPrice().getNumber().doubleValue())
+                .setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Item::getMargin).setHeader("Margin").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Item::getModified).setHeader("Modified").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addComponentColumn(i -> i.isOverridden() ? getIcon(true) : getIcon(false)).setHeader("Override").setSortable(true)
+                .setAutoWidth(true).setFlexGrow(0);
 
         grid.asSingleSelect().addValueChangeListener(event -> editItem(event.getValue()));
+        grid.setPageSize(10);
+        grid.setPaginatorSize(5);
         return grid;
+    }
+
+    private String trim(String str, int limit) {
+        return str.length() > limit ? str.substring(0, limit) + "[...]" : str;
+    }
+
+    private Icon getIcon(boolean boo) {
+        String size = "15px";
+        Icon i = boo ? VaadinIcon.CHECK_SQUARE_O.create() : VaadinIcon.THIN_SQUARE.create();
+        i.setSize(size);
+        return i;
     }
 
     private Button createNewItem() {

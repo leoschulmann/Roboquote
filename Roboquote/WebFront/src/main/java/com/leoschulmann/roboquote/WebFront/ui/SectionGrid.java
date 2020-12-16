@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.vaadin.flow.component.grid.GridVariant.*;
+
 public class SectionGrid extends Grid<ItemPosition> {
     private final QuoteSection quoteSection;
     private final Footer footer;
@@ -32,22 +34,14 @@ public class SectionGrid extends Grid<ItemPosition> {
         setItems(quoteSection.getPositions());
 
         removeAllColumns();
-        addColumn("name").setHeader("Item name").setAutoWidth(true);
-        addComponentColumn(this::getQuantityField).setKey("qty").setHeader("Quantity");
-        addColumn("partNo").setHeader("Part No");
-        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setKey("price");
-        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum()))
-                .setKey("total")
-                .setHeader("Sum");
-        addComponentColumn(this::createDeleteButton).setKey("delete");
+        addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        addColumn(ItemPosition::getName).setHeader("Item name").setSortable(false).setFlexGrow(1);
+        addComponentColumn(this::getQuantityField).setHeader("Quantity").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+        addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setWidth("8em").setFlexGrow(0);
+        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setWidth("8em").setFlexGrow(0);
+        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum").setWidth("8em").setFlexGrow(0);
+        addComponentColumn(this::createDeleteButton).setSortable(false).setAutoWidth(true).setFlexGrow(0);
         setHeightByRows(true);
-        getColumnByKey("name").setAutoWidth(true);
-        getColumnByKey("total").setAutoWidth(true);
-        getColumnByKey("price").setAutoWidth(true);
-        getColumnByKey("qty").setAutoWidth(true);
-        getColumnByKey("partNo").setAutoWidth(true);
-        getColumnByKey("delete").setAutoWidth(true);
-        recalculateColumnWidths();
         footer = new Footer(this, currencyFormatter);
     }
 

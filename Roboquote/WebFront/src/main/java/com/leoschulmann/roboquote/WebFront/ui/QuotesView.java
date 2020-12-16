@@ -8,6 +8,7 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -25,10 +26,10 @@ import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.vaadin.flow.component.grid.GridVariant.*;
+
 @Route(value = "quotes", layout = MainLayout.class)
 public class QuotesView extends VerticalLayout {
-    private PaginatedGrid<Quote> grid;
-
     private final QuoteService quoteService;
     private final CurrencyFormatService currencyFormatService;
     private final DownloadService downloadService;
@@ -40,34 +41,37 @@ public class QuotesView extends VerticalLayout {
         this.currencyFormatService = currencyFormatService;
         this.downloadService = downloadService;
         this.moneyMathService = moneyMathService;
-        createGrid();
-        updateGrid();
+        Grid<Quote> grid = createGrid();
+        updateGrid(grid);
         add(grid);
         grid.addItemClickListener(event -> editQuote(event.getItem()));
     }
 
-    private void createGrid() {
-        grid = new PaginatedGrid<>(Quote.class);
-        setSizeFull();
+    private Grid<Quote> createGrid() {
+        PaginatedGrid<Quote> grid = new PaginatedGrid<>(Quote.class);
+        grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
         grid.removeAllColumns();
-        grid.addColumns("number", "version", "customer", "dealer", "created");
-        grid.addColumn(q -> {
+        grid.addColumn(Quote::getCreated).setHeader("Created").setSortable(true).setKey("created").setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(q -> q.getNumber() + "-" + q.getVersion()).setHeader("#").setSortable(true).setKey("serialNum").setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Quote::getCustomer).setHeader("Customer").setSortable(true).setResizable(true).setFlexGrow(1);
+        grid.addColumn(Quote::getDealer).setHeader("Dealer").setSortable(true).setFlexGrow(1);
+        grid.addColumn(q -> currencyFormatService.formatMoney(q.getFinalPrice() == null ?
+                Money.of(BigDecimal.ZERO, "EUR") : q.getFinalPrice()))
+                .setHeader("Quote Price")
+                .setSortable(true).setComparator(q -> q.getFinalPrice() == null ? 0. : q.getFinalPrice().getNumber().doubleValue())
+                .setAutoWidth(true).setFlexGrow(0);
 
-            Money m = q.getFinalPrice();
-
-            return currencyFormatService.formatMoney(m == null ? Money.of(BigDecimal.ZERO, "EUR") : m);
-        }).setHeader("Quote Price");
         grid.setMultiSort(true);
 
         grid.setPageSize(15);
         grid.setPaginatorSize(5);
         GridSortOrder<Quote> byCreated = new GridSortOrder<>(grid.getColumnByKey("created"), SortDirection.DESCENDING);
-        GridSortOrder<Quote> byNum = new GridSortOrder<>(grid.getColumnByKey("number"), SortDirection.DESCENDING);
-        GridSortOrder<Quote> byVer = new GridSortOrder<>(grid.getColumnByKey("version"), SortDirection.DESCENDING);
-        grid.sort(List.of(byCreated, byNum, byVer));
+        GridSortOrder<Quote> bySerial = new GridSortOrder<>(grid.getColumnByKey("serialNum"), SortDirection.DESCENDING);
+        grid.sort(List.of(byCreated, bySerial));
+        return grid;
     }
 
-    private void updateGrid() {
+    private void updateGrid(Grid<Quote> grid) {
         grid.setItems(quoteService.findAll());
     }
 

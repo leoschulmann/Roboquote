@@ -14,6 +14,8 @@ import javax.money.MonetaryAmount;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
+import static com.vaadin.flow.component.grid.GridVariant.*;
+
 public class QuoteViewer extends VerticalLayout {
     private CurrencyFormatService currencyService;
 
@@ -78,17 +80,18 @@ public class QuoteViewer extends VerticalLayout {
 
     private Grid<ItemPosition> placeSection(QuoteSection sect) {
         Grid<ItemPosition> grid = new Grid<>(ItemPosition.class);
+        grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
         grid.removeAllColumns();
-        grid.addColumn("itemId");
-        grid.addColumn("name");
-        grid.addColumn("partNo");
-        grid.addColumn("qty");
-        grid.addColumn(item -> currencyService.formatMoney(item.getSellingPrice())).setHeader("Price");
-        grid.addColumn(item -> currencyService.formatMoney(item.getSellingSum())).setHeader("Sum");
-        //todo fix word wrap
+
+        grid.addColumn(ItemPosition::getItemId).setHeader("Id").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ItemPosition::getName).setHeader("Name").setSortable(false);
+        grid.addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ItemPosition::getQty).setHeader("Qty").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ip -> currencyService.formatMoney(ip.getSellingPrice())).setHeader("Price").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ip -> currencyService.formatMoney(ip.getSellingSum())).setHeader("Sum").setSortable(false).setAutoWidth(true).setFlexGrow(0);
+
         grid.setItems(sect.getPositions());
         grid.setHeightByRows(true);
-        grid.getColumns().forEach(col -> col.setSortable(false));
         return grid;
     }
 
