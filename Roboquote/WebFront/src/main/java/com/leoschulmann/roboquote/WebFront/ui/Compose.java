@@ -53,19 +53,19 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private CurrencyFormatService currencyFormatter;
     private InventoryItemToItemPositionConverter converter;
     private QuoteSectionHandler sectionHandler;
-    private QuoteAssembler assembler;
     private DownloadService downloadService;
     private CurrencyRatesService currencyRatesService;
-    private MoneyMathService moneyMathService;
+    private QuoteService quoteService;
+    private StringFormattingService stringFormattingService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
     private ComboBox<SectionGrid> avaiableGridsBox;
     private Binder<Quote> quoteBinder = new Binder<>(Quote.class);
     private Quote quote;
-    private final H4 totalString = new H4();
-    private final H4 totalWithDiscountString = new H4();
-    private final H5 includingVatValue = new H5();
+    private final Span totalString;
+    private final Span totalWithDiscountString;
+    private final Span includingVatValue;
     private Integer discount = 0;
     private Integer vat = 20;
     private Set<HasEnabled> clickableComponents;
@@ -80,21 +80,27 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                    CurrencyFormatService currencyFormatter,
                    InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
-                   QuoteAssembler assembler, DownloadService downloadService,
+                   DownloadService downloadService,
                    CurrencyRatesService currencyRatesService,
-                   MoneyMathService moneyMathService) {
+                   QuoteService quoteService,
+                   StringFormattingService stringFormattingService) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
         this.converter = converter;
         this.sectionHandler = sectionHandler;
-        this.assembler = assembler;
         this.downloadService = downloadService;
         this.currencyRatesService = currencyRatesService;
-        this.moneyMathService = moneyMathService;
+        this.quoteService = quoteService;
+        this.stringFormattingService = stringFormattingService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
-
+        totalString = new Span();
+        totalString.getElement().getStyle().set("margin-left", "auto");
+        totalWithDiscountString = new Span();
+        totalWithDiscountString.getElement().getStyle().set("margin-left", "auto").set("font-weight", "bold");
+        includingVatValue = new Span();
+        includingVatValue.getElement().getStyle().set("margin-left", "auto");
         add(getInventoryLookupAccordeon());
         gridsBlock = createGridsBlock();
 
@@ -110,7 +116,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             quote = Objects.requireNonNullElseGet(ui.getSession().getAttribute(Quote.class),
                     () -> {
                         //empty quote with default rates, vat, discount and one empty quote section
-                        Quote q =  new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
+                        Quote q = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
                                 BigDecimal.ONE, BigDecimal.valueOf(2));
                         q.addSections(new QuoteSection("New quote section"));
                         return q;
@@ -263,16 +269,17 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
     private void refreshTotal() {
         MonetaryAmount am = getTotalMoney();
-        totalString.setText("TOTAL " + currencyFormatter.formatMoney(am));
-        totalWithDiscountString.setText(
-                (discount < 0 ? "TOTAL (with premium " + Math.abs(discount) + "%) " : "TOTAL (discounted " + discount + "%) ")
-                        + currencyFormatter.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount)));
+        totalString.setText(stringFormattingService.getCombined(am));
+        totalWithDiscountString.setText(stringFormattingService.getCombinedWithDiscountOrMarkup(am, discount));
+        includingVatValue.setText(stringFormattingService.getVat(am, discount, vat));
+
         totalWithDiscountString.setVisible(discount != 0);
 
-        includingVatValue.setText("(incl. VAT " + vat + "% " +
-                currencyFormatter.formatMoney(moneyMathService.calculateIncludedTax(
-                        moneyMathService.calculateDiscountedPrice(am, discount), vat))
-                + ")");
+        if (discount == 0) {
+            totalString.getElement().getStyle().set("font-weight", "bold").remove("text-decoration");
+        } else {
+            totalString.getElement().getStyle().set("text-decoration", "line-through").remove("font-weight");
+        }
     }
 
     private void refreshSectionSubtotal(String currency, QuoteSection qs) {
@@ -298,52 +305,19 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     }
 
     private VerticalLayout createFinishBlock() {
-        VerticalLayout layout = new VerticalLayout();
-        HorizontalLayout controlSublayout = new HorizontalLayout();
-        TextField gridNameInputField = new TextField();  //todo add validation (non-empty, non-duplicating, etc)
-        Button addNewGridButton = new Button(VaadinIcon.PLUS.create());
-        addNewGridButton.setEnabled(false);
-        gridNameInputField.addValueChangeListener(event -> addNewGridButton.setEnabled(!event.getValue().isBlank()));
-
-        layout.setWidthFull();
-        controlSublayout.setWidthFull();
-        gridNameInputField.setPlaceholder("Add new section ");
-        gridNameInputField.setWidth("50%");
-        addNewGridButton.addClickListener(click -> {
-            QuoteSection qs = new QuoteSection(gridNameInputField.getValue().trim());
-            quote.addSections(qs);  //todo make with service ?..
-            addNewGrid(qs);
-            gridNameInputField.clear();
-        });
-
-        addToClickableComponents(gridNameInputField, addNewGridButton);
-        addNewGridButton.setWidth("10%");
-
-        controlSublayout.add(gridNameInputField, addNewGridButton);
-        controlSublayout.setAlignItems(Alignment.END);
-
-        totalWithDiscountString.setVisible(false);
-        add(controlSublayout, totalString, totalWithDiscountString, includingVatValue, createFinishControlElements());
-        return layout;
-    }
-
-    private HorizontalLayout createFinishControlElements() {
         IntegerField discountField = new IntegerField();
-        Button showDiscountFieldButton = new Button("%");
         IntegerField vatField = new IntegerField();
-        Button showVatFieldButton = new Button(VaadinIcon.PIGGY_BANK_COIN.create());
-        Button showCurrencyComboButton = new Button(VaadinIcon.DOLLAR.create());
         ComboBox<String> currencyCombo = new ComboBox<>("Currency", "EUR", "USD", "RUB", "JPY");
+        Button addNewSectionBtn = new Button("Add new section");
         Button postQuote = new Button("Save to DB");
         Button dlButt = new Button("Download .xlsx");
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
 
-        addToClickableComponents(discountField, vatField, postQuote, currencyCombo);
+        addToClickableComponents(discountField, vatField, postQuote, currencyCombo, addNewSectionBtn);
 
         discountField.setValue(0);
-        discountField.setVisible(false);
         discountField.setHasControls(true);
         discountField.setMin(-99);
         discountField.setMax(99);
@@ -354,10 +328,8 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             discount = c.getValue();
             refreshTotal();
         });
-        showDiscountFieldButton.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
 
         vatField.setValue(20);
-        vatField.setVisible(false);
         vatField.setHasControls(true);
         vatField.setMin(0);
         vatField.setMax(99);
@@ -366,30 +338,24 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             vat = c.getValue();
             refreshTotal();
         });
-        showVatFieldButton.addClickListener(c -> vatField.setVisible(!vatField.isVisible()));
 
         currencyCombo.setValue(currency);
-        currencyCombo.setVisible(false);
         currencyCombo.addValueChangeListener(event -> {
             currency = event.getValue();
             refreshAll();
             fireEvent(new UniversalSectionChangedEvent(this));
         });
-        showCurrencyComboButton.addClickListener(c -> currencyCombo.setVisible(!currencyCombo.isVisible()));
 
         wrapper.wrapComponent(dlButt);
         wrapper.setVisible(false);
+        quoteBinder.forField(discountField).asRequired().bind(Quote::getDiscount, Quote::setDiscount);
+        quoteBinder.forField(vatField).asRequired().bind(Quote::getVat, Quote::setVat);
 
-        quoteBinder.bind(discountField, Quote::getDiscount, Quote::setDiscount);
-        quoteBinder.bind(vatField, Quote::getVat, Quote::setVat);
+        HorizontalLayout buttons = new HorizontalLayout(discountField, vatField, currencyCombo, addNewSectionBtn,
+                postQuote, wrapper);
+        buttons.setAlignItems(Alignment.BASELINE);
 
-        HorizontalLayout layout = new HorizontalLayout(
-                discountField, showDiscountFieldButton, vatField, showVatFieldButton,
-                currencyCombo, showCurrencyComboButton, postQuote, wrapper);
-
-        layout.setAlignItems(Alignment.END);
-        postQuote.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        postQuote.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        postQuote.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         postQuote.addClickListener(click -> {
             if (quoteBinder.validate().isOk() && gridsNotEmpty()) {
                 int id = postToDbAndGetID();
@@ -403,7 +369,27 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                 showValidationErrorDialog();
             }
         });
-        return layout;
+
+        addNewSectionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addNewSectionBtn.addClickListener(c -> {
+            TextField tf = new TextField();
+            Button addBtn = new Button("Add");
+            addBtn.setEnabled(false);
+            tf.setWidth("32em");
+            tf.addValueChangeListener(event -> addBtn.setEnabled(!event.getValue().isBlank()));
+            addBtn.setWidthFull();
+            addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Dialog dialog = new Dialog(new VerticalLayout(tf, addBtn));
+            addBtn.addClickListener(click -> {
+                QuoteSection qs = new QuoteSection(tf.getValue().trim());
+                quoteService.addSections(quote, qs);
+                addNewGrid(qs);
+                tf.clear();
+                dialog.close();
+            });
+            dialog.open();
+        });
+        return new VerticalLayout(totalString, totalWithDiscountString, includingVatValue, buttons);
     }
 
     private void showValidationErrorDialog() {
@@ -425,7 +411,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         try {
             quoteBinder.writeBean(quote);
             quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
-            return assembler.postNew(quote);
+            return quoteService.postNew(quote);
         } catch (ValidationException e) {
             e.printStackTrace();
             return -1;
@@ -437,7 +423,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         accordion.setWidthFull();
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
-        SectionGrid sg = new SectionGrid(quoteSection, currencyFormatter);
+        SectionGrid sg = new SectionGrid(quoteSection, currencyFormatter, stringFormattingService);
 
         sg.addListener(ComposeDeleteItemPositionEvent.class, this::itemPositionDeleted);
         sg.addListener(ComposeItemPositionQuantityEvent.class, this::itemPositionQuantityChanged);
@@ -478,8 +464,8 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         discountField.setValue(0);
         discountField.setVisible(false);
         discountField.setHasControls(true);
-        discountField.setMin(0);
-        discountField.setMax(100);
+        discountField.setMin(-99);
+        discountField.setMax(99);
         discountField.addValueChangeListener(c -> {
             sectionHandler.setSectionDiscount(grid.getQuoteSection(), c.getValue());
             refreshSectionSubtotal(currency, grid.getQuoteSection());
