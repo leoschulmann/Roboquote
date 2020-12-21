@@ -32,9 +32,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .and().authorizeRequests()
                 .antMatchers("/register").permitAll()
                 .requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
-
                 .anyRequest().authenticated()
-
                 .and().formLogin()
                 .loginPage(LOGIN_URL).permitAll()
                 .loginProcessingUrl(LOGIN_PROCESSING_URL)
@@ -47,6 +45,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
+                .eraseCredentials(false)  //deleting might break credentials forwarding to another services
                 .userDetailsService(userDetailsService).passwordEncoder(new BCryptPasswordEncoder());
     }
 

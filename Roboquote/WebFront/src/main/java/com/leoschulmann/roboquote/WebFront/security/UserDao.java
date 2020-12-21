@@ -26,12 +26,11 @@ public class UserDao {
         Query query = em.createQuery("SELECT u FROM User u WHERE u.username = :param", User.class)
                 .setParameter("param", user);
         List<User> list = query.getResultList();
-        Optional<User> found = Optional.ofNullable(list.isEmpty() ? null : list.get(0));
-        return found;
+        return Optional.ofNullable(list.isEmpty() ? null : list.get(0));
     }
 
     public List<User> getAll() {
-        Query query = em.createQuery("select u from User u");
+        Query query = em.createQuery("SELECT u FROM User u");
         return query.getResultList();
     }
 
@@ -42,8 +41,8 @@ public class UserDao {
 
     @Transactional
     public void update(User user, String[] params) {
-        user.setPassword(Objects.requireNonNull(params[0], "Name cannot be null"));
-        user.setUsername(Objects.requireNonNull(params[1], "Email cannot be null"));
+        user.setUsername(Objects.requireNonNull(params[1], "Username cannot be null"));
+        user.setPassword(Objects.requireNonNull(params[0], "Password cannot be null"));
         em.persist(user);
     }
 

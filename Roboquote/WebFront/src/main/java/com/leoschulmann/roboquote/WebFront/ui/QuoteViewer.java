@@ -2,6 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.MoneyMathService;
+import com.leoschulmann.roboquote.WebFront.components.StringFormattingService;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
@@ -19,7 +20,8 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 public class QuoteViewer extends VerticalLayout {
     private CurrencyFormatService currencyService;
 
-    public QuoteViewer(Quote q, CurrencyFormatService currencyService, MoneyMathService moneyMathService) {
+    public QuoteViewer(Quote q, CurrencyFormatService currencyService, MoneyMathService moneyMathService,
+                       StringFormattingService stringFormatter) {
         this.currencyService = currencyService;
         add(new Span("id: " + q.getId() + ";\tQuote No: " + q.getNumber() + "-" + q.getVersion() +
                 "\t(" + q.getFinalPrice().getCurrency().getCurrencyCode() + ")"));
@@ -38,9 +40,8 @@ public class QuoteViewer extends VerticalLayout {
         q.getSections().forEach(sect -> {
             add(new Span(sect.getName()));
             add(placeSection(sect));
-            Span subtotalSpan = new Span("Subtotal " + sect.getName() + " " + currencyService.formatMoney(sect.getTotal()));
-            Span subtotalDiscountedSpan = new Span("Subtotal " + sect.getName() + " (incl. discount " + sect.getDiscount() + "%) "
-                    + currencyService.formatMoney(sect.getTotalDiscounted()));
+            Span subtotalSpan = new Span(stringFormatter.getSubtotal(sect.getName(), sect.getTotal()));
+            Span subtotalDiscountedSpan = new Span(stringFormatter.getSubtotalDisc(sect.getName(), sect.getTotal(), sect.getDiscount()));
 
             if (sect.getDiscount() != 0) {
                 alignRightAndStrikethrough(subtotalSpan);
@@ -56,14 +57,10 @@ public class QuoteViewer extends VerticalLayout {
 
         MonetaryAmount sum = moneyMathService.getSum(q.getSections().stream().
                 map(QuoteSection::getTotalDiscounted).collect(Collectors.toList()));
-        MonetaryAmount discounted = moneyMathService.calculateDiscountedPrice(sum, q.getDiscount());
-        MonetaryAmount vat = moneyMathService.calculateIncludedTax(discounted, q.getVat());
 
-        Span totalSpan = new Span("TOTAL: " + currencyService.formatMoney(sum));
-        Span discountedTotalSpan = new Span("TOTAL (" +
-                (q.getDiscount() < 0 ? "with premium +" : "with discount -") +
-                Math.abs(q.getDiscount()) + "%): " + currencyService.formatMoney(discounted));
-        Span vatSpan = new Span("(incl. VAT " + q.getVat() + "%: " + currencyService.formatMoney(vat) + ")");
+        Span totalSpan = new Span(stringFormatter.getCombined(sum));
+        Span discountedTotalSpan = new Span(stringFormatter.getCombinedWithDiscountOrMarkup(sum, q.getDiscount()));
+        Span vatSpan = new Span(stringFormatter.getVat(sum, q.getDiscount(), q.getVat()));
 
         add(totalSpan);
         if (q.getDiscount() != 0) {

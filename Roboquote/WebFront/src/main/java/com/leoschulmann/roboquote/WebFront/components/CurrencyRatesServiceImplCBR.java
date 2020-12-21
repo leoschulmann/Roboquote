@@ -101,4 +101,17 @@ public class CurrencyRatesServiceImplCBR implements CurrencyRatesService {
     private String getTagValue(Element e, String tag) {
         return e.getElementsByTagName(tag).item(0).getTextContent();
     }
+
+    //for testing only
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setRubEurRate(BigDecimal rubEurRate) {
+        this.rubEurRate = rubEurRate;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
 }

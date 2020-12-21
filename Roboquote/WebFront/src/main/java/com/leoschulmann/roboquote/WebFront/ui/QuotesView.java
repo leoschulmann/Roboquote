@@ -1,9 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
-import com.leoschulmann.roboquote.WebFront.components.DownloadService;
-import com.leoschulmann.roboquote.WebFront.components.MoneyMathService;
-import com.leoschulmann.roboquote.WebFront.components.QuoteService;
+import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -34,13 +31,16 @@ public class QuotesView extends VerticalLayout {
     private final CurrencyFormatService currencyFormatService;
     private final DownloadService downloadService;
     private final MoneyMathService moneyMathService;
+    private final StringFormattingService stringFormattingService;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
-                      DownloadService downloadService, MoneyMathService moneyMathService) {
+                      DownloadService downloadService, MoneyMathService moneyMathService,
+                      StringFormattingService stringFormattingService) {
         this.quoteService = quoteService;
         this.currencyFormatService = currencyFormatService;
         this.downloadService = downloadService;
         this.moneyMathService = moneyMathService;
+        this.stringFormattingService = stringFormattingService;
         Grid<Quote> grid = createGrid();
         updateGrid(grid);
         add(grid);
@@ -78,7 +78,7 @@ public class QuotesView extends VerticalLayout {
     private void editQuote(Quote quote) {
         try {
             Dialog qViewerDialog = new Dialog(
-                    new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService)));
+                    new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService)));
 
             FileDownloadWrapper downloadXlsxWrapper = createDownloadWrapper(quote.getNumber(), quote.getVersion(), quote.getId());
             Button asTemplateBtn = createAsTemplateBtn(quote, qViewerDialog);

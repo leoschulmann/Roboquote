@@ -14,8 +14,8 @@ import java.util.Optional;
 public class Greeting extends VerticalLayout {
 
     public Greeting(UserDao userDao) {
-        String pass;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String pass = authentication.getCredentials().toString();
         String login = authentication.getName();
 
         Optional<User> o = userDao.getByUserName(login);
@@ -23,5 +23,6 @@ public class Greeting extends VerticalLayout {
         String role = o.isPresent() ? o.get().getRole() : "0";
 
         add(new H2("Hello, " + role + " " + login + "!"));
+        add(pass);
     }
 }

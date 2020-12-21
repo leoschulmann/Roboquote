@@ -20,8 +20,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
-import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -36,7 +34,6 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
 import org.vaadin.olli.FileDownloadWrapper;
 
 import javax.money.MonetaryAmount;
@@ -45,6 +42,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Route(value = "compose", layout = MainLayout.class)
@@ -57,6 +55,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private CurrencyRatesService currencyRatesService;
     private QuoteService quoteService;
     private StringFormattingService stringFormattingService;
+    private MoneyMathService moneyMathService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -83,7 +82,8 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                    DownloadService downloadService,
                    CurrencyRatesService currencyRatesService,
                    QuoteService quoteService,
-                   StringFormattingService stringFormattingService) {
+                   StringFormattingService stringFormattingService,
+                   MoneyMathService moneyMathService) {
 
         this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
@@ -93,6 +93,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         this.currencyRatesService = currencyRatesService;
         this.quoteService = quoteService;
         this.stringFormattingService = stringFormattingService;
+        this.moneyMathService = moneyMathService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
         totalString = new Span();
@@ -294,10 +295,10 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     }
 
     private MonetaryAmount getTotalMoney() {
-        return gridList.stream()
-                .map(gr -> gr.getQuoteSection().getTotalDiscounted())
-                .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(0, currency));
+
+        return moneyMathService.getSum(gridList.stream()
+                .map(grid -> grid.getQuoteSection().getTotalDiscounted())
+                .collect(Collectors.toList()));
     }
 
     private VerticalLayout createGridsBlock() {
