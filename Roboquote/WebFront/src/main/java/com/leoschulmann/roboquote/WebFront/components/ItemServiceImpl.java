@@ -1,6 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,9 +21,11 @@ public class ItemServiceImpl implements ItemService {
     @Value("${itemservice.url}")
     String url;
 
+    @Autowired
+    RestTemplate restTemplate;
+
     @Override
     public List<Item> findAll() {
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Item[]> responseEntity = restTemplate.getForEntity(url, Item[].class);
         if (responseEntity.getBody() != null) {
             return Arrays.asList(responseEntity.getBody());
@@ -33,21 +36,18 @@ public class ItemServiceImpl implements ItemService {
     public void saveItem(Item item) {
         item.setModified(LocalDate.now());
         item.setCreated(LocalDate.now());
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Item> responseEntity = restTemplate.postForEntity(url, item, Item.class);
     }
 
     @Override
     public void deleteItem(Item item) {
         int id = item.getId();
-        RestTemplate restTemplate = new RestTemplate();
         restTemplate.delete(url + id);
     }
 
     @Override
     public void updateItem(Item item) {
         item.setModified(LocalDate.now());
-        RestTemplate restTemplate = new RestTemplate();
         HttpEntity<Item> httpEntity = new HttpEntity<>(item, new HttpHeaders());
         ResponseEntity<Item> responseEntity = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Item.class);
     }

@@ -8,6 +8,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
 import org.javamoney.moneta.Money;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -17,6 +18,13 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
 
     @Value("${itemservice.url}")
     String url;
+
+    @Autowired
+    public void setRestTemplate(RestTemplate rt) {
+        this.restTemplate = rt;
+    }
+
+    private RestTemplate restTemplate;
 
     static ObjectMapper om = new ObjectMapper(new JsonFactory());
 
@@ -31,7 +39,6 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
 
     @Override
     public ItemPosition createItemPositionByItemId(Integer inventoryId, Integer qty) {
-        RestTemplate restTemplate = new RestTemplate();
         String re = restTemplate.getForObject(url + inventoryId, String.class);
 
         try {
