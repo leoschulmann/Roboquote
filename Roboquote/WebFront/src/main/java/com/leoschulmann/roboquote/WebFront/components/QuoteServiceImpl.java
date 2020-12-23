@@ -5,6 +5,9 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -28,6 +31,9 @@ public class QuoteServiceImpl implements QuoteService {
     @Autowired
     RestTemplate restTemplate;
 
+    @Autowired
+    AuthService authService;
+
     final InventoryItemToItemPositionConverter itemConverter;
 
     public QuoteServiceImpl(InventoryItemToItemPositionConverter itemConverter) {
@@ -37,7 +43,11 @@ public class QuoteServiceImpl implements QuoteService {
     @Override
     public List<Quote> findAll() {
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Quote[]> responseEntity = restTemplate.getForEntity(url, Quote[].class);
+        HttpHeaders headers = new HttpHeaders();
+        String[] creds = authService.getAuthData();
+        headers.add(creds[0], creds[1]);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        ResponseEntity<Quote[]> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, Quote[].class);
         if (responseEntity.getBody() != null) {
             return Arrays.asList(responseEntity.getBody());
         } else return new ArrayList<>();

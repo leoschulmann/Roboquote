@@ -45,7 +45,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
-                .eraseCredentials(false)  //deleting might break credentials forwarding to another services
+                .eraseCredentials(false)  //deleting will break credentials forwarding to another services
                 .userDetailsService(userDetailsService).passwordEncoder(new BCryptPasswordEncoder());
     }
 
