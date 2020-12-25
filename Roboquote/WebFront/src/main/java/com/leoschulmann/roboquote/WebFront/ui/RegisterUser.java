@@ -1,6 +1,7 @@
-package com.leoschulmann.roboquote.WebFront.security;
+package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.ui.MainLayout;
+import com.leoschulmann.roboquote.WebFront.security.User;
+import com.leoschulmann.roboquote.WebFront.security.UserDao;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;

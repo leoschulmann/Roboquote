@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
@@ -24,32 +25,43 @@ public class ItemServiceImpl implements ItemService {
     @Autowired
     RestTemplate restTemplate;
 
+    @Autowired
+    AuthService authService;
+
     @Override
     public List<Item> findAll() {
-        ResponseEntity<Item[]> responseEntity = restTemplate.getForEntity(url, Item[].class);
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        ResponseEntity<Item[]> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, Item[].class);
         if (responseEntity.getBody() != null) {
             return Arrays.asList(responseEntity.getBody());
         } else return new ArrayList<>();
     }
 
+    @Transactional
     @Override
     public void saveItem(Item item) {
         item.setModified(LocalDate.now());
         item.setCreated(LocalDate.now());
-        ResponseEntity<Item> responseEntity = restTemplate.postForEntity(url, item, Item.class);
+        HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
+        HttpEntity<Item> entity = new HttpEntity<>(item, headers);
+        restTemplate.exchange(url, HttpMethod.POST, entity, Item.class);
     }
 
+    @Transactional
     @Override
     public void deleteItem(Item item) {
         int id = item.getId();
-        restTemplate.delete(url + id);
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        restTemplate.exchange(url + id, HttpMethod.DELETE, entity, Item.class);
     }
 
+    @Transactional
     @Override
     public void updateItem(Item item) {
         item.setModified(LocalDate.now());
-        HttpEntity<Item> httpEntity = new HttpEntity<>(item, new HttpHeaders());
-        ResponseEntity<Item> responseEntity = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Item.class);
+        HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
+        HttpEntity<Item> entity = new HttpEntity<>(item, headers);
+        restTemplate.exchange(url, HttpMethod.PUT, entity, Item.class);
     }
 }
 

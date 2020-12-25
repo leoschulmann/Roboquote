@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -42,12 +43,9 @@ public class QuoteServiceImpl implements QuoteService {
 
     @Override
     public List<Quote> findAll() {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        String[] creds = authService.getAuthData();
-        headers.add(creds[0], creds[1]);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
         ResponseEntity<Quote[]> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, Quote[].class);
+
         if (responseEntity.getBody() != null) {
             return Arrays.asList(responseEntity.getBody());
         } else return new ArrayList<>();
@@ -93,26 +91,29 @@ public class QuoteServiceImpl implements QuoteService {
         }
     }
 
+    @Transactional
     @Override
     public int postNew(Quote quote) {
         if (quote.getNumber() == null) quote.setNumber(getNameFromService());
         if (quote.getVersion() == null) quote.setVersion(getVersionFromService(quote.getNumber()));
-        return postQuote(quote);
+        HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
+        HttpEntity<Quote> entity = new HttpEntity<>(quote, headers);
+        ResponseEntity<Quote> responseEntity = restTemplate.exchange(saveQuoteUrl, HttpMethod.POST, entity, Quote.class);
+        return responseEntity.getBody().getId();
     }
 
     private Integer getVersionFromService(String number) {
-        ResponseEntity<Integer> responseEntity = restTemplate.getForEntity(getNameUrl + "/" + number, Integer.class);
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        ResponseEntity<Integer> responseEntity = restTemplate.exchange(getNameUrl + "/" + number,
+                HttpMethod.GET, entity, Integer.class);
+
         return responseEntity.getBody();
     }
 
     private String getNameFromService() {
-        ResponseEntity<String> responseEntity = restTemplate.getForEntity(getNameUrl, String.class);
-        return responseEntity.getBody(); //todo exception handling
-    }
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
 
-    private int postQuote(Quote quote) {
-        ResponseEntity<Quote> responseEntity = restTemplate.postForEntity(saveQuoteUrl, quote, Quote.class);
-        return responseEntity.getBody().getId();
+        ResponseEntity<String> responseEntity = restTemplate.exchange(getNameUrl, HttpMethod.GET, entity, String.class);
+        return responseEntity.getBody();
     }
-
 }

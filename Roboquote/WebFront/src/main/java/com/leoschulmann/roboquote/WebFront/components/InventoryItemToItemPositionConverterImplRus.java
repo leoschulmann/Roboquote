@@ -10,6 +10,9 @@ import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
 import org.javamoney.moneta.Money;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,6 +21,9 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
 
     @Value("${itemservice.url}")
     String url;
+
+    @Autowired
+    AuthService authService;
 
     @Autowired
     public void setRestTemplate(RestTemplate rt) {
@@ -39,10 +45,11 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
 
     @Override
     public ItemPosition createItemPositionByItemId(Integer inventoryId, Integer qty) {
-        String re = restTemplate.getForObject(url + inventoryId, String.class);
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        ResponseEntity<String> responseEntity = restTemplate.exchange(url+inventoryId, HttpMethod.GET, entity, String.class);
 
         try {
-            JsonNode node = om.readTree(re);
+            JsonNode node = om.readTree(responseEntity.getBody());
 
             ItemPosition ip = new ItemPosition();
             ip.setName(node.get("name-russian").asText());

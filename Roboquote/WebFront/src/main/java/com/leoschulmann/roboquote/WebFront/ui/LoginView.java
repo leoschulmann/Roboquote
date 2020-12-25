@@ -1,4 +1,4 @@
-package com.leoschulmann.roboquote.WebFront.security;
+package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -6,18 +6,18 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 
-@Route("login") 
-
+@Route("login")
 public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
 	private LoginForm login = new LoginForm(); 
 
-	public LoginView(UserDao userDao){
+	public LoginView(){
 		setSizeFull();
 		setAlignItems(Alignment.CENTER); 
 		setJustifyContentMode(JustifyContentMode.CENTER);
 
 		login.setAction("login");
+		login.setForgotPasswordButtonVisible(false);
 
 		add(login);
 	}
