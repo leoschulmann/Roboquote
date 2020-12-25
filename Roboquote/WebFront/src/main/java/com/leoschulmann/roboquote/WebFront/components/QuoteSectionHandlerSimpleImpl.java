@@ -48,6 +48,11 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
     }
 
     @Override
+    public String getSectionName(QuoteSection quoteSection) {
+        return quoteSection.getName();
+    }
+
+    @Override
     public void updateSubtotalToCurrency(QuoteSection qs, String currency,
                                          BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
 

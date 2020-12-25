@@ -106,7 +106,7 @@ public class QuotesView extends VerticalLayout {
         Button downloadXlsxBtn = new Button("Download " + serialNumber + "-" + version + ".xlsx");
         downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
-                new StreamResource(serialNumber + "-" + version + ".xlsx",
+                new StreamResource(serialNumber + "-" + version + downloadService.getExtension(),
                         () -> new ByteArrayInputStream(downloadService.downloadXlsx(id))));
         wrapper.wrapComponent(downloadXlsxBtn);
         return wrapper;

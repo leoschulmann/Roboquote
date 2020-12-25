@@ -16,4 +16,5 @@ public interface QuoteService {
 
     int postNew(Quote quote);
 
+    String getFullName(int id);
 }

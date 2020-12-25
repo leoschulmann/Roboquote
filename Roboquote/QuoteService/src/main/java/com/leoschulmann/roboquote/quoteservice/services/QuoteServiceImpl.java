@@ -33,4 +33,10 @@ public class QuoteServiceImpl implements QuoteService {
     public List<Quote> findAll() {
         return quoteRepo.findAll();
     }
+
+    @Override
+    public String getQuoteFullName(int id) {
+        Quote q = getQuote(id);
+        return q.getNumber() + "-" + q.getVersion();
+    }
 }

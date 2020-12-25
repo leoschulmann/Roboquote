@@ -102,6 +102,14 @@ public class QuoteServiceImpl implements QuoteService {
         return responseEntity.getBody().getId();
     }
 
+    @Override
+    public String getFullName(int id) {
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        ResponseEntity<String> responseEntity = restTemplate.exchange(getNameUrl + "/forid/" + id,
+                HttpMethod.GET, entity, String.class);
+        return responseEntity.getBody();
+    }
+
     private Integer getVersionFromService(String number) {
         HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
         ResponseEntity<Integer> responseEntity = restTemplate.exchange(getNameUrl + "/" + number,

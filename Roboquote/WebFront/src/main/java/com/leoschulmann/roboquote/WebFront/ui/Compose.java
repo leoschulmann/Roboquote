@@ -244,7 +244,8 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         ComboBox<Item> searchBox = getItemComboBox();
         avaiableGridsBox = new ComboBox<>();
         resetAvailableGridsCombobox();
-        Button addToGridBtn = new Button(VaadinIcon.PLUS.create());
+        Button addToGridBtn = new Button("ADD");
+        addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addToGridBtn.addClickListener(click -> {
             if (searchBox.getValue() != null && avaiableGridsBox.getValue() != null) {
                 ItemPosition ip = converter.convert(searchBox.getValue());
@@ -310,13 +311,17 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         IntegerField vatField = new IntegerField();
         ComboBox<String> currencyCombo = new ComboBox<>("Currency", "EUR", "USD", "RUB", "JPY");
         Button addNewSectionBtn = new Button("Add new section");
-        Button postQuote = new Button("Save to DB");
-        Button dlButt = new Button("Download .xlsx");
+        Button saveQuoteBtn = new Button("Save to DB");
+        Button dlButt = new Button("Download");
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
 
-        addToClickableComponents(discountField, vatField, postQuote, currencyCombo, addNewSectionBtn);
+        HorizontalLayout buttons = new HorizontalLayout(discountField, vatField, currencyCombo, addNewSectionBtn,
+                saveQuoteBtn);
+        buttons.setAlignItems(Alignment.BASELINE);
+
+        addToClickableComponents(discountField, vatField, saveQuoteBtn, currencyCombo, addNewSectionBtn);
 
         discountField.setValue(0);
         discountField.setHasControls(true);
@@ -324,7 +329,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         discountField.setMax(99);
         discountField.setLabel("Discount, %");
         discountField.addValueChangeListener(c -> {
-            if (c.getValue() < 0) discountField.setLabel("Premium, %");
+            if (c.getValue() < 0) discountField.setLabel("Markup, %");
             else discountField.setLabel("Discount, %");
             discount = c.getValue();
             refreshTotal();
@@ -340,6 +345,9 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             refreshTotal();
         });
 
+        quoteBinder.forField(discountField).asRequired().bind(Quote::getDiscount, Quote::setDiscount);
+        quoteBinder.forField(vatField).asRequired().bind(Quote::getVat, Quote::setVat);
+
         currencyCombo.setValue(currency);
         currencyCombo.addValueChangeListener(event -> {
             currency = event.getValue();
@@ -347,50 +355,68 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
+        dlButt.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_PRIMARY);
         wrapper.wrapComponent(dlButt);
-        wrapper.setVisible(false);
-        quoteBinder.forField(discountField).asRequired().bind(Quote::getDiscount, Quote::setDiscount);
-        quoteBinder.forField(vatField).asRequired().bind(Quote::getVat, Quote::setVat);
 
-        HorizontalLayout buttons = new HorizontalLayout(discountField, vatField, currencyCombo, addNewSectionBtn,
-                postQuote, wrapper);
-        buttons.setAlignItems(Alignment.BASELINE);
+        addNewSectionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addNewSectionBtn.addClickListener(c -> showNamingDialog());
 
-        postQuote.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        postQuote.addClickListener(click -> {
+        saveQuoteBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        saveQuoteBtn.addClickListener(click -> {
             if (quoteBinder.validate().isOk() && gridsNotEmpty()) {
                 int id = postToDbAndGetID();
                 byte[] bytes = downloadService.downloadXlsx(id);
-                wrapper.setResource(new StreamResource(UUID.nameUUIDFromBytes(bytes).toString() + ".xlsx",
+                wrapper.setResource(new StreamResource(
+                        quoteService.getFullName(id) + downloadService.getExtension(),
                         () -> new ByteArrayInputStream(bytes)));
-                wrapper.setVisible(true);
-
+                buttons.add(wrapper);
                 disableClickableComponents();
             } else {
                 showValidationErrorDialog();
             }
         });
 
-        addNewSectionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        addNewSectionBtn.addClickListener(c -> {
-            TextField tf = new TextField();
-            Button addBtn = new Button("Add");
-            addBtn.setEnabled(false);
-            tf.setWidth("32em");
-            tf.addValueChangeListener(event -> addBtn.setEnabled(!event.getValue().isBlank()));
-            addBtn.setWidthFull();
-            addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            Dialog dialog = new Dialog(new VerticalLayout(tf, addBtn));
-            addBtn.addClickListener(click -> {
-                QuoteSection qs = new QuoteSection(tf.getValue().trim());
-                quoteService.addSections(quote, qs);
-                addNewGrid(qs);
-                tf.clear();
-                dialog.close();
-            });
-            dialog.open();
-        });
+
         return new VerticalLayout(totalString, totalWithDiscountString, includingVatValue, buttons);
+    }
+
+    private void showNamingDialog() {
+        TextField tf = new TextField();
+        Button addBtn = new Button("Add");
+        addBtn.setEnabled(false);
+        tf.setWidth("32em");
+        tf.addValueChangeListener(event -> addBtn.setEnabled(!event.getValue().isBlank()));
+        addBtn.setWidthFull();
+        addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Dialog dialog = new Dialog(new VerticalLayout(tf, addBtn));
+        addBtn.addClickListener(click -> {
+            QuoteSection qs = new QuoteSection(tf.getValue().trim());
+            quoteService.addSections(quote, qs);
+            addNewGrid(qs);
+            dialog.close();
+        });
+        dialog.open();
+    }
+
+    private void showNamingDialog(String name, SectionGrid grid, Accordion acc) {
+        TextField tf = new TextField();
+        tf.setValue(name);
+        Button addBtn = new Button("Set");
+        addBtn.setEnabled(false);
+        tf.setWidth("32em");
+        tf.addValueChangeListener(event -> addBtn.setEnabled(!event.getValue().isBlank()));
+        addBtn.setWidthFull();
+        addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Dialog dialog = new Dialog(new VerticalLayout(tf, addBtn));
+        addBtn.addClickListener(click -> {
+                    sectionHandler.setSectionName(grid.getQuoteSection(), tf.getValue().trim());
+                    fireEvent(new UniversalSectionChangedEvent(this));
+                    resetAvailableGridsCombobox();
+                    acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(tf.getValue().trim())));
+                    dialog.close();
+                }
+        );
+        dialog.open();
     }
 
     private void showValidationErrorDialog() {
@@ -442,54 +468,45 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     }
 
     private HorizontalLayout getGridHeaderPanel(Accordion acc, String name, SectionGrid grid) {
-        HorizontalLayout head = new HorizontalLayout();
-        head.setWidthFull();
-        TextField nameField = new TextField();
-        nameField.setWidth("50%");
-        nameField.setValue(name);
-        nameField.setVisible(false);
-
-        nameField.addValueChangeListener(event -> {
-            if (!event.getValue().isBlank()) {
-                sectionHandler.setSectionName(grid.getQuoteSection(), event.getValue().trim());
-                fireEvent(new UniversalSectionChangedEvent(this));
-                resetAvailableGridsCombobox();
-                acc.getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(event.getValue().trim())));
-            }
-        });
+        HorizontalLayout layout = new HorizontalLayout();
 
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
-        editNameBtn.addClickListener(c -> nameField.setVisible(!nameField.isVisible()));
+        IntegerField discountField = new IntegerField("Discount, %");
+        Button deleteBtn = new Button(VaadinIcon.CLOSE_CIRCLE.create());
 
-        IntegerField discountField = new IntegerField();
+        editNameBtn.addClickListener(c -> showNamingDialog(
+                sectionHandler.getSectionName(grid.getQuoteSection()), grid, acc));
+        editNameBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+
         discountField.setValue(0);
-        discountField.setVisible(false);
         discountField.setHasControls(true);
         discountField.setMin(-99);
         discountField.setMax(99);
+        discountField.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         discountField.addValueChangeListener(c -> {
+            discountField.setLabel(c.getValue() < 0 ? "Markup, %" : "Discount, %");
             sectionHandler.setSectionDiscount(grid.getQuoteSection(), c.getValue());
             refreshSectionSubtotal(currency, grid.getQuoteSection());
             refreshTotal();
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
-
-        Button discountBtn = new Button("%");
-        discountBtn.addClickListener(c -> discountField.setVisible(!discountField.isVisible()));
-
-        Button deleteBtn = new Button(VaadinIcon.TRASH.create());
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
             gridList.remove(grid);
             resetAvailableGridsCombobox();
             refreshTotal();
         });
-        addToClickableComponents(deleteBtn, discountField, nameField);
 
-        head.add(nameField, editNameBtn, discountField, discountBtn, deleteBtn);
+        deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 
-        return head;
+
+        addToClickableComponents(deleteBtn, editNameBtn, discountField);
+
+        layout.getStyle().set("margin-left", "auto");
+        layout.setAlignItems(Alignment.END);
+        layout.add(discountField, editNameBtn, deleteBtn);
+        return layout;
     }
 
     private ComboBox<Item> getItemComboBox() {

@@ -10,4 +10,6 @@ public interface QuoteService {
     Quote getQuote(Integer id);
 
     List<Quote> findAll();
+
+    String getQuoteFullName(int id);
 }

@@ -28,4 +28,9 @@ public class DownloadServiceImpl implements DownloadService {
 
         return response.getBody();
     }
+
+    @Override
+    public String getExtension() {
+        return ".xlsx";
+    }
 }

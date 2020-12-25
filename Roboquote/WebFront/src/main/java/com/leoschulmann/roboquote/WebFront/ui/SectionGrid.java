@@ -12,11 +12,13 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.shared.Registration;
 
 import java.util.ArrayList;
@@ -38,18 +40,19 @@ public class SectionGrid extends Grid<ItemPosition> {
 
         removeAllColumns();
         addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        addComponentColumn(this::createDeleteButton).setSortable(false).setAutoWidth(true).setFlexGrow(0);
         addColumn(ItemPosition::getName).setHeader("Item name").setSortable(false).setFlexGrow(1);
         addComponentColumn(this::getQuantityField).setHeader("Quantity").setSortable(false).setAutoWidth(true).setFlexGrow(0);
         addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setWidth("8em").setFlexGrow(0);
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setWidth("8em").setFlexGrow(0);
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum").setWidth("8em").setFlexGrow(0);
-        addComponentColumn(this::createDeleteButton).setSortable(false).setAutoWidth(true).setFlexGrow(0);
         setHeightByRows(true);
         footer = new Footer(this, stringFormattingService);
     }
 
     private Component getQuantityField(ItemPosition itemPosition) {
         field = new IntegerField();
+        field.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         field.setMax(99);
         field.setMin(1);
         field.setHasControls(true);
@@ -65,6 +68,7 @@ public class SectionGrid extends Grid<ItemPosition> {
 
     private Component createDeleteButton(ItemPosition itemPosition) {
         Button deleteItemPositionBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
+        deleteItemPositionBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
 
         deleteItemPositionBtn.addClickListener(c -> {
             fireEvent(new ComposeDeleteItemPositionEvent(this, itemPosition));

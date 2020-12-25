@@ -20,5 +20,7 @@ public interface QuoteSectionHandler {
     void updateSubtotalToCurrency(QuoteSection qs, String currency,
                                   BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv);
 
+    String getSectionName(QuoteSection quoteSection);
+
     //todo make some fancy sorting implementations (like more expensive goes first etc)
 }
