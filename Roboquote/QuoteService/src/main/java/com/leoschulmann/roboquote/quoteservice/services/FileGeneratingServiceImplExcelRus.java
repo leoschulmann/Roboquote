@@ -21,13 +21,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 @Service
-public class ExcelServiceImplVariantRus implements ExcelService {
+public class FileGeneratingServiceImplExcelRus implements FileGeneratingService {
     private Sheet sheet;
     private XSSFWorkbook workbook;
     private CellStyle subheaderStyle;
@@ -43,6 +41,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
     private Map<String, CellStyle> currencyUnderlinedStyleMap;
     private Map<String, CellStyle> currencySubtotalStyleMap;
     private Map<String, CellStyle> currencyTotalStyleMap;
+    private List<String> summarizingCellsAddress;
 
     @Override
     public byte[] generateFile(Quote quote) {
@@ -55,6 +54,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         currencyUnderlinedStyleMap = new HashMap<>();
         currencySubtotalStyleMap = new HashMap<>();
         currencyTotalStyleMap = new HashMap<>();
+        summarizingCellsAddress = new ArrayList<>();
 
         titleStyle = getTitleStyle();
         titleStyleUnderlined = getTitleUnderlinedStyle();
@@ -72,7 +72,7 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         sheet.setColumnWidth(3, 3572);  //13.17
         sheet.setColumnWidth(4, 4852);  //18.17
 
-        addPicture(ExcelServiceImplVariantRus.class.getClassLoader().getResource("pholder.png").getFile(), 0, 0);
+        addPicture(FileGeneratingServiceImplExcelRus.class.getClassLoader().getResource("pholder.png").getFile(), 0, 0);
 
         for (int i = 0; i < 15; i++) {
             Row r = sheet.createRow(i);
@@ -159,11 +159,14 @@ public class ExcelServiceImplVariantRus implements ExcelService {
             writePosition(positions.get(i), i == positions.size() - 1);
         }
         drawWideLine();
-        drawSubtotals(0, section.getName(), section.getTotal());
+        Cell subtotals = drawSubtotals(0, section.getName(), section.getTotal());
+        Cell subtotalsWithDiscount = null;
 
-        if (section.getDiscount() != null && section.getDiscount() > 0) {
-            drawSubtotals(section.getDiscount(), section.getName(), section.getTotalDiscounted());
+        if (section.getDiscount() != 0) {
+            subtotalsWithDiscount = drawSubtotals(section.getDiscount(), section.getName(), section.getTotalDiscounted());
         }
+        summarizingCellsAddress.add(subtotalsWithDiscount == null ? subtotals.getAddress().formatAsString()
+                : subtotalsWithDiscount.getAddress().formatAsString());
         createBlankRows(3);
     }
 
@@ -178,18 +181,22 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         RegionUtil.setBorderTop(BorderStyle.MEDIUM, region, sheet);
     }
 
-    private void drawSubtotals(int discount, String name, MonetaryAmount money) {
+    private Cell drawSubtotals(int discount, String name, MonetaryAmount money) {
         int idx = sheet.getLastRowNum() + 1;
         Row row = sheet.createRow(idx);
         createBlankCells(row);
         sheet.addMergedRegion(new CellRangeAddress(idx, idx, 0, 3));
-        String content = (discount > 0 ?
-                "ВСЕГО " + name + " (со скидкой " + discount + "%)" :
-                "ВСЕГО " + name);
+        String content;
+
+        if (discount == 0) content = "ВСЕГО " + name;
+        else if (discount > 0) content = "ВСЕГО " + name + " (со скидкой " + discount + "%)";
+        else content = "ВСЕГО " + name + " (с наценкой " + Math.abs(discount) + "%)";
+
         row.getCell(0).setCellValue(content);
         row.getCell(4).setCellValue(money.getNumber().doubleValue());
         row.getCell(0).setCellStyle(subTotalStyle);
         row.getCell(4).setCellStyle(getCurrencySubtotalStyle(money.getCurrency().getCurrencyCode().toLowerCase()));
+        return row.getCell(4);
     }
 
     private void drawWideLine() {
@@ -228,47 +235,48 @@ public class ExcelServiceImplVariantRus implements ExcelService {
         sheet.addMergedRegion(region);
         row.getCell(0).setCellValue("ИТОГО:");
 
-        //todo refactor to FORMULA
         MonetaryAmount sum = quote.getSections().stream()
                 .map(QuoteSection::getTotalDiscounted)
                 .reduce(MonetaryFunctions.sum())
                 .orElseGet(() -> Money.of(0, "EUR"));
-
-        row.getCell(4).setCellValue(sum.getNumber().doubleValue());
+        Cell totalCell = row.getCell(4);
+        totalCell.setCellFormula(String.join("+", summarizingCellsAddress));
 
         row.getCell(0).setCellStyle(totalStyle);
-        row.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
 
-        if (quote.getDiscount() != null && quote.getDiscount() > 0) {
+        if (quote.getDiscount() != 0) {
             idx++;
             Row discoRow = sheet.createRow(idx);
             createBlankCells(discoRow);
             CellRangeAddress discoRegion = new CellRangeAddress(idx, idx, 0, 3);
             sheet.addMergedRegion(discoRegion);
-            discoRow.getCell(0).setCellValue("ИТОГО (со скидкой " + quote.getDiscount() + "%):");
-            discoRow.getCell(4).setCellValue(sum.multiply((100 - quote.getDiscount()) / 100.).getNumber().doubleValue());
+            discoRow.getCell(0).setCellValue(quote.getDiscount() > 0 ?
+                    "ИТОГО (со скидкой " + quote.getDiscount() + "%):"
+                    : "ИТОГО (со наценкой " + Math.abs(quote.getDiscount()) + "%):"
+            );
+            String formula = totalCell.getAddress().formatAsString() + "* (100 - " + quote.getDiscount() + ")/100";
+
+            discoRow.getCell(4).setCellFormula(formula);
+            totalCell = discoRow.getCell(4);
+
             discoRow.getCell(0).setCellStyle(totalStyle);
             discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
         }
 
-        idx++;
-        Row taxRow = sheet.createRow(idx);
-        createBlankCells(taxRow);
-        CellRangeAddress taxRegion = new CellRangeAddress(idx, idx, 0, 3);
-        sheet.addMergedRegion(taxRegion);
-        taxRow.getCell(0).setCellValue("в т.ч. НДС " + quote.getVat() + "%):");
-        taxRow.getCell(4).setCellValue(getTaxSum(sum, quote.getDiscount(), quote.getVat()));
-        taxRow.getCell(0).setCellStyle(totalStyle);
-        taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
-    }
+        if (quote.getVat() != 0) {
+            idx++;
+            Row taxRow = sheet.createRow(idx);
+            createBlankCells(taxRow);
+            CellRangeAddress taxRegion = new CellRangeAddress(idx, idx, 0, 3);
+            sheet.addMergedRegion(taxRegion);
+            taxRow.getCell(0).setCellValue("в т.ч. НДС " + quote.getVat() + "%):");
 
-    private double getTaxSum(MonetaryAmount sum, Integer discount, Integer vat) {
-        //todo refactor to FORMULA
-        MonetaryAmount source;
-        if (discount != null && discount > 0) {
-            source = sum.multiply((100 - discount) / 100.);
-        } else source = sum;
-        return source.multiply(vat / 100.).divide(vat / 100. + 1).getNumber().doubleValueExact();
+            String formula = totalCell.getAddress().formatAsString()
+                    + " * (" + quote.getVat() + "/100) / ((" + quote.getVat() + "/100) +1 )";
+            taxRow.getCell(4).setCellFormula(formula);
+            taxRow.getCell(0).setCellStyle(totalStyle);
+            taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
+        }
     }
 
     private byte[] writeFileToByteArray() {

@@ -3,7 +3,7 @@ package com.leoschulmann.roboquote.quoteservice.test;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
-import com.leoschulmann.roboquote.quoteservice.services.ExcelService;
+import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -36,7 +36,7 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
     public NameGeneratingService nameGenerator;
 
     @Autowired
-    public ExcelService excelService;
+    public FileGeneratingService fileGeneratingService;
 
     @BeforeEach
     public void prepareQuote() {
@@ -85,7 +85,7 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
     public void deserializeByteArrAndWrite() throws IOException {
         Files.deleteIfExists(Path.of("./test.xlsx"));
         try (FileOutputStream fos = new FileOutputStream("./test.xlsx")) {
-            byte[] arr = excelService.generateFile(quote);
+            byte[] arr = fileGeneratingService.generateFile(quote);
             fos.write(arr);
         }
         assertTrue(Files.exists(Path.of("./test.xlsx")));

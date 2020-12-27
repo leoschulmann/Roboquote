@@ -1,7 +1,7 @@
 package com.leoschulmann.roboquote.quoteservice.controllers;
 
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
-import com.leoschulmann.roboquote.quoteservice.services.ExcelService;
+import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/download/")
 public class DownloadsController {
-    private final ExcelService excelService;
+    private final FileGeneratingService fileGeneratingService;
     private final QuoteService quoteService;
 
-    public DownloadsController(ExcelService excelService, QuoteService quoteService) {
-        this.excelService = excelService;
+    public DownloadsController(FileGeneratingService fileGeneratingService, QuoteService quoteService) {
+        this.fileGeneratingService = fileGeneratingService;
         this.quoteService = quoteService;
     }
 
@@ -28,7 +28,7 @@ public class DownloadsController {
         Quote q = quoteService.getQuote(id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(excelService.generateFile(q),
+            return new ResponseEntity<>(fileGeneratingService.generateFile(q),
                     headers, HttpStatus.OK);
     }
 }
