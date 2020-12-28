@@ -61,6 +61,21 @@ public class Item {
     public Item() {
     }
 
+    public Item(int id, String brand, String partno, String nameRus, String nameEng, Money buyingPrice, double margin,
+                Money sellingPrice, LocalDate created, LocalDate modified, boolean overridden) {
+        this.id = id;
+        this.brand = brand;
+        this.partno = partno;
+        this.nameRus = nameRus;
+        this.nameEng = nameEng;
+        this.buyingPrice = buyingPrice;
+        this.margin = margin;
+        this.sellingPrice = sellingPrice;
+        this.created = created;
+        this.modified = modified;
+        this.overridden = overridden;
+    }
+
     public int getId() {
         return id;
     }

@@ -2,7 +2,6 @@ package com.leoschulmann.roboquote.itemservice.controller;
 
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.services.ItemService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +12,11 @@ import java.util.List;
 @RequestMapping("/item")
 public class ItemController {
 
-    @Autowired
-    ItemService itemService;
+    final ItemService itemService;
+
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
 
     @GetMapping("/")
     List<Item> findAll() {
@@ -28,7 +30,7 @@ public class ItemController {
 
     @PostMapping("/")
     ResponseEntity<Item> addNewItem(@RequestBody Item item) {
-       Item i =  itemService.saveItem(item);
+        Item i = itemService.saveItem(item);
         return new ResponseEntity<>(i, HttpStatus.CREATED);
     }
 
