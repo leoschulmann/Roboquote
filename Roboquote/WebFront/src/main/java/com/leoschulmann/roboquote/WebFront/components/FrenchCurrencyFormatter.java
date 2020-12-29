@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
+import org.javamoney.moneta.format.AmountFormatParams;
 import org.javamoney.moneta.format.CurrencyStyle;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class FrenchCurrencyFormatter implements CurrencyFormatService {
                 AmountFormatQueryBuilder
                         .of(Locale.FRANCE)
                         .set(CurrencyStyle.SYMBOL)
+                        .set(AmountFormatParams.PATTERN, "#,###,###.## ¤")
                         .build());
     }
 

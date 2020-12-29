@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 
 @Route(value = "compose", layout = MainLayout.class)
 public class Compose extends VerticalLayout implements AfterNavigationObserver {
-    private ItemService itemService;
     private CurrencyFormatService currencyFormatter;
     private InventoryItemToItemPositionConverter converter;
     private QuoteSectionHandler sectionHandler;
@@ -56,6 +55,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private QuoteService quoteService;
     private StringFormattingService stringFormattingService;
     private MoneyMathService moneyMathService;
+    private ItemCachingService cachingService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -75,17 +75,16 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private BigDecimal yenRate;
     private double exchangeConversionFee;
 
-    public Compose(ItemService itemService,
-                   CurrencyFormatService currencyFormatter,
+    public Compose(CurrencyFormatService currencyFormatter,
                    InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
                    DownloadService downloadService,
                    CurrencyRatesService currencyRatesService,
                    QuoteService quoteService,
                    StringFormattingService stringFormattingService,
-                   MoneyMathService moneyMathService) {
+                   MoneyMathService moneyMathService,
+                   ItemCachingService cachingService) {
 
-        this.itemService = itemService;
         this.currencyFormatter = currencyFormatter;
         this.converter = converter;
         this.sectionHandler = sectionHandler;
@@ -94,6 +93,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         this.quoteService = quoteService;
         this.stringFormattingService = stringFormattingService;
         this.moneyMathService = moneyMathService;
+        this.cachingService = cachingService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
         totalString = new Span();
@@ -102,7 +102,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         totalWithDiscountString.getElement().getStyle().set("margin-left", "auto").set("font-weight", "bold");
         includingVatValue = new Span();
         includingVatValue.getElement().getStyle().set("margin-left", "auto");
-        add(getInventoryLookupAccordeon());
+        add(getInventoryLookup());
         gridsBlock = createGridsBlock();
 
         add(createQuoteInfoBlock());
@@ -238,7 +238,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         return hl;
     }
 
-    private Accordion getInventoryLookupAccordeon() {
+    private HorizontalLayout getInventoryLookup() {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setWidthFull();
         ComboBox<Item> searchBox = getItemComboBox();
@@ -263,10 +263,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         avaiableGridsBox.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
         layout.add(searchBox, avaiableGridsBox, addToGridBtn);
-        Accordion accordion = new Accordion();
-        accordion.setWidthFull();
-        accordion.add("Inventory lookup", layout);
-        return accordion;
+        return layout;
     }
 
     private void refreshTotal() {
@@ -510,23 +507,23 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     }
 
     private ComboBox<Item> getItemComboBox() {
-        ComboBox<Item> filteringComboBox = new ComboBox<>();
-        filteringComboBox.addClassName("compose-querybox");
-        List<Item> elementsList = itemService.findAll(); //todo make 'prepare elements' mechanism to reduce DB load
+        ComboBox<Item> combo = new ComboBox<>();
+        List<Item> elementsList = cachingService.getItemsFromCache();
 
         ComboBox.ItemFilter<Item> filter = (ComboBox.ItemFilter<Item>)
                 (element, filterString) -> element.getNameRus().toLowerCase().contains(filterString.toLowerCase()) ||
                         element.getNameEng().toLowerCase().contains(filterString.toLowerCase()) ||
                         element.getPartno().toLowerCase().contains(filterString.toLowerCase());
 
-        filteringComboBox.setItems(filter, elementsList);
-        filteringComboBox.setItemLabelGenerator((ItemLabelGenerator<Item>) item -> item.getPartno() + " "
-                + item.getNameRus().substring(0, Math.min(item.getNameRus().length(), 35)) + " | "
-                + item.getNameEng().substring(0, Math.min(item.getNameEng().length(), 35))
+        combo.setItems(filter, elementsList);
+        combo.setItemLabelGenerator((ItemLabelGenerator<Item>) item ->
+                currencyFormatter.formatMoney(item.getSellingPrice()) + " (" + item.getPartno() + ") "
+                        + item.getNameRus().substring(0, Math.min(item.getNameRus().length(), 35)) + " / "
+                        + item.getNameEng().substring(0, Math.min(item.getNameEng().length(), 35))
         );
 
-        filteringComboBox.setClearButtonVisible(true);
-        return filteringComboBox;
+        combo.setClearButtonVisible(true);
+        return combo;
     }
 
     private void addToClickableComponents(HasEnabled... components) {

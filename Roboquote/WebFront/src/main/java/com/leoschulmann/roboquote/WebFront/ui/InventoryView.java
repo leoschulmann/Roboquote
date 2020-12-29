@@ -1,6 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
+import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
 import com.leoschulmann.roboquote.WebFront.components.ItemService;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
@@ -25,13 +26,16 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 public class InventoryView extends VerticalLayout {
     private final ItemService itemService;
     private final CurrencyFormatService currencyFormatService;
+    private ItemCachingService cachingService;
     private PaginatedGrid<Item> grid;
     private InventoryForm form;
     private Dialog dialog;
 
-    public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService) {
+    public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService,
+                        ItemCachingService cachingService) {
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
+        this.cachingService = cachingService;
         grid = drawGrid();
 
         form = new InventoryForm();
@@ -45,7 +49,7 @@ public class InventoryView extends VerticalLayout {
 
         add(createNewItem(), drawGrid());
 
-        updateList();
+        grid.setItems(cachingService.getItemsFromCache());
     }
 
     private PaginatedGrid<Item> drawGrid() {
@@ -107,7 +111,8 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void updateList() {
-        grid.setItems(itemService.findAll());
+        cachingService.updateCache();
+        grid.setItems(cachingService.getItemsFromCache());
     }
 
     private void closeDialog() {
