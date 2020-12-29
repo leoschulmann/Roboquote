@@ -1,8 +1,11 @@
 package com.leoschulmann.roboquote.itemservice.services;
 
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.itemservice.exceptions.ItemNotFoundException;
+import com.leoschulmann.roboquote.itemservice.exceptions.MangledItemException;
 import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,12 +13,15 @@ import java.util.List;
 @Service
 public class ItemServiceImpl implements ItemService {
 
-    @Autowired
-    ItemRepository itemRepository;
+    final ItemRepository itemRepository;
+
+    public ItemServiceImpl(ItemRepository itemRepository) {
+        this.itemRepository = itemRepository;
+    }
 
     @Override
     public Item getItemById(int id) {
-        return itemRepository.findById(id).orElse(null);
+        return itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
     }
 
     @Override
@@ -32,11 +38,21 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public void deleteItemById(int id) {
-        itemRepository.deleteById(id);
+        try {
+            itemRepository.deleteById(id);
+        } catch (EmptyResultDataAccessException e) {
+            e.printStackTrace();
+            throw new ItemNotFoundException(id);
+        }
     }
 
     @Override
     public Item saveItem(Item item) {
-        return itemRepository.saveAndFlush(item);
+        try {
+            return itemRepository.saveAndFlush(item);
+        } catch (DataIntegrityViolationException e) {
+            e.printStackTrace();
+            throw new MangledItemException();
+        }
     }
 }

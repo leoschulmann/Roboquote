@@ -19,15 +19,15 @@ public class ItemDeserializer extends JsonDeserializer<Item> {
 
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
         Item item = new Item();
-        item.setPartno(node.get("part-number").asText());
-        item.setBrand(node.get("brand").asText());
-        item.setNameRus(node.get("name-russian").asText());
-        item.setNameEng(node.get("name-english").asText());
+        item.setPartno(node.get("part-number").textValue());
+        item.setBrand(node.get("brand").textValue());
+        item.setNameRus(node.get("name-russian").textValue());
+        item.setNameEng(node.get("name-english").textValue());
         item.setMargin(node.get("selling-margin").doubleValue());
-        String buyingCur = node.get("currency-buying").asText();
+        String buyingCur = node.get("currency-buying").textValue();
         BigDecimal buyingAmt = node.get("amount-buying").decimalValue();
         item.setBuyingPrice(Money.of(buyingAmt, buyingCur));
-        String sellingCur = node.get("currency-selling").asText();
+        String sellingCur = node.get("currency-selling").textValue();
         BigDecimal sellingAmt = node.get("amount-selling").decimalValue();
         item.setSellingPrice(Money.of(sellingAmt, sellingCur));
 
