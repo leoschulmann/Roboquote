@@ -5,6 +5,7 @@ import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -17,7 +18,11 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -100,7 +105,7 @@ public class InventoryForm extends FormLayout {
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        Div text = new Div(new Span ("Delete item?"));
+        Div text = new Div(new Span("Delete item?"));
         Button ok = new Button("Confirm");
         ok.addThemeVariants(ButtonVariant.LUMO_ERROR);
         ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -146,12 +151,12 @@ public class InventoryForm extends FormLayout {
         itemBinder.bind(createdField, Item::getCreated, null);
         itemBinder.bind(modifiedField, Item::getModified, null);
         itemBinder.bind(brandField, Item::getBrand, Item::setBrand);
-        itemBinder.bind(partNoField, Item::getPartno, Item::setPartno);
-        itemBinder.bind(nameRusField, Item::getNameRus, Item::setNameRus);
-        itemBinder.bind(nameEngField, Item::getNameEng, Item::setNameEng);
-        itemBinder.bind(marginField, Item::getMargin, Item::setMargin);
+        itemBinder.forField(partNoField).asRequired().bind(Item::getPartno, Item::setPartno);
+        itemBinder.forField(nameRusField).asRequired().bind(Item::getNameRus, Item::setNameRus);
+        itemBinder.forField(nameEngField).asRequired().bind(Item::getNameEng, Item::setNameEng);
+        itemBinder.forField(marginField).asRequired().bind(Item::getMargin, Item::setMargin);
 
-        itemBinder.forField(buyingAmountField).bind(
+        itemBinder.forField(buyingAmountField).asRequired().bind(
                 item -> {
                     if (item.getBuyingPrice() != null) return item.getBuyingPrice().getNumber().doubleValueExact();
                     else return null;
@@ -180,7 +185,7 @@ public class InventoryForm extends FormLayout {
 
         itemBinder.forField(overrideSellPriceCheckbox).bind(Item::isOverridden, Item::setOverridden);
 
-        itemBinder.forField(sellingAmountField).bind(
+        itemBinder.forField(sellingAmountField).asRequired().bind(
                 item -> {
                     if (item.isOverridden())
                         return item.getSellingPrice().getNumber().doubleValueExact();
@@ -188,7 +193,7 @@ public class InventoryForm extends FormLayout {
                 },
                 (item, aDouble) -> {
                     if (item.isOverridden()) {
-                        String cur = item.getSellingPrice().getCurrency().getCurrencyCode(); //todo check for bugs
+                        String cur = item.getSellingPrice().getCurrency().getCurrencyCode();
                         item.setSellingPrice(Money.of(aDouble, cur));
                     } else item.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
                 }
@@ -202,7 +207,7 @@ public class InventoryForm extends FormLayout {
                 },
                 (item, cur) -> {
                     if (item.isOverridden()) {
-                        NumberValue nv = item.getSellingPrice().getNumber();  //todo check for bugs
+                        NumberValue nv = item.getSellingPrice().getNumber();
                         item.setSellingPrice(Money.of(nv, cur));
                     } else item.setSellingPrice(Money.of(BigDecimal.ZERO, cur));
                 }
@@ -226,7 +231,7 @@ public class InventoryForm extends FormLayout {
                         itemBinder.writeBean(item);
                         fireEvent(new InventoryUpdateItemEvent(this, item));
                     } catch (ValidationException e) {
-                        e.printStackTrace();
+                        showValidationErrorDialog();
                     }
                 }
         );
@@ -235,7 +240,7 @@ public class InventoryForm extends FormLayout {
                         itemBinder.writeBean(item);
                         fireEvent(new InventoryCreateItemEvent(this, item));
                     } catch (ValidationException e) {
-                        e.printStackTrace();
+                        showValidationErrorDialog();
                     }
                 }
         );
@@ -243,5 +248,15 @@ public class InventoryForm extends FormLayout {
         saveBtn.setText(edit ? "Update" : "Create");
         deleteBtn.setEnabled(edit);
 
+    }
+
+    private void showValidationErrorDialog() {
+        Icon i = VaadinIcon.WARNING.create();
+        i.setColor("Red");
+        i.setSize("50px");
+        VerticalLayout vl = new VerticalLayout(i);
+        vl.add(new Span("Please fill marked fields"));
+        vl.setAlignItems(FlexComponent.Alignment.CENTER);
+        new Dialog(vl).open();
     }
 }
