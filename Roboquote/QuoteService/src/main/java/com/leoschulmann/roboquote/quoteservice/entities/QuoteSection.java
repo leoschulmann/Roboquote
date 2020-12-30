@@ -38,7 +38,7 @@ public class QuoteSection {
     private Integer discount;
 
     @Columns(columns = {
-            @Column(name = "subtotal_currency"),  //todo add 'nullable'
+            @Column(name = "subtotal_currency"),
             @Column(name = "subtotal_amount")})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     @JsonDeserialize(using = MoneyDeserializer.class)

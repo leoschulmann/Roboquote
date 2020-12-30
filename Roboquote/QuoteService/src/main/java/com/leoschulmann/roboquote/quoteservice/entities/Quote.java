@@ -69,10 +69,10 @@ public class Quote {
     @Column(name = "vat")
     private Integer vat;
 
-    @Column(name = "euro_rate")
+    @Column(name = "euro_rate", columnDefinition = "decimal(19,4)")
     private BigDecimal eurRate;
 
-    @Column(name = "usd_rate")
+    @Column(name = "usd_rate", columnDefinition = "decimal(19,4)")
     private BigDecimal usdRate;
 
     @Column(name = "jpy_rate", columnDefinition = "decimal(19,4)")
@@ -82,7 +82,7 @@ public class Quote {
     private BigDecimal conversionRate;
 
     @Columns(columns = {
-            @Column(name = "final_price_currency"), //todo add 'nullable'
+            @Column(name = "final_price_currency"),
             @Column(name = "final_price_amount")})
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     @JsonDeserialize(using = MoneyDeserializer.class)

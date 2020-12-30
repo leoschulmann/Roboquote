@@ -5,9 +5,13 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.javamoney.moneta.Money;
+import org.javamoney.moneta.function.MonetaryFunctions;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +19,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.money.MonetaryAmount;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,6 +73,8 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
         qs1.setTotal(Money.of(160, "USD"));
         qs2.setTotal(Money.of(320, "USD"));
         quote.setVat(20);
+        MonetaryAmount total = List.of(qs1, qs2).stream().map(QuoteSection::getTotalDiscounted).reduce(MonetaryFunctions.sum()).get();
+        quote.setFinalPrice((Money) (total.multiply((100.0 - quote.getDiscount()) / 100)));
     }
 
     @Test
@@ -94,9 +102,11 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
     @Test
     @Order(2)
     public void excelContents() throws Exception {
-        try (XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream("./test.xlsx"));) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream("./test.xlsx"))) {
             Sheet sheet = workbook.getSheetAt(0);
-            assertEquals(136., sheet.getRow(sheet.getLastRowNum() - 1).getCell(4).getNumericCellValue());
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            Cell testingCell = sheet.getRow(sheet.getLastRowNum() - 1).getCell(4);
+            assertEquals(136., evaluator.evaluate(testingCell).getNumberValue());
         }
     }
 

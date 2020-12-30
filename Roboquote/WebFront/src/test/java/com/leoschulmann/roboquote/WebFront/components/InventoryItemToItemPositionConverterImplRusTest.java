@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import org.javamoney.moneta.Money;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,8 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 class InventoryItemToItemPositionConverterImplRusTest {
 
-    @Autowired
-    InventoryItemToItemPositionConverterImplRus converter;
+    private static InventoryItemToItemPositionConverterImplRus converter;
+
+
+    @BeforeAll
+    public static void init() {
+        AuthService mockAuthService = Mockito.mock(AuthServiceImplBasic.class);
+        Mockito.when(mockAuthService.provideHttpEntityWithCredentials()).thenReturn(null);
+        converter = new InventoryItemToItemPositionConverterImplRus(mockAuthService);
+    }
 
     @Test
     void convert() {
@@ -53,11 +63,17 @@ class InventoryItemToItemPositionConverterImplRusTest {
         ObjectMapper om = new ObjectMapper();
         String json = om.writeValueAsString(item);
 
-        RestTemplate mock = Mockito.mock(RestTemplate.class);
-        converter.setRestTemplate(mock);  //@InjectMocks somehow does not work :-/
+        ResponseEntity<String> mockResponse = Mockito.mock(ResponseEntity.class);
+        Mockito.when(mockResponse.getBody()).thenReturn(json);
+        RestTemplate mockRestTemplate = Mockito.mock(RestTemplate.class);
+        Mockito.when(mockRestTemplate.exchange(
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.any(HttpMethod.class),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.<Class<String>>any()
+        )).thenReturn(mockResponse);
 
-        Mockito.when(mock.getForObject("http://localhost:8282/item/1234", String.class))
-                .thenReturn(json);
+        converter.setRestTemplate(mockRestTemplate);  //@InjectMocks somehow does not work :-/
 
         ItemPosition ip = converter.createItemPositionByItemId(1234, 3);
 

@@ -235,14 +235,13 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
         sheet.addMergedRegion(region);
         row.getCell(0).setCellValue("ИТОГО:");
 
-        MonetaryAmount sum = quote.getSections().stream()
-                .map(QuoteSection::getTotalDiscounted)
-                .reduce(MonetaryFunctions.sum())
-                .orElseGet(() -> Money.of(0, "EUR"));
+        String currency = quote.getFinalPrice().getCurrency().getCurrencyCode();
+
         Cell totalCell = row.getCell(4);
         totalCell.setCellFormula(String.join("+", summarizingCellsAddress));
 
         row.getCell(0).setCellStyle(totalStyle);
+        totalCell.setCellStyle(getTotalCurrencyStyle(currency.toLowerCase()));
 
         if (quote.getDiscount() != 0) {
             idx++;
@@ -260,7 +259,7 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
             totalCell = discoRow.getCell(4);
 
             discoRow.getCell(0).setCellStyle(totalStyle);
-            discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
+            discoRow.getCell(4).setCellStyle(getTotalCurrencyStyle(currency.toLowerCase()));
         }
 
         if (quote.getVat() != 0) {
@@ -275,7 +274,7 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
                     + " * (" + quote.getVat() + "/100) / ((" + quote.getVat() + "/100) +1 )";
             taxRow.getCell(4).setCellFormula(formula);
             taxRow.getCell(0).setCellStyle(totalStyle);
-            taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(sum.getCurrency().getCurrencyCode().toLowerCase()));
+            taxRow.getCell(4).setCellStyle(getTotalCurrencyStyle(currency.toLowerCase()));
         }
     }
 

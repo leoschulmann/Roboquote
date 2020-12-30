@@ -22,8 +22,11 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
     @Value("${itemservice.url}")
     String url;
 
-    @Autowired
-    AuthService authService;
+    final AuthService authService;
+
+    public InventoryItemToItemPositionConverterImplRus(AuthService authService) {
+        this.authService = authService;
+    }
 
     @Autowired
     public void setRestTemplate(RestTemplate rt) {

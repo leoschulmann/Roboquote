@@ -50,7 +50,7 @@ public class ItemPosition {
     @JsonBackReference
     private QuoteSection section;
 
-    @Column(name = "inventory_item_id")  //todo make not null
+    @Column(name = "inventory_item_id")
     private Integer itemId;
 
     public ItemPosition() {

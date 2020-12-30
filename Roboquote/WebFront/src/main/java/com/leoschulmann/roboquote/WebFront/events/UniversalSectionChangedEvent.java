@@ -5,8 +5,6 @@ import com.vaadin.flow.component.ComponentEvent;
 
 
 public class UniversalSectionChangedEvent extends ComponentEvent<Compose> {
-    //todo add payload
-
     public UniversalSectionChangedEvent(Compose source) {
         super(source, false);
     }

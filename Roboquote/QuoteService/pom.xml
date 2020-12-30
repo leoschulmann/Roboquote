@@ -5,7 +5,7 @@
     <parent>
         <artifactId>Roboquote</artifactId>
         <groupId>com.leoschulmann</groupId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2</version>
     </parent>
     <artifactId>QuoteService</artifactId>
 

@@ -7,7 +7,7 @@
     <groupId>com.leoschulmann</groupId>
     <artifactId>Roboquote</artifactId>
     <packaging>pom</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2</version>
     <modules>
         <module>ItemService</module>
         <module>QuoteService</module>
