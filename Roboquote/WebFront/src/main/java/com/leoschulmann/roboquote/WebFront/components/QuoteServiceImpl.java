@@ -110,6 +110,11 @@ public class QuoteServiceImpl implements QuoteService {
         return responseEntity.getBody();
     }
 
+    @Override
+    public void removeSection(Quote quote, QuoteSection quoteSection) {
+        quote.removeSection(quoteSection);
+    }
+
     private Integer getVersionFromService(String number) {
         HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
         ResponseEntity<Integer> responseEntity = restTemplate.exchange(getNameUrl + "/" + number,

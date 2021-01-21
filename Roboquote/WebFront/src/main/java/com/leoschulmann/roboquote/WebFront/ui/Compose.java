@@ -491,6 +491,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
             gridList.remove(grid);
+            quoteService.removeSection(quote, grid.getQuoteSection());
             resetAvailableGridsCombobox();
             refreshTotal();
         });
