@@ -10,10 +10,13 @@ import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
 import org.javamoney.moneta.Money;
 import org.vaadin.klaudeta.PaginatedGrid;
@@ -30,9 +33,10 @@ public class InventoryView extends VerticalLayout {
     private PaginatedGrid<Item> grid;
     private InventoryForm form;
     private Dialog dialog;
+    private ListDataProvider<Item> dataProvider;
 
     public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService,
-                        ItemCachingService cachingService) {
+                         ItemCachingService cachingService) {
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
@@ -47,9 +51,14 @@ public class InventoryView extends VerticalLayout {
         form.addListener(InventoryUpdateItemEvent.class, this::update);
         form.addListener(InventoryCreateItemEvent.class, this::create);
 
-        add(createNewItem(), drawGrid());
-
+        add(createTopControls(), grid);
         grid.setItems(cachingService.getItemsFromCache());
+    }
+
+    private HorizontalLayout createTopControls() {
+        HorizontalLayout hl = new HorizontalLayout(createNewItem(), gridLengthSelector());
+        hl.setAlignItems(Alignment.BASELINE);
+        return hl;
     }
 
     private PaginatedGrid<Item> drawGrid() {
@@ -60,7 +69,7 @@ public class InventoryView extends VerticalLayout {
         grid.addColumn(Item::getBrand).setHeader("Brand").setKey("brand").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(Item::getPartno).setHeader("Part No").setKey("partno").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(item -> trim(item.getNameRus(), 75)).setHeader("Name RUS").setSortable(true).setResizable(true).setFlexGrow(1);
-        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
+//        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
         grid.addColumn(i -> currencyFormatService.formatMoney(
                 i.getSellingPrice() == null ? Money.of(0, "EUR") : i.getSellingPrice()))
                 .setHeader("Selling price").setSortable(true)
@@ -74,6 +83,7 @@ public class InventoryView extends VerticalLayout {
         grid.asSingleSelect().addValueChangeListener(event -> editItem(event.getValue()));
         grid.setPageSize(10);
         grid.setPaginatorSize(5);
+        grid.getStyle().set("font-size", "12px");
         return grid;
     }
 
@@ -102,6 +112,15 @@ public class InventoryView extends VerticalLayout {
             dialog.open();
         });
         return newItemBtn;
+    }
+
+    private ComboBox<Integer> gridLengthSelector() {
+        ComboBox<Integer> box = new ComboBox<>("# items");
+        box.setItems(5, 10, 15, 20, 25, 30, 50, 100);
+        box.addValueChangeListener(l -> grid.setPageSize(l.getValue()));
+        box.setValue(10);
+        box.setWidth("5em");
+        return box;
     }
 
     private void editItem(Item value) {

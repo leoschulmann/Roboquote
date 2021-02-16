@@ -181,7 +181,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         BigDecimalField euro = new BigDecimalField("₽/€");
         BigDecimalField dollar = new BigDecimalField("₽/$");
-        BigDecimalField yen = new BigDecimalField("¥/₽");
+        BigDecimalField yen = new BigDecimalField("₽/¥");
         euro.setValue(euroRate);
         dollar.setValue(dollarRate);
         yen.setValue(yenRate);
@@ -262,7 +262,12 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         avaiableGridsBox.setWidthFull();
         avaiableGridsBox.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
-        layout.add(searchBox, avaiableGridsBox, addToGridBtn);
+        Button refreshItems = new Button(VaadinIcon.REFRESH.create());
+        refreshItems.addClickListener(click -> {
+            cachingService.updateCache();
+            searchBox.setItems(cachingService.getItemsFromCache());
+        });
+        layout.add(refreshItems, searchBox, avaiableGridsBox, addToGridBtn);
         return layout;
     }
 
