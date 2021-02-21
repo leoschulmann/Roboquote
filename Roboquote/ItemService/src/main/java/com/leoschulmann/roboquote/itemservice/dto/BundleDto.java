@@ -50,4 +50,9 @@ public class BundleDto {
     public void setItems(List<PostitionDto> items) {
         this.items = items;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
