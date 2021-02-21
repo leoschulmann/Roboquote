@@ -1,8 +1,12 @@
 package com.leoschulmann.roboquote.itemservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class PostitionDto {
     private int id;
     private int qty;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String name;
 
     public int getId() {
@@ -30,6 +34,11 @@ public class PostitionDto {
     }
 
     public PostitionDto() {
+    }
+
+    public PostitionDto(int id, int qty) {
+        this.id = id;
+        this.qty = qty;
     }
 
     public PostitionDto(int id, int qty, String name) {

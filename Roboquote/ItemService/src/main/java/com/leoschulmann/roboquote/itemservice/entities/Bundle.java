@@ -18,7 +18,7 @@ public class Bundle {
     @Column(name = "name_eng")
     private String nameEng;
 
-    @OneToMany(mappedBy = "parentBundle", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parentBundle", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BundledPosition> positions;
 
     public Bundle() {

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 public class BundleDto {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private int id;
+
     private String name;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -16,6 +19,20 @@ public class BundleDto {
     public BundleDto(String name, List<PostitionDto> items) {
         this.name = name;
         this.items = items;
+    }
+
+    public BundleDto(int id, String name, List<PostitionDto> items) {
+        this.id = id;
+        this.name = name;
+        this.items = items;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
