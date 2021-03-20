@@ -31,6 +31,8 @@ public class BundlesView extends VerticalLayout {
     private Button addBtn;
     private Button wrapBtn;
     private Button saveBundleButton;
+    private Button removeFromSelected;
+    private Button removeLine;
     private final ListDataProvider<Item> availableItemsDataProvider;
     private ListDataProvider<BundledPosition> selectedItemsDataProvider;
     private final Bundle bundle;
@@ -40,15 +42,8 @@ public class BundlesView extends VerticalLayout {
 
 
     public BundlesView(ItemCachingService cachingService, BundleService bundleService) {
-        bundle = new Bundle();
-        availableItemsDataProvider = new ListDataProvider<>(cachingService.getItemsFromCache());
         this.bundleService = bundleService;
-        availableItemsGrid = createAvailableGrid();
-        bundleItemsGrid = createSelectedGrid();
-        addBtn = createAddButton();
-        wrapBtn = createWrapButton();
-        VerticalLayout middleButtons = new VerticalLayout(addBtn, wrapBtn);
-        middleButtons.setWidth("5%");
+        bundle = new Bundle();
         nameField = new TextField("Bundle name");
         saveBundleButton = createSaveBundle();
         nameField.setWidth("90%");
@@ -57,37 +52,23 @@ public class BundlesView extends VerticalLayout {
         nameAndButton.setWidthFull();
         nameAndButton.setAlignItems(Alignment.BASELINE);
         add(nameAndButton);
-        HorizontalLayout mailPanel = new HorizontalLayout(availableItemsGrid, middleButtons, bundleItemsGrid);
+
+        HorizontalLayout mailPanel = new HorizontalLayout();
         mailPanel.setWidthFull();
-        mailPanel.setAlignItems(Alignment.CENTER);
+        mailPanel.setAlignItems(Alignment.START);
+        availableItemsDataProvider = new ListDataProvider<>(cachingService.getItemsFromCache());
+        availableItemsGrid = createAvailableGrid();
+        bundleItemsGrid = createSelectedGrid();
+        availableItemsGrid.setWidth("45%");
+        bundleItemsGrid.setWidth("45%");
+        addBtn = createAddButton();
+        wrapBtn = createWrapButton();
+        removeFromSelected = createRemoveButton();
+        removeLine = createRemovLineButton();
+        VerticalLayout panelButtons = new VerticalLayout(addBtn, removeFromSelected, removeLine, wrapBtn);
+        panelButtons.setWidth("5%");
+        mailPanel.add(availableItemsGrid, panelButtons, bundleItemsGrid);
         add(mailPanel);
-    }
-
-    private Button createWrapButton() {
-        wrapBtn = new Button(VaadinIcon.LINES.create());
-        wrapBtn.addClickListener(c -> {
-            if (!wrap) {
-                bundleItemsGrid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
-                availableItemsGrid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
-                wrap = true;
-            } else {
-                bundleItemsGrid.removeThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
-                availableItemsGrid.removeThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
-                wrap = false;
-            }
-        });
-        return wrapBtn;
-    }
-
-    private Button createSaveBundle() {
-        saveBundleButton = new Button("SAVE");
-        saveBundleButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        saveBundleButton.addClickListener(c -> {
-            bundle.setNameRus(nameField.getValue());
-            bundle.setNameEng(nameField.getValue());
-            bundleService.saveBundle(bundle);
-        });
-        return saveBundleButton;
     }
 
     private Grid<BundledPosition> createSelectedGrid() {
@@ -102,7 +83,8 @@ public class BundlesView extends VerticalLayout {
         Grid.Column<BundledPosition> qcol = bundleItemsGrid.addColumn(BundledPosition::getQty);
         namecol.setHeader("Item name").setFlexGrow(1).setResizable(true);
         qcol.setHeader("Qty").setFlexGrow(0).setTextAlign(ColumnTextAlign.CENTER).setFooter(counter);
-        bundleItemsGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COLUMN_BORDERS);
+        bundleItemsGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES,
+                GridVariant.LUMO_COLUMN_BORDERS);
 
         return bundleItemsGrid;
     }
@@ -110,9 +92,12 @@ public class BundlesView extends VerticalLayout {
     private Grid<Item> createAvailableGrid() {
         final Grid<Item> availableItemsGrid = new Grid<>(Item.class);
         availableItemsGrid.getStyle().set("font-size", "12px");
+        availableItemsGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES,
+                GridVariant.LUMO_COLUMN_BORDERS);
 
         availableItemsGrid.removeAllColumns();
-        Grid.Column<Item> col = availableItemsGrid.addColumn(Item::getNameRus);
+        Grid.Column<Item> nameCol = availableItemsGrid.addColumn(Item::getNameRus).setFlexGrow(1);
+        availableItemsGrid.addColumn(Item::getSellingPrice).setFlexGrow(0);
 
         availableItemsGrid.setDataProvider(availableItemsDataProvider);
 
@@ -124,28 +109,85 @@ public class BundlesView extends VerticalLayout {
         filter.addValueChangeListener(event -> availableItemsDataProvider.addFilter(
                 item -> StringUtils.containsIgnoreCase(item.getNameRus(), filter.getValue())));
         filter.setValueChangeMode(ValueChangeMode.EAGER);
-        col.setHeader(filter);
+        nameCol.setHeader(filter);
         return availableItemsGrid;
     }
 
     private Button createAddButton() {
-        addBtn = new Button(VaadinIcon.FORWARD.create());
+        addBtn = new Button(VaadinIcon.ANGLE_RIGHT.create());
         addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
         addBtn.addClickListener(c -> {
-            Item item = availableItemsGrid.asSingleSelect().getValue();
-            Optional<BundledPosition> opt = selectedItemsContainsItem(item);
+            Optional<Item> optItem = availableItemsGrid.asSingleSelect().getOptionalValue();
+            if (optItem.isPresent()) {
+                Optional<BundledPosition> optBP = selectedItemsContainsItem(optItem.get());
+                if (optBP.isPresent()) {
+                    BundledPosition bp = optBP.get();
+                    bp.setQty(bp.getQty() + 1);
+                } else {
+                    BundledPosition bp = bundleService.convertToBundlePostion(optItem.get());
+                    bundle.addPosition(bp);
+                }
+                selectedItemsDataProvider.refreshAll();
+                counter.setText("Total : " + countItems());
+            }
+        });
+        return addBtn;
+    }
 
-            if (opt.isPresent()) {
-                BundledPosition bp = opt.get();
-                bp.setQty(bp.getQty() + 1);
+    private Button createWrapButton() {
+        wrapBtn = new Button(VaadinIcon.LINES.create());
+        wrapBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+        wrapBtn.addClickListener(c -> {
+            if (!wrap) {
+                bundleItemsGrid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+                availableItemsGrid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+                wrap = true;
             } else {
-                BundledPosition bp = bundleService.convertToBundlePostion(item);
-                bundle.addPosition(bp);
+                bundleItemsGrid.removeThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+                availableItemsGrid.removeThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+                wrap = false;
+            }
+        });
+        return wrapBtn;
+    }
+
+    private Button createRemoveButton() {
+        removeFromSelected = new Button(VaadinIcon.ANGLE_LEFT.create());
+        removeFromSelected.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+        removeFromSelected.addClickListener(c-> {
+            BundledPosition bp = bundleItemsGrid.asSingleSelect().getValue();
+            if (bp.getQty() > 1) {
+                bp.setQty(bp.getQty() - 1);
+            } else {
+                bundle.removePosition(bp);
             }
             selectedItemsDataProvider.refreshAll();
             counter.setText("Total : " + countItems());
         });
-        return addBtn;
+        return removeFromSelected;
+    }
+
+    private Button createRemovLineButton() {
+        removeLine = new Button(VaadinIcon.ANGLE_DOUBLE_LEFT.create());
+        removeLine.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
+        removeLine.addClickListener(c-> {
+            BundledPosition bp = bundleItemsGrid.asSingleSelect().getValue();
+                bundle.removePosition(bp);
+            selectedItemsDataProvider.refreshAll();
+            counter.setText("Total : " + countItems());
+        });
+        return removeLine;
+}
+
+    private Button createSaveBundle() {
+        saveBundleButton = new Button("Save");
+        saveBundleButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        saveBundleButton.addClickListener(c -> {
+            bundle.setNameRus(nameField.getValue());
+            bundle.setNameEng(nameField.getValue());
+            bundleService.saveBundle(bundle);
+        });
+        return saveBundleButton;
     }
 
     private int countItems() {

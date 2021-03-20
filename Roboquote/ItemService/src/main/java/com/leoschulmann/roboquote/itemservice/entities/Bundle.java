@@ -57,4 +57,8 @@ public class Bundle {
     public int getId() {
         return id;
     }
+
+    public void removePosition(BundledPosition bp) {
+        positions.remove(bp);
+    }
 }
