@@ -36,7 +36,14 @@ public class BundleService {
 
     public List<BundleDto> getAll() {
         List<Bundle> listDomain = bundleRepository.findAll();
-        return listDomain.stream().map(dom -> new BundleDto(dom.getId(), dom.getNameRus(), null)).collect(Collectors.toList());
+
+        return listDomain.stream().map(dom -> {
+            List<PostitionDto> postitions = dom.getPositions().stream()
+                    .map(bp -> new PostitionDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
+                    .collect(Collectors.toList());
+
+            return new BundleDto(dom.getId(), dom.getNameRus(), postitions);
+        }).collect(Collectors.toList());
     }
 
     public BundleDto addNewBundle(BundleDto requestDto) {
