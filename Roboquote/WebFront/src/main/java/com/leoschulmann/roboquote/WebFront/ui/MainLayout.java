@@ -27,11 +27,13 @@ public class MainLayout extends AppLayout {
         RouterLink linkToCompose = new RouterLink("Compose", Compose.class);
         RouterLink lingToInventory = new RouterLink("Inventory", InventoryView.class);
         RouterLink linkToQuotes = new RouterLink("Quotes", QuotesView.class);
+        RouterLink linkToBundlesEditor = new RouterLink("Bundles", BundlesView.class);
         RouterLink linkToInvite = new RouterLink("Invite user", RegisterUser.class);
         linkToCompose.setHighlightCondition(HighlightConditions.sameLocation());
         lingToInventory.setHighlightCondition(HighlightConditions.sameLocation());
         linkToQuotes.setHighlightCondition(HighlightConditions.sameLocation());
+        linkToBundlesEditor.setHighlightCondition(HighlightConditions.sameLocation());
         linkToInvite.setHighlightCondition(HighlightConditions.sameLocation());
-        addToDrawer(new VerticalLayout(linkToCompose, lingToInventory, linkToQuotes, linkToInvite));
+        addToDrawer(new VerticalLayout(linkToCompose, lingToInventory, linkToQuotes, linkToBundlesEditor, linkToInvite));
     }
 }

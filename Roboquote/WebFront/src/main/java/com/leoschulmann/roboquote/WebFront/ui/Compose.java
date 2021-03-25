@@ -4,6 +4,8 @@ import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent;
 import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
 import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
+import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
+import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
@@ -56,6 +58,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private StringFormattingService stringFormattingService;
     private MoneyMathService moneyMathService;
     private ItemCachingService cachingService;
+    private BundleService bundleService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -83,7 +86,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                    QuoteService quoteService,
                    StringFormattingService stringFormattingService,
                    MoneyMathService moneyMathService,
-                   ItemCachingService cachingService) {
+                   ItemCachingService cachingService, BundleService bundleService) {
 
         this.currencyFormatter = currencyFormatter;
         this.converter = converter;
@@ -94,6 +97,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         this.stringFormattingService = stringFormattingService;
         this.moneyMathService = moneyMathService;
         this.cachingService = cachingService;
+        this.bundleService = bundleService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
         totalString = new Span();
@@ -181,7 +185,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         BigDecimalField euro = new BigDecimalField("₽/€");
         BigDecimalField dollar = new BigDecimalField("₽/$");
-        BigDecimalField yen = new BigDecimalField("¥/₽");
+        BigDecimalField yen = new BigDecimalField("₽/¥");
         euro.setValue(euroRate);
         dollar.setValue(dollarRate);
         yen.setValue(yenRate);
@@ -262,7 +266,12 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         avaiableGridsBox.setWidthFull();
         avaiableGridsBox.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
-        layout.add(searchBox, avaiableGridsBox, addToGridBtn);
+        Button refreshItems = new Button(VaadinIcon.REFRESH.create());
+        refreshItems.addClickListener(click -> {
+            cachingService.updateCache();
+            searchBox.setItems(cachingService.getItemsFromCache());
+        });
+        layout.add(refreshItems, searchBox, avaiableGridsBox, addToGridBtn);
         return layout;
     }
 
@@ -356,7 +365,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         wrapper.wrapComponent(dlButt);
 
         addNewSectionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        addNewSectionBtn.addClickListener(c -> showNamingDialog());
+        addNewSectionBtn.addClickListener(c -> showNewSectionDialog());
 
         saveQuoteBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         saveQuoteBtn.addClickListener(click -> {
@@ -377,25 +386,61 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         return new VerticalLayout(totalString, totalWithDiscountString, includingVatValue, buttons);
     }
 
-    private void showNamingDialog() {
+    private void showNewSectionDialog() {
+        VerticalLayout addEmpty;
+        VerticalLayout addBundle;
+
         TextField tf = new TextField();
-        Button addBtn = new Button("Add");
-        addBtn.setEnabled(false);
+        Button addEmptySecBtn = new Button("Add empty section");
         tf.setWidth("32em");
-        tf.addValueChangeListener(event -> addBtn.setEnabled(!event.getValue().isBlank()));
-        addBtn.setWidthFull();
-        addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Dialog dialog = new Dialog(new VerticalLayout(tf, addBtn));
-        addBtn.addClickListener(click -> {
+        tf.setClearButtonVisible(true);
+        addEmptySecBtn.setEnabled(false);
+        addEmptySecBtn.setWidthFull();
+        addEmptySecBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        tf.addValueChangeListener(event -> addEmptySecBtn.setEnabled(!event.getValue().isBlank()));
+        addEmpty = new VerticalLayout(tf, addEmptySecBtn);
+
+        ComboBox<BundleDto> bundles = new ComboBox<>();
+        bundles.setItems(bundleService.getBundlesList());
+        bundles.setAllowCustomValue(false);
+        bundles.setClearButtonVisible(true);
+        bundles.setWidth("32em");
+        Button addBundleBtn = new Button("Add bundle");
+        addBundleBtn.setEnabled(false);
+        addBundleBtn.setWidthFull();
+        addBundleBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        bundles.addValueChangeListener(event -> addBundleBtn.setEnabled(!(event.getValue() == null)));
+        addBundle = new VerticalLayout(bundles, addBundleBtn);
+
+        Dialog dialog = new Dialog(new HorizontalLayout(addEmpty, addBundle));
+
+        addEmptySecBtn.addClickListener(click -> {
             QuoteSection qs = new QuoteSection(tf.getValue().trim());
             quoteService.addSections(quote, qs);
             addNewGrid(qs);
             dialog.close();
         });
+
+        addBundleBtn.addClickListener(bang -> {
+            int id = bundles.getValue().getId();
+            BundleDto dto = bundleService.getBundleById(id);
+            QuoteSection qs = new QuoteSection(dto.getName());
+            quoteService.addSections(quote, qs);
+            addNewGrid(qs);
+            for (BundleItemDto pos : dto.getItems()) {
+                ItemPosition ip = converter.createItemPositionByItemId(pos.getId(), pos.getQty());
+                sectionHandler.putToSection(qs, ip);
+            }
+            refreshSectionSubtotal(currency, qs);
+            fireEvent(new UniversalSectionChangedEvent(this));
+            refreshTotal();
+
+            dialog.close();
+        });
         dialog.open();
     }
 
-    private void showNamingDialog(String name, SectionGrid grid, Accordion acc) {
+    private void showNewSectionDialog(String name, SectionGrid grid, Accordion acc) {
         TextField tf = new TextField();
         tf.setValue(name);
         Button addBtn = new Button("Set");
@@ -471,7 +516,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         IntegerField discountField = new IntegerField("Discount, %");
         Button deleteBtn = new Button(VaadinIcon.CLOSE_CIRCLE.create());
 
-        editNameBtn.addClickListener(c -> showNamingDialog(
+        editNameBtn.addClickListener(c -> showNewSectionDialog(
                 sectionHandler.getSectionName(grid.getQuoteSection()), grid, acc));
         editNameBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
 
@@ -491,6 +536,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
             gridList.remove(grid);
+            quoteService.removeSection(quote, grid.getQuoteSection());
             resetAvailableGridsCombobox();
             refreshTotal();
         });

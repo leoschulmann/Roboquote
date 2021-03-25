@@ -17,4 +17,6 @@ public interface QuoteService {
     int postNew(Quote quote);
 
     String getFullName(int id);
+
+    void removeSection(Quote quote, QuoteSection quoteSection);
 }

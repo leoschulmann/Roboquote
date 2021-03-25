@@ -316,4 +316,9 @@ public class Quote {
             quoteSection.setQuote(this);
         });
     }
+
+    public void removeSection(QuoteSection quoteSection) {
+        sections.remove(quoteSection);
+        quoteSection.setQuote(null);
+    }
 }

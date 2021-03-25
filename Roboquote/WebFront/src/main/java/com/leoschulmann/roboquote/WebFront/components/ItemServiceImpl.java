@@ -37,6 +37,13 @@ public class ItemServiceImpl implements ItemService {
         } else return new ArrayList<>();
     }
 
+    @Override
+    public Item getById(int id) {
+        HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
+        ResponseEntity<Item> responseEntity = restTemplate.exchange(url + id, HttpMethod.GET, entity, Item.class);
+        return responseEntity.getBody();
+    }
+
     @Transactional
     @Override
     public void saveItem(Item item) {

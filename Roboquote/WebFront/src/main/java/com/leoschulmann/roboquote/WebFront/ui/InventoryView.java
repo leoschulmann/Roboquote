@@ -10,15 +10,26 @@ import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.TextFieldVariant;
+import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
+import org.apache.commons.lang3.StringUtils;
 import org.javamoney.moneta.Money;
 import org.vaadin.klaudeta.PaginatedGrid;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
@@ -30,12 +41,17 @@ public class InventoryView extends VerticalLayout {
     private PaginatedGrid<Item> grid;
     private InventoryForm form;
     private Dialog dialog;
+    private ListDataProvider<Item> dataProvider;
+    ArrayList<Item> data;
 
     public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService,
-                        ItemCachingService cachingService) {
+                         ItemCachingService cachingService) {
         this.itemService = itemService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
+        data = new ArrayList<>();
+        data.addAll(cachingService.getItemsFromCache());
+        dataProvider = new ListDataProvider<>(data);
         grid = drawGrid();
 
         form = new InventoryForm();
@@ -47,33 +63,96 @@ public class InventoryView extends VerticalLayout {
         form.addListener(InventoryUpdateItemEvent.class, this::update);
         form.addListener(InventoryCreateItemEvent.class, this::create);
 
-        add(createNewItem(), drawGrid());
+        add(createTopControls(), grid);
+    }
 
-        grid.setItems(cachingService.getItemsFromCache());
+    private HorizontalLayout createTopControls() {
+        HorizontalLayout hl = new HorizontalLayout(createNewItem(), gridLengthSelector());
+        hl.setAlignItems(Alignment.BASELINE);
+        return hl;
     }
 
     private PaginatedGrid<Item> drawGrid() {
         grid = new PaginatedGrid<>(Item.class);
+        grid.setDataProvider(dataProvider);
         grid.removeAllColumns();
         grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
-        grid.addColumn(Item::getId).setHeader("Id").setSortable(true).setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(Item::getBrand).setHeader("Brand").setKey("brand").setSortable(true).setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(Item::getPartno).setHeader("Part No").setKey("partno").setSortable(true).setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(item -> trim(item.getNameRus(), 75)).setHeader("Name RUS").setSortable(true).setResizable(true).setFlexGrow(1);
-        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
+        grid.addColumn(Item::getId)
+                .setHeader("Id")
+                .setSortable(true)
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        Column<Item> brandCol = grid.addColumn(Item::getBrand)
+                .setHeader("Brand")
+                .setKey("brand")
+                .setSortable(true)
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        Column<Item> partnoCol = grid.addColumn(Item::getPartno)
+                .setHeader("Part No")
+                .setKey("partno")
+                .setSortable(true)
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        Column<Item> nameCol = grid.addColumn(item -> trim(item.getNameRus(), 75))
+                .setHeader("Name RUS")
+                .setSortable(true)
+                .setResizable(true).setFlexGrow(1);
+//        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
         grid.addColumn(i -> currencyFormatService.formatMoney(
                 i.getSellingPrice() == null ? Money.of(0, "EUR") : i.getSellingPrice()))
                 .setHeader("Selling price").setSortable(true)
                 .setComparator(i -> i.getSellingPrice() == null ? 0. : i.getSellingPrice().getNumber().doubleValue())
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        grid.addColumn(Item::getMargin)
+                .setHeader("Margin")
+                .setSortable(true)
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        grid.addColumn(Item::getModified)
+                .setHeader("Modified")
+                .setSortable(true)
+                .setAutoWidth(true)
+                .setResizable(true).setFlexGrow(0);
+        grid.addComponentColumn(i -> i.isOverridden() ? getIcon(true) : getIcon(false))
+                .setHeader("Override")
+                .setSortable(true)
                 .setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(Item::getMargin).setHeader("Margin").setSortable(true).setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(Item::getModified).setHeader("Modified").setSortable(true).setAutoWidth(true).setFlexGrow(0);
-        grid.addComponentColumn(i -> i.isOverridden() ? getIcon(true) : getIcon(false)).setHeader("Override").setSortable(true)
-                .setAutoWidth(true).setFlexGrow(0);
+
+        HeaderRow filterRow = grid.appendHeaderRow();
+        TextField brandFil = new TextField();
+        brandFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
+        brandFil.setWidth("5em");
+        brandFil.setClearButtonVisible(true);
+        brandFil.addValueChangeListener(event -> dataProvider.addFilter(
+                item -> StringUtils.containsIgnoreCase(item.getBrand(), brandFil.getValue())));
+        brandFil.setValueChangeMode(ValueChangeMode.EAGER);
+
+        TextField partnoFil = new TextField();
+        partnoFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
+        partnoFil.setWidth("5em");
+        partnoFil.setClearButtonVisible(true);
+        partnoFil.addValueChangeListener(event -> dataProvider.addFilter(
+                item -> StringUtils.containsIgnoreCase(item.getPartno(), partnoFil.getValue())));
+        partnoFil.setValueChangeMode(ValueChangeMode.EAGER);
+
+        TextField nameFil = new TextField();
+        nameFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
+        nameFil.setWidth("15em");
+        nameFil.setClearButtonVisible(true);
+        nameFil.addValueChangeListener(event -> dataProvider.addFilter(
+                item -> StringUtils.containsIgnoreCase(item.getNameRus(), nameFil.getValue())));
+        nameFil.setValueChangeMode(ValueChangeMode.EAGER);
+
+        filterRow.getCell(brandCol).setComponent(brandFil);
+        filterRow.getCell(partnoCol).setComponent(partnoFil);
+        filterRow.getCell(nameCol).setComponent(nameFil);
 
         grid.asSingleSelect().addValueChangeListener(event -> editItem(event.getValue()));
         grid.setPageSize(10);
         grid.setPaginatorSize(5);
+        grid.getStyle().set("font-size", "12px");
         return grid;
     }
 
@@ -104,6 +183,15 @@ public class InventoryView extends VerticalLayout {
         return newItemBtn;
     }
 
+    private ComboBox<Integer> gridLengthSelector() {
+        ComboBox<Integer> box = new ComboBox<>("# items");
+        box.setItems(5, 10, 15, 20, 25, 30, 50, 100);
+        box.addValueChangeListener(l -> grid.setPageSize(l.getValue()));
+        box.setValue(10);
+        box.setWidth("5em");
+        return box;
+    }
+
     private void editItem(Item value) {
         form.mode(true);
         form.setItem(value);
@@ -112,7 +200,8 @@ public class InventoryView extends VerticalLayout {
 
     private void updateList() {
         cachingService.updateCache();
-        grid.setItems(cachingService.getItemsFromCache());
+        data.clear();
+        data.addAll(cachingService.getItemsFromCache());
     }
 
     private void closeDialog() {
