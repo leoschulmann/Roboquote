@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.leoschulmann.roboquote.itemservice.config.TestJpaConfig;
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.PostitionDto;
+import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.exceptions.ExceptionProcessor;
 import com.leoschulmann.roboquote.itemservice.repositories.BundleRepository;
@@ -64,7 +64,7 @@ public class BundleTest {
     @Test
     public void testSaveNew() throws Exception {
         BundleDto requestDto = new BundleDto("test", List.of(
-                new PostitionDto(1, 1), new PostitionDto(2, 15)));
+                new BundleItemDto(1, 1), new BundleItemDto(2, 15)));
         String json = om.writeValueAsString(requestDto);
         MvcResult res = mockMvc.perform(MockMvcRequestBuilders.post("/bundle").contentType("application/json")
                 .content(json)).andDo(MockMvcResultHandlers.print()).andReturn();
@@ -78,9 +78,9 @@ public class BundleTest {
 
     @Test
     public void getAllTest() throws Exception {
-        BundleDto dto1 = new BundleDto("bundle1", List.of(new PostitionDto(4, 2)));
-        BundleDto dto2 = new BundleDto("bundle2", List.of(new PostitionDto(5, 10)));
-        BundleDto dto3 = new BundleDto("bundle3", List.of(new PostitionDto(2, 1)));
+        BundleDto dto1 = new BundleDto("bundle1", List.of(new BundleItemDto(4, 2)));
+        BundleDto dto2 = new BundleDto("bundle2", List.of(new BundleItemDto(5, 10)));
+        BundleDto dto3 = new BundleDto("bundle3", List.of(new BundleItemDto(2, 1)));
 
         bundleService.addNewBundle(dto1);
         bundleService.addNewBundle(dto2);
@@ -98,13 +98,13 @@ public class BundleTest {
     @Test
     public void PutTest() throws Exception {
 
-        List<PostitionDto> list = List.of(new PostitionDto(2, 2), new PostitionDto(3, 3));
+        List<BundleItemDto> list = List.of(new BundleItemDto(2, 2), new BundleItemDto(3, 3));
         BundleDto initialDto = new BundleDto();
         initialDto.setName("test bundle");
         initialDto.setItems(list);
         int id = (bundleService.addNewBundle(initialDto)).getId();
 
-        List<PostitionDto> newItems = List.of(new PostitionDto(4, 10), new PostitionDto(5, 3));
+        List<BundleItemDto> newItems = List.of(new BundleItemDto(4, 10), new BundleItemDto(5, 3));
         BundleDto modifiedDto = new BundleDto();
         modifiedDto.setName("modified test bundle");
         modifiedDto.setItems(newItems);

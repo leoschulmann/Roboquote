@@ -5,7 +5,7 @@ import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent
 import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
 import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.PostitionDto;
+import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
@@ -427,7 +427,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             QuoteSection qs = new QuoteSection(dto.getName());
             quoteService.addSections(quote, qs);
             addNewGrid(qs);
-            for (PostitionDto pos : dto.getItems()) {
+            for (BundleItemDto pos : dto.getItems()) {
                 ItemPosition ip = converter.createItemPositionByItemId(pos.getId(), pos.getQty());
                 sectionHandler.putToSection(qs, ip);
             }

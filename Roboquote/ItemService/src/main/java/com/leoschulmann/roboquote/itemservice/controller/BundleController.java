@@ -39,7 +39,7 @@ public class BundleController {
     @DeleteMapping("{id}")
     ResponseEntity<List<BundleDto>> removeBundle(@PathVariable int id) {
         bundleService.deleteBundle(id);
-        return getBundles();
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PutMapping("{id}")

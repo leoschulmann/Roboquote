@@ -1,7 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.PostitionDto;
+import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
@@ -31,6 +31,9 @@ public class BundleServiceImpl implements BundleService {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    ItemService itemService;
+
     @Override
     public List<BundleDto> getBundlesList() {
         HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
@@ -48,7 +51,7 @@ public class BundleServiceImpl implements BundleService {
     }
 
     @Override
-    public BundledPosition convertToBundlePostion(Item item) {
+    public BundledPosition convertToBundlePosition(Item item) {
         return new BundledPosition(1, item);
     }
 
@@ -58,12 +61,38 @@ public class BundleServiceImpl implements BundleService {
         BundleDto dto = convertToDto(bundle);
         HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
         HttpEntity<BundleDto> entity = new HttpEntity<>(dto, headers);
-        restTemplate.exchange(url, HttpMethod.POST, entity, Item.class);
+        restTemplate.exchange(url, HttpMethod.POST, entity, BundleDto.class);
+    }
+
+    @Override
+    public Bundle convertToBundle(BundleDto dto) {
+        Bundle b = new Bundle();
+        b.setId(dto.getId());
+        b.setNameRus(dto.getName());
+        b.setNameEng(dto.getName());
+        b.setPositions(dto.getItems().stream().map(posDto -> new BundledPosition(posDto.getQty(),
+                itemService.getById(posDto.getId()))).collect(Collectors.toList())); //todo might generate too many queries
+        return b;
+    }
+
+    @Override
+    public void updateBundle(Bundle bundle) {
+        BundleDto dto = convertToDto(bundle);
+        HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
+        HttpEntity<BundleDto> entity = new HttpEntity<>(dto, headers);
+        restTemplate.exchange(url + bundle.getId(), HttpMethod.PUT, entity, BundleDto.class);
+    }
+
+    @Override
+    public void deleteBundle(int id) {
+        HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        restTemplate.exchange(url + id, HttpMethod.DELETE, entity, BundleDto[].class);
     }
 
     private BundleDto convertToDto(Bundle b) {
-        List<PostitionDto> postitions = b.getPositions().stream()
-                .map(bp -> new PostitionDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
+        List<BundleItemDto> postitions = b.getPositions().stream()
+                .map(bp -> new BundleItemDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
                 .collect(Collectors.toList());
         return new BundleDto(b.getNameRus(), postitions);
     }

@@ -11,17 +11,17 @@ public class BundleDto {
     private String name;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private List<PostitionDto> items;
+    private List<BundleItemDto> items;
 
     public BundleDto() {
     }
 
-    public BundleDto(String name, List<PostitionDto> items) {
+    public BundleDto(String name, List<BundleItemDto> items) {
         this.name = name;
         this.items = items;
     }
 
-    public BundleDto(int id, String name, List<PostitionDto> items) {
+    public BundleDto(int id, String name, List<BundleItemDto> items) {
         this.id = id;
         this.name = name;
         this.items = items;
@@ -43,11 +43,11 @@ public class BundleDto {
         this.name = name;
     }
 
-    public List<PostitionDto> getItems() {
+    public List<BundleItemDto> getItems() {
         return items;
     }
 
-    public void setItems(List<PostitionDto> items) {
+    public void setItems(List<BundleItemDto> items) {
         this.items = items;
     }
 

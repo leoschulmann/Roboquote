@@ -58,6 +58,10 @@ public class Bundle {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public void removePosition(BundledPosition bp) {
         positions.remove(bp);
     }

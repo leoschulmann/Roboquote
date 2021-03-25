@@ -1,7 +1,7 @@
 package com.leoschulmann.roboquote.itemservice.services;
 
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.PostitionDto;
+import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
@@ -29,20 +29,20 @@ public class BundleService {
         Bundle bundle = bundleRepository.findById(id).orElseThrow(() -> new RuntimeException("no bundle for id=" + id));
         BundleDto dto = new BundleDto(bundle.getId(), bundle.getNameRus(), new ArrayList<>());
         for (BundledPosition pos : bundle.getPositions()) {
-            dto.getItems().add(new PostitionDto(pos.getItem().getId(), pos.getQty(), pos.getItem().getNameRus()));
+            dto.getItems().add(new BundleItemDto(pos.getItem().getId(), pos.getQty(), pos.getItem().getNameRus()));
         }
         return dto;
     }
 
     public List<BundleDto> getAll() {
-        List<Bundle> listDomain = bundleRepository.findAll();
+        List<Bundle> listDtos = bundleRepository.findAll();
 
-        return listDomain.stream().map(dom -> {
-            List<PostitionDto> postitions = dom.getPositions().stream()
-                    .map(bp -> new PostitionDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
+        return listDtos.stream().map(dto -> {
+            List<BundleItemDto> postitions = dto.getPositions().stream()
+                    .map(bp -> new BundleItemDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
                     .collect(Collectors.toList());
 
-            return new BundleDto(dom.getId(), dom.getNameRus(), postitions);
+            return new BundleDto(dto.getId(), dto.getNameRus(), postitions);
         }).collect(Collectors.toList());
     }
 
@@ -67,7 +67,7 @@ public class BundleService {
     }
 
     private void addItemsFromDto(Bundle bundle, BundleDto bundleDto) {
-        for (PostitionDto posDto : bundleDto.getItems()) {
+        for (BundleItemDto posDto : bundleDto.getItems()) {
             BundledPosition pos = new BundledPosition();
             pos.setQty(posDto.getQty());
             Item i = itemRepository.findById(posDto.getId())

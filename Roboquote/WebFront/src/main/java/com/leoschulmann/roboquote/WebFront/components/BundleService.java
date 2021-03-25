@@ -12,7 +12,13 @@ public interface BundleService {
 
     BundleDto getBundleById(int id);
 
-    BundledPosition convertToBundlePostion(Item item);
+    BundledPosition convertToBundlePosition(Item item);
 
     void saveBundle(Bundle bundle);
+
+    Bundle convertToBundle(BundleDto dto);
+
+    void updateBundle(Bundle bundle);
+
+    void deleteBundle(int id);
 }

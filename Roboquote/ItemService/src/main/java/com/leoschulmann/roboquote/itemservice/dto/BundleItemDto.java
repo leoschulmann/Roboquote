@@ -2,7 +2,7 @@ package com.leoschulmann.roboquote.itemservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class PostitionDto {
+public class BundleItemDto {
     private int id;
     private int qty;
 
@@ -33,15 +33,15 @@ public class PostitionDto {
         this.name = name;
     }
 
-    public PostitionDto() {
+    public BundleItemDto() {
     }
 
-    public PostitionDto(int id, int qty) {
+    public BundleItemDto(int id, int qty) {
         this.id = id;
         this.qty = qty;
     }
 
-    public PostitionDto(int id, int qty, String name) {
+    public BundleItemDto(int id, int qty, String name) {
         this.id = id;
         this.qty = qty;
         this.name = name;
