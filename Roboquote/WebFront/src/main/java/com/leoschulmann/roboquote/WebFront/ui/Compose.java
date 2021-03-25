@@ -22,6 +22,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -514,6 +515,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
         IntegerField discountField = new IntegerField("Discount, %");
+        Button wrapButton = new Button(VaadinIcon.LINES.create());
         Button deleteBtn = new Button(VaadinIcon.CLOSE_CIRCLE.create());
 
         editNameBtn.addClickListener(c -> showNewSectionDialog(
@@ -533,6 +535,13 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             fireEvent(new UniversalSectionChangedEvent(this));
         });
 
+        wrapButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+        wrapButton.addClickListener(c -> {
+            if (grid.isTextWrap()) grid.removeThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+            else grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
+            grid.setTextWrap(!grid.isTextWrap());
+        });
+
         deleteBtn.addClickListener(c -> {
             gridsBlock.remove(acc);
             gridList.remove(grid);
@@ -544,11 +553,11 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 
 
-        addToClickableComponents(deleteBtn, editNameBtn, discountField);
+        addToClickableComponents(deleteBtn, editNameBtn, wrapButton, discountField);
 
         layout.getStyle().set("margin-left", "auto");
         layout.setAlignItems(Alignment.END);
-        layout.add(discountField, editNameBtn, deleteBtn);
+        layout.add(discountField, editNameBtn, wrapButton, deleteBtn);
         return layout;
     }
 
