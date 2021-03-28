@@ -1,54 +1,35 @@
 package com.leoschulmann.roboquote.itemservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.List;
 
+@Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class BundleDto {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private int id;
 
+    @Size(min = 1, max = 100)
     private String name;
 
+    @Size(min = 1)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<BundleItemDto> items;
-
-    public BundleDto() {
-    }
 
     public BundleDto(String name, List<BundleItemDto> items) {
         this.name = name;
         this.items = items;
     }
 
-    public BundleDto(int id, String name, List<BundleItemDto> items) {
+    public BundleDto(int id, @NotBlank String name) {
         this.id = id;
         this.name = name;
-        this.items = items;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<BundleItemDto> getItems() {
-        return items;
-    }
-
-    public void setItems(List<BundleItemDto> items) {
-        this.items = items;
     }
 
     @Override

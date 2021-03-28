@@ -71,7 +71,7 @@ public class BundleServiceImpl implements BundleService {
         b.setNameRus(dto.getName());
         b.setNameEng(dto.getName());
         b.setPositions(dto.getItems().stream().map(posDto -> new BundledPosition(posDto.getQty(),
-                itemService.getById(posDto.getId()))).collect(Collectors.toList())); //todo might generate too many queries
+                itemService.getById(posDto.getItemId()))).collect(Collectors.toList())); //todo might generate too many queries
         return b;
     }
 

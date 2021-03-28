@@ -1,57 +1,35 @@
 package com.leoschulmann.roboquote.itemservice.services;
 
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
-import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
-import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.itemservice.entities.projections.BundleWithoutPositions;
 import com.leoschulmann.roboquote.itemservice.repositories.BundleRepository;
-import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BundleService {
 
     private final BundleRepository bundleRepository;
-
-    private final ItemRepository itemRepository;
-
-    public BundleService(BundleRepository bundleRepository, ItemRepository itemRepository) {
-        this.bundleRepository = bundleRepository;
-        this.itemRepository = itemRepository;
-    }
+    private final DtoConverter dtoConverter;
 
     public BundleDto getById(int id) {
-        Bundle bundle = bundleRepository.findById(id).orElseThrow(() -> new RuntimeException("no bundle for id=" + id));
-        BundleDto dto = new BundleDto(bundle.getId(), bundle.getNameRus(), new ArrayList<>());
-        for (BundledPosition pos : bundle.getPositions()) {
-            dto.getItems().add(new BundleItemDto(pos.getItem().getId(), pos.getQty(), pos.getItem().getNameRus()));
-        }
-        return dto;
+        Bundle bundle = bundleRepository.findById(id).get(); //validated in controller
+        return dtoConverter.convertFromBundle(bundle);
     }
 
-    public List<BundleDto> getAll() {
-        List<Bundle> listDtos = bundleRepository.findAll();
-
-        return listDtos.stream().map(dto -> {
-            List<BundleItemDto> postitions = dto.getPositions().stream()
-                    .map(bp -> new BundleItemDto(bp.getItem().getId(), bp.getQty(), bp.getItem().getNameRus()))
-                    .collect(Collectors.toList());
-
-            return new BundleDto(dto.getId(), dto.getNameRus(), postitions);
-        }).collect(Collectors.toList());
+    public List<BundleDto> getAllBundlesIdsAndNames() {
+        List<BundleWithoutPositions> projections = bundleRepository.getAllBundlesNamesAndIds();
+        return dtoConverter.convertFromProjections(projections);
     }
 
-    public BundleDto addNewBundle(BundleDto requestDto) {
-        Bundle b = new Bundle();
-        b.setNameRus(requestDto.getName());
-        addItemsFromDto(b, requestDto);
-        Bundle persisted = bundleRepository.save(b);
-        return getById(persisted.getId());
+    public Integer addNewBundle(BundleDto requestDto) {
+        Bundle bundle = dtoConverter.convertToBundle(requestDto);
+        return bundleRepository.save(bundle).getId();
     }
 
     public void deleteBundle(int id) {
@@ -59,21 +37,10 @@ public class BundleService {
     }
 
     public void editBundle(int id, BundleDto dto) {
-        Bundle bundle = bundleRepository.findById(id).orElseThrow(() -> new RuntimeException("no bundle for id=" + id));
-        bundle.setNameRus(dto.getName());
+        Bundle bundle = bundleRepository.findById(id).get(); //validated in controller
+        bundle.setNameRus(dto.getName()); //todo i8n violation
         bundle.setPositions(new ArrayList<>());
-        addItemsFromDto(bundle, dto);
+        bundle.setPositions(dtoConverter.convertFromBundleItemDto(dto.getItems()));
         bundleRepository.save(bundle);
-    }
-
-    private void addItemsFromDto(Bundle bundle, BundleDto bundleDto) {
-        for (BundleItemDto posDto : bundleDto.getItems()) {
-            BundledPosition pos = new BundledPosition();
-            pos.setQty(posDto.getQty());
-            Item i = itemRepository.findById(posDto.getId())
-                    .orElseThrow(() -> new RuntimeException("no item for id=" + posDto.getId()));
-            pos.setItem(i);
-            bundle.addPosition(pos);
-        }
     }
 }

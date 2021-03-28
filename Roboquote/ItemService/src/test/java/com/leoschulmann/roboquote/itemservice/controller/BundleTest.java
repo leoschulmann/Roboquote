@@ -1,149 +1,155 @@
 package com.leoschulmann.roboquote.itemservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import com.leoschulmann.roboquote.itemservice.config.TestJpaConfig;
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
 import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
+import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.exceptions.ExceptionProcessor;
 import com.leoschulmann.roboquote.itemservice.repositories.BundleRepository;
 import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
 import com.leoschulmann.roboquote.itemservice.services.BundleService;
-import org.javamoney.moneta.Money;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import com.leoschulmann.roboquote.itemservice.services.DtoConverter;
+import com.leoschulmann.roboquote.itemservice.util.TestFactory;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.AnnotationConfigContextLoader;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.util.ArrayList;
+import javax.transaction.Transactional;
+import javax.validation.Validator;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {TestJpaConfig.class}, loader = AnnotationConfigContextLoader.class)
 @Transactional
+@ExtendWith(SpringExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ContextConfiguration(classes = {TestJpaConfig.class})
 public class BundleTest {
     @Autowired
-    private ItemRepository itemRepository;
+    BundleRepository bundleRepository;
 
     @Autowired
-    private BundleRepository bundleRepository;
-    private BundleController bundleController;
-    private BundleService bundleService;
+    ItemRepository itemRepository;
 
-    private MockMvc mockMvc;
-    private ObjectMapper om;
+    BundleService bundleService;
+    BundleController bundleController;
+    DtoConverter dtoConverter;
+    MockMvc mockMvc;
+    ObjectMapper om;
 
-    @Before
-    public void prepare() {
-        bundleService = new BundleService(bundleRepository, itemRepository);
-        bundleController = new BundleController(bundleService);
+    @Test
+    void sanityCheck() {
+        Assertions.assertNotNull(bundleRepository);
+        Assertions.assertNotNull(itemRepository);
+    }
+
+    @BeforeAll
+    void prepare() {
+        Validator validator = Mockito.mock(Validator.class);
+        Mockito.when(validator.validate(any(BundleItemDto.class))).thenReturn(new HashSet<>());
+        dtoConverter = new DtoConverter(itemRepository);
+        bundleService = new BundleService(bundleRepository, dtoConverter);
+        bundleController = new BundleController(bundleService, validator);
+
         mockMvc = MockMvcBuilders.standaloneSetup(bundleController).setControllerAdvice(new ExceptionProcessor()).build();
-
         om = new ObjectMapper();
-
-        List<Item> items = itemFactory("coffee", "beer", "cocoa", "cola", "juice");
+        List<Item> items = TestFactory.itemFactory("coffee", "beer", "cocoa", "cola", "juice");
         itemRepository.saveAll(items);
+
+        List<Bundle> bundles = List.of(
+                TestFactory.bundleFactory("bundle1", items.get(0), items.get(1), items.get(2)), //id=6
+                TestFactory.bundleFactory("bundle2", items.get(3), items.get(4)),               //id=10
+                TestFactory.bundleFactory("bundle3", items.get(0), items.get(2), items.get(4))  //id=13
+        );
+        bundleRepository.saveAll(bundles);
     }
 
     @Test
-    public void testSaveNew() throws Exception {
-        BundleDto requestDto = new BundleDto("test", List.of(
-                new BundleItemDto(1, 1), new BundleItemDto(2, 15)));
-        String json = om.writeValueAsString(requestDto);
-        MvcResult res = mockMvc.perform(MockMvcRequestBuilders.post("/bundle").contentType("application/json")
-                .content(json)).andDo(MockMvcResultHandlers.print()).andReturn();
-
-        BundleDto resDto = om.readValue(res.getResponse().getContentAsString(StandardCharsets.UTF_8), BundleDto.class);
-
-        assertEquals(resDto.getName(), requestDto.getName());
-        assertEquals("coffee", resDto.getItems().get(0).getName());
-        assertEquals(15, resDto.getItems().get(1).getQty());
-    }
-
-    @Test
-    public void getAllTest() throws Exception {
-        BundleDto dto1 = new BundleDto("bundle1", List.of(new BundleItemDto(4, 2)));
-        BundleDto dto2 = new BundleDto("bundle2", List.of(new BundleItemDto(5, 10)));
-        BundleDto dto3 = new BundleDto("bundle3", List.of(new BundleItemDto(2, 1)));
-
-        bundleService.addNewBundle(dto1);
-        bundleService.addNewBundle(dto2);
-        bundleService.addNewBundle(dto3);
-
-        MvcResult res = mockMvc.perform(MockMvcRequestBuilders.get("/bundle"))
-                .andDo(MockMvcResultHandlers.print()).andExpect(status().isOk()).andReturn();
-        CollectionType type = om.getTypeFactory().constructCollectionType(List.class, BundleDto.class);
-        List<BundleDto> dtos = om.readValue(res.getResponse().getContentAsString(StandardCharsets.UTF_8), type);
-
+    void testGetNamesIds() throws Exception {
+        MvcResult res = mockMvc.perform(get("/bundle")).andReturn();
+        String str = res.getResponse().getContentAsString();
+        List<BundleDto> dtos = Arrays.asList(om.readValue(str, BundleDto[].class));
         assertEquals(3, dtos.size());
-        assertEquals("bundle3", dtos.get(2).getName());
+        assertTrue(dtos.stream().anyMatch(d -> d.getName().equals("bundle1")));
     }
 
     @Test
-    public void PutTest() throws Exception {
-
-        List<BundleItemDto> list = List.of(new BundleItemDto(2, 2), new BundleItemDto(3, 3));
-        BundleDto initialDto = new BundleDto();
-        initialDto.setName("test bundle");
-        initialDto.setItems(list);
-        int id = (bundleService.addNewBundle(initialDto)).getId();
-
-        List<BundleItemDto> newItems = List.of(new BundleItemDto(4, 10), new BundleItemDto(5, 3));
-        BundleDto modifiedDto = new BundleDto();
-        modifiedDto.setName("modified test bundle");
-        modifiedDto.setItems(newItems);
-
-        String json = om.writeValueAsString(modifiedDto);
-
-        mockMvc.perform(MockMvcRequestBuilders.put("/bundle/" + id)
-                .contentType("application/json").content(json)).andExpect(status().isOk())
-                .andDo(MockMvcResultHandlers.print());
-
-        MvcResult res = mockMvc.perform(MockMvcRequestBuilders.get("/bundle/" + id))
-                .andExpect(status().isOk()).andReturn();
-
-        BundleDto resDto = om.readValue(res.getResponse().getContentAsString(StandardCharsets.UTF_8), BundleDto.class);
-
-        assertEquals("modified test bundle", resDto.getName());
-        assertEquals(2, resDto.getItems().size());
-        assertEquals("cola", resDto.getItems().get(0).getName());
-        assertEquals(10, resDto.getItems().get(0).getQty());
+    void testGetSingle() throws Exception {
+        int bundleid = 6;
+        MvcResult res = mockMvc.perform(get("/bundle/" + bundleid)).andReturn();
+        String json = res.getResponse().getContentAsString();
+        BundleDto dto = om.readValue(json, BundleDto.class);
+        assertEquals("bundle1", dto.getName());
+        assertEquals(3, dto.getItems().size());
+        assertTrue(dto.getItems().stream().anyMatch(i -> i.getName().equals("beer")));
     }
 
-    private List<Item> itemFactory(String... names) {
-        Random random = new Random();
-        List<Item> list = new ArrayList<>();
-        for (String name : names) {
-            Item item = new Item();
-            item.setNameRus(name);
-            item.setNameEng(name);
-            item.setModified(LocalDate.now());
-            item.setCreated(LocalDate.now());
-            item.setPartno(String.valueOf(random.nextInt(1000000)));
-            item.setMargin(random.nextInt(99));
-            item.setBrand(String.valueOf(random.nextInt(100000)));
-            item.setBuyingPrice(Money.of(random.nextInt(10000), "USD"));
-            item.setSellingPrice(Money.of(random.nextInt(10000), "USD"));
-            item.setOverridden(random.nextBoolean());
-            list.add(item);
-        }
-        return list;
+    @Test
+    void addNewBundle() throws Exception {
+        List<BundleItemDto> list = List.of(new BundleItemDto(1, 10), new BundleItemDto(2, 20));
+        BundleDto dto = new BundleDto("my new bundle", list);
+        String json = om.writeValueAsString(dto);
+        mockMvc.perform(post("/bundle").contentType("application/json").characterEncoding("UTF-8")
+                .content(json)).andDo(print()).andExpect(status().isOk());
 
+        MvcResult res = mockMvc.perform(get("/bundle")).andReturn();
+        String str = res.getResponse().getContentAsString();
+        List<BundleDto> dtos = Arrays.asList(om.readValue(str, BundleDto[].class));
+        assertEquals(4, dtos.size());
+    }
+
+    @Test
+    void deleteBundle() throws Exception {
+        int bundleid = 6;
+        mockMvc.perform(delete("/bundle/" + bundleid));
+
+        MvcResult res = mockMvc.perform(get("/bundle")).andReturn();
+        String str = res.getResponse().getContentAsString();
+        List<BundleDto> dtos = Arrays.asList(om.readValue(str, BundleDto[].class));
+        assertEquals(2, dtos.size());
+    }
+
+
+    @Test
+    void editBundle() throws Exception {
+        int bundleid = 6;
+        int itemid = 5;
+        int qty = 99;
+        List<BundleItemDto> items = List.of(new BundleItemDto(itemid, qty));
+        BundleDto dto = new BundleDto("new name", items);
+        String json = om.writeValueAsString(dto);
+        mockMvc.perform(put("/bundle/"+ bundleid).contentType("application/json").characterEncoding("UTF-8")
+                .content(json)).andDo(print()).andExpect(status().isOk());
+
+        MvcResult res = mockMvc.perform(get("/bundle/" + bundleid)).andReturn();
+        BundleDto newdto = om.readValue(res.getResponse().getContentAsString(), BundleDto.class);
+        assertEquals("new name", newdto.getName());
+
+        List<BundleItemDto> newitems = newdto.getItems();
+        assertEquals(1, newitems.size());
+        assertEquals("juice", newitems.get(0).getName());
+        assertEquals(99, newitems.get(0).getQty());
     }
 }
+////
+//        mockMvc.perform(MockMvcRequestBuilders.put("/bundle/" + id)
+//                .contentType("application/json").content(json)).andExpect(status().isOk())
+//                .andDo(MockMvcResultHandlers.print());

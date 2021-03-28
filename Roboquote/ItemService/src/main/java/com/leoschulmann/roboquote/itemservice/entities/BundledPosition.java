@@ -1,8 +1,13 @@
 package com.leoschulmann.roboquote.itemservice.entities;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import javax.persistence.*;
 
 @Entity
+@Setter @Getter @NoArgsConstructor
 @Table(name = "bundled_pos")
 public class BundledPosition {
 
@@ -22,39 +27,8 @@ public class BundledPosition {
     @JoinColumn(name = "item_id")
     private Item item;
 
-    public int getId() {
-        return id;
-    }
-
-    public BundledPosition() {
-    }
-
     public BundledPosition(Integer qty, Item item) {
         this.qty = qty;
-        this.item = item;
-    }
-
-    public Integer getQty() {
-        return qty;
-    }
-
-    public void setQty(Integer qty) {
-        this.qty = qty;
-    }
-
-    public Bundle getBundle() {
-        return parentBundle;
-    }
-
-    public void setBundle(Bundle bundle) {
-        this.parentBundle = bundle;
-    }
-
-    public Item getItem() {
-        return item;
-    }
-
-    public void setItem(Item item) {
         this.item = item;
     }
 }

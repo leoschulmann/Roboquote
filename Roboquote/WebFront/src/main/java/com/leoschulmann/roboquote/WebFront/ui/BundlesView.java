@@ -40,7 +40,7 @@ public class BundlesView extends VerticalLayout {
                 .setFlexGrow(0);
         bundleGrid.setWidth("65%");
         bundleGrid.addItemClickListener(c -> {
-            Bundle bundle = bundleService.convertToBundle(c.getItem());
+            Bundle bundle = bundleService.convertToBundle(c.getItem());  //todo WILL NOT WORK
             BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), bundleService,
                     bundle, this);
             edDial.setWidth("85%");
