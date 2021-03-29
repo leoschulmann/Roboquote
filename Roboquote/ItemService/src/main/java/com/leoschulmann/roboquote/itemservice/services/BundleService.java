@@ -40,7 +40,7 @@ public class BundleService {
         Bundle bundle = bundleRepository.findById(id).get(); //validated in controller
         bundle.setNameRus(dto.getName()); //todo i8n violation
         bundle.setPositions(new ArrayList<>());
-        bundle.setPositions(dtoConverter.convertFromBundleItemDto(dto.getItems()));
+        dto.getItems().stream().map(dtoConverter::convertFromBundleItemDto).forEach(bundle::addPosition);
         bundleRepository.save(bundle);
     }
 }

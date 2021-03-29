@@ -35,14 +35,12 @@ public class DtoConverter {
     public Bundle convertToBundle(BundleDto dto) {
         Bundle bundle = new Bundle();
         bundle.setNameRus(dto.getName()); //todo i8n violation
-        bundle.setPositions(convertFromBundleItemDto(dto.getItems()));
+        dto.getItems().stream().map(this::convertFromBundleItemDto).forEach(bundle::addPosition);
         return bundle;
     }
 
-    public List<BundledPosition> convertFromBundleItemDto(List<BundleItemDto> items) {
-        return items.stream().map(i -> {
-            Item item = itemRepository.findById(i.getItemId()).get();
-            return new BundledPosition(i.getQty(), item);
-        }).collect(Collectors.toList());
+    public BundledPosition convertFromBundleItemDto(BundleItemDto itemDto) {
+        Item item = itemRepository.findById(itemDto.getItemId()).get();
+        return new BundledPosition(itemDto.getQty(), item);
     }
 }

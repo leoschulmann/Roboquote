@@ -3,13 +3,11 @@ package com.leoschulmann.roboquote.WebFront.ui;
 import com.leoschulmann.roboquote.WebFront.components.BundleService;
 import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
@@ -35,12 +33,13 @@ public class BundlesView extends VerticalLayout {
         bundleGrid.setDataProvider(new ListDataProvider<>(bundleService.getBundlesList()));
         bundleGrid.removeAllColumns();
         bundleGrid.addColumn(BundleDto::getName).setHeader("Name").setFlexGrow(1);
-        bundleGrid.addComponentColumn(dto -> new Label(String.valueOf(
-                dto.getItems().stream().mapToInt(BundleItemDto::getQty).sum()))).setHeader("# items")
-                .setFlexGrow(0);
+//        bundleGrid.addComponentColumn(dto -> new Label(String.valueOf(
+//                dto.getItems().stream().mapToInt(BundleItemDto::getQty).sum()))).setHeader("# items")
+//                .setFlexGrow(0);
         bundleGrid.setWidth("65%");
         bundleGrid.addItemClickListener(c -> {
-            Bundle bundle = bundleService.convertToBundle(c.getItem());  //todo WILL NOT WORK
+            int bunId = c.getItem().getId();
+            Bundle bundle = bundleService.getBundleById(bunId);
             BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), bundleService,
                     bundle, this);
             edDial.setWidth("85%");

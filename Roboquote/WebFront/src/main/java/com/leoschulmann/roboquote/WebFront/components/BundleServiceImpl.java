@@ -44,7 +44,7 @@ public class BundleServiceImpl implements BundleService {
     }
 
     @Override
-    public BundleDto getBundleById(int id) {
+    public BundleDto getBundleDtoById(int id) {
         HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
         ResponseEntity<BundleDto> responseEntity = restTemplate.exchange(url + id, HttpMethod.GET, entity, BundleDto.class);
         return responseEntity.getBody();
@@ -88,6 +88,12 @@ public class BundleServiceImpl implements BundleService {
         HttpHeaders headers = authService.provideHttpHeadersWithCredentials();
         HttpEntity<String> entity = new HttpEntity<>(headers);
         restTemplate.exchange(url + id, HttpMethod.DELETE, entity, BundleDto[].class);
+    }
+
+    @Override
+    public Bundle getBundleById(int id) {
+        BundleDto dto = getBundleDtoById(id);
+        return convertToBundle(dto);
     }
 
     private BundleDto convertToDto(Bundle b) {

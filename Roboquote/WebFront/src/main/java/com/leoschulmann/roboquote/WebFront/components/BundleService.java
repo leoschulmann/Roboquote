@@ -10,7 +10,7 @@ import java.util.List;
 public interface BundleService {
     List<BundleDto> getBundlesList();
 
-    BundleDto getBundleById(int id);
+    BundleDto getBundleDtoById(int id);
 
     BundledPosition convertToBundlePosition(Item item);
 
@@ -21,4 +21,6 @@ public interface BundleService {
     void updateBundle(Bundle bundle);
 
     void deleteBundle(int id);
+
+    Bundle getBundleById(int bunId);
 }

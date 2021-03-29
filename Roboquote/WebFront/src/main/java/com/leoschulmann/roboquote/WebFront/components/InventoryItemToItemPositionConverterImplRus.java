@@ -47,7 +47,7 @@ public class InventoryItemToItemPositionConverterImplRus implements InventoryIte
     }
 
     @Override
-    public ItemPosition createItemPositionByItemId(Integer inventoryId, Integer qty) {
+    public ItemPosition createItemPositionByItemId(Integer inventoryId, Integer qty) { //todo rewrite
         HttpEntity<String> entity = authService.provideHttpEntityWithCredentials();
         ResponseEntity<String> responseEntity = restTemplate.exchange(url+inventoryId, HttpMethod.GET, entity, String.class);
 

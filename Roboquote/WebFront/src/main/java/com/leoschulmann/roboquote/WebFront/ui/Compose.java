@@ -424,12 +424,12 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         addBundleBtn.addClickListener(bang -> {
             int id = bundles.getValue().getId();
-            BundleDto dto = bundleService.getBundleById(id);
+            BundleDto dto = bundleService.getBundleDtoById(id);
             QuoteSection qs = new QuoteSection(dto.getName());
             quoteService.addSections(quote, qs);
             addNewGrid(qs);
             for (BundleItemDto pos : dto.getItems()) {
-                ItemPosition ip = converter.createItemPositionByItemId(pos.getId(), pos.getQty());
+                ItemPosition ip = converter.createItemPositionByItemId(pos.getItemId(), pos.getQty());
                 sectionHandler.putToSection(qs, ip);
             }
             refreshSectionSubtotal(currency, qs);
