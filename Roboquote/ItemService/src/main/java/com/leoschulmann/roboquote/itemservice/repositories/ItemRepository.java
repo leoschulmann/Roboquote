@@ -9,4 +9,7 @@ public interface ItemRepository extends JpaRepository<Item, Integer> {
     Item findByNameRus(String name);
     List<Item> findAllByNameRusContainingIgnoreCaseOrNameEngContainingIgnoreCaseOrPartnoContainingIgnoreCase
             (String s1, String s2, String s3);
+
+
+    List<Item> findByIdIn(List<Integer> ids);
 }

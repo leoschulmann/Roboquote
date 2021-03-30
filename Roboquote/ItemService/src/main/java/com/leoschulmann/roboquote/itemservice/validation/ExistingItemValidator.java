@@ -7,6 +7,7 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
 public class ExistingItemValidator implements ConstraintValidator<ExistingItem, Integer> {
+
     @Autowired
     ItemRepository itemRepository;
 
