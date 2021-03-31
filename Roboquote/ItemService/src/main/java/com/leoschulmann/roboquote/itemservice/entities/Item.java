@@ -4,15 +4,22 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.itemservice.serializers.ItemDeserializer;
 import com.leoschulmann.roboquote.itemservice.serializers.ItemSerializer;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.money.Monetary;
 import javax.persistence.*;
 import java.time.LocalDate;
 
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @JsonSerialize(using = ItemSerializer.class)
 @JsonDeserialize(using = ItemDeserializer.class)
@@ -58,12 +65,8 @@ public class Item {
     @Column(name = "overridden_sell_price")
     boolean overridden;
 
-    public Item() {
-    }
-
-    public Item(int id, String brand, String partno, String nameRus, String nameEng, Money buyingPrice, double margin,
+    public Item(String brand, String partno, String nameRus, String nameEng, Money buyingPrice, double margin,
                 Money sellingPrice, LocalDate created, LocalDate modified, boolean overridden) {
-        this.id = id;
         this.brand = brand;
         this.partno = partno;
         this.nameRus = nameRus;
@@ -73,95 +76,6 @@ public class Item {
         this.sellingPrice = sellingPrice;
         this.created = created;
         this.modified = modified;
-        this.overridden = overridden;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getPartno() {
-        return partno;
-    }
-
-    public void setPartno(String partno) {
-        this.partno = partno;
-    }
-
-    public String getNameRus() {
-        return nameRus;
-    }
-
-    public void setNameRus(String nameRus) {
-        this.nameRus = nameRus;
-    }
-
-    public String getNameEng() {
-        return nameEng;
-    }
-
-    public void setNameEng(String nameEng) {
-        this.nameEng = nameEng;
-    }
-
-    public Money getBuyingPrice() {
-        return buyingPrice;
-    }
-
-    public void setBuyingPrice(Money buyingPrice) {
-        this.buyingPrice = buyingPrice;
-    }
-
-    public double getMargin() {
-        return margin;
-    }
-
-    public void setMargin(double margin) {
-        this.margin = margin;
-    }
-
-    public Money getSellingPrice() {
-        return isOverridden() ? sellingPrice.with(Monetary.getDefaultRounding()) :
-                buyingPrice.divide((100 - margin) / 100.).with(Monetary.getDefaultRounding());
-    }
-
-    public void setSellingPrice(Money sellingPrice) {
-        this.sellingPrice = sellingPrice;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-
-    public LocalDate getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDate created) {
-        this.created = created;
-    }
-
-    public LocalDate getModified() {
-        return modified;
-    }
-
-    public void setModified(LocalDate modified) {
-        this.modified = modified;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public boolean isOverridden() {
-        return overridden;
-    }
-
-    public void setOverridden(boolean overridden) {
         this.overridden = overridden;
     }
 }

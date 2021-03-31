@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
+@Deprecated
 public class ItemDeserializer extends JsonDeserializer<Item> {
     @Override
     public Item deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)

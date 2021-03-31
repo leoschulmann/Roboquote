@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@Deprecated
 public class ItemServiceImpl implements ItemService {
 
     final ItemRepository itemRepository;

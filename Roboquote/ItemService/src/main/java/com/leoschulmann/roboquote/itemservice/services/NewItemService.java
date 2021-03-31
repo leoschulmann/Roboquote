@@ -24,4 +24,30 @@ public class NewItemService {
     public ItemDto getItemById(int id) {
         return dtoConverter.convertToItemDto(itemRepository.findById(id).get());
     }
+
+    public List<ItemDto> getAllDtos() {
+        return itemRepository.findAll().stream().map(dtoConverter::convertToItemDto).collect(Collectors.toList());
+    }
+
+    public Integer addNewItem(ItemDto itemDto) {
+        Item converted = dtoConverter.convertToItem(itemDto);
+        return itemRepository.save(converted).getId();
+    }
+
+    public Integer editItem(int id, ItemDto itemDto) {
+        Item persisted = itemRepository.findById(id).get(); //validated in controller
+        persisted = dtoConverter.updateFields(persisted, itemDto);
+        return itemRepository.save(persisted).getId();
+    }
+
+    public void deleteItem(int id) {
+        itemRepository.deleteById(id);
+    }
+
+    public List<ItemDto> searchByQuery(String query) {
+        List<Item> items = itemRepository.
+                findAllByNameRusContainingIgnoreCaseOrNameEngContainingIgnoreCaseOrPartnoContainingIgnoreCase
+                        (query, query, query);
+        return items.stream().map(dtoConverter::convertToItemDto).collect(Collectors.toList());
+    }
 }

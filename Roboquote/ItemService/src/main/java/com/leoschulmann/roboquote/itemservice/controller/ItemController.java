@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/item")
+@Deprecated
 public class ItemController {
 
     final ItemService itemService;
