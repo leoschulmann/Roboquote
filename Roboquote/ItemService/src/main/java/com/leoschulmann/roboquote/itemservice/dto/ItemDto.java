@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.itemservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.leoschulmann.roboquote.itemservice.validation.AnyValue;
 import com.leoschulmann.roboquote.itemservice.validation.ValidDate;
@@ -17,6 +18,7 @@ import javax.validation.constraints.Size;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ItemDto {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer id;
 
     @Size(max = 255)

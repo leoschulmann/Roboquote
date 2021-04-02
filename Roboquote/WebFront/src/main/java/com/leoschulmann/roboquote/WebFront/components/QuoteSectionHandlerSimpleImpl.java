@@ -63,23 +63,23 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
         double charge = conv / 100 + 1.;
 
         switch (currency) {
-            case "RUB":
-                qs.setTotal(roubles.add(convertToRouble(euros, euroRate, charge))
+            case "RUB": //todo investigate cast
+                qs.setTotal((Money) roubles.add(convertToRouble(euros, euroRate, charge))
                         .add(convertToRouble(dollars, dollarRate, charge))
                         .add(convertToRouble(yens, yenRate, charge)));
                 break;
             case "EUR":
-                qs.setTotal(euros.add(convertFromRouble(roubles, "EUR", euroRate, charge))
+                qs.setTotal((Money) euros.add(convertFromRouble(roubles, "EUR", euroRate, charge))
                         .add(crossExchange(dollars, "EUR", dollarRate, euroRate, charge))
                         .add(crossExchange(yens, "EUR", yenRate, euroRate, charge)));
                 break;
             case "USD":
-                qs.setTotal(dollars.add(convertFromRouble(roubles, "USD", dollarRate, charge))
+                qs.setTotal((Money) dollars.add(convertFromRouble(roubles, "USD", dollarRate, charge))
                         .add(crossExchange(euros, "USD", euroRate, dollarRate, charge))
                         .add(crossExchange(yens, "USD", yenRate, dollarRate, charge)));
                 break;
             case "JPY":
-                qs.setTotal(yens.add(convertFromRouble(roubles, "JPY", yenRate, charge))
+                qs.setTotal((Money) yens.add(convertFromRouble(roubles, "JPY", yenRate, charge))
                         .add(crossExchange(euros, "JPY", euroRate, yenRate, charge))
                         .add(crossExchange(dollars, "JPY", dollarRate, yenRate, charge)));
                 break;

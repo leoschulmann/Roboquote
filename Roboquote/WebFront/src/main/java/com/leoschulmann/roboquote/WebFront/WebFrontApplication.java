@@ -15,6 +15,7 @@ public class WebFrontApplication {
 
 	@Bean
 	RestTemplate restTemplate() {
-		return new RestTemplate();
+		return new RestTemplate();     //todo register with responseErrorHandler
+
 	}
 }

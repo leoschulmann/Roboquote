@@ -13,6 +13,7 @@ import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.money.Monetary;
 import javax.persistence.*;
 import java.time.LocalDate;
 
@@ -64,6 +65,11 @@ public class Item {
 
     @Column(name = "overridden_sell_price")
     boolean overridden;
+
+    public Money getSellingPrice() {
+        return isOverridden() ? sellingPrice.with(Monetary.getDefaultRounding()) :
+                buyingPrice.divide((100 - margin) / 100.).with(Monetary.getDefaultRounding());
+    }
 
     public Item(String brand, String partno, String nameRus, String nameEng, Money buyingPrice, double margin,
                 Money sellingPrice, LocalDate created, LocalDate modified, boolean overridden) {

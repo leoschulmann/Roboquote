@@ -4,6 +4,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 
 import java.util.List;
 
+@Deprecated
 public interface ItemService {
     Item getItemById(int id);
 
