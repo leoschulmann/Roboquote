@@ -37,4 +37,9 @@ public class Bundle {
     public void removePosition(BundledPosition bp) {
         positions.remove(bp);
     }
+
+    @Override
+    public String toString() {
+        return nameRus;
+    }
 }

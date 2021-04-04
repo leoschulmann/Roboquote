@@ -1,6 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.BundleService;
+import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
@@ -36,8 +36,8 @@ public class BundlesEditorDialog extends Dialog {
     private Button deleteBundle;
     private ListDataProvider<Item> availableItemsDataProvider;
     private ListDataProvider<BundledPosition> selectedItemsDataProvider;
+    private HttpRestService httpRestService;
     private final Bundle bundle;
-    private final BundleService bundleService;
     private final List<Item> itemsCache;
     private final boolean createNew;
     private final Span counter = new Span();
@@ -45,18 +45,18 @@ public class BundlesEditorDialog extends Dialog {
     private final BundlesView bundlesView;
 
 
-    public BundlesEditorDialog(List<Item> itemscache, BundleService bundleService, Bundle bundle, BundlesView bundlesView) {
+    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, Bundle bundle, BundlesView bundlesView) {
         this.itemsCache = itemscache;
-        this.bundleService = bundleService;
+        this.httpRestService = httpRestService;
         this.bundle = bundle;
         this.bundlesView = bundlesView;
         createNew = false;
         build();
     }
 
-    public BundlesEditorDialog(List<Item> itemscache, BundleService bundleService, BundlesView bundlesView) {
+    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, BundlesView bundlesView) {
         this.itemsCache = itemscache;
-        this.bundleService = bundleService;
+        this.httpRestService = httpRestService;
         this.bundle = new Bundle();
         this.bundlesView = bundlesView;
         createNew = true;
@@ -147,7 +147,7 @@ public class BundlesEditorDialog extends Dialog {
                     BundledPosition bp = optBP.get();
                     bp.setQty(bp.getQty() + 1);
                 } else {
-                    BundledPosition bp = bundleService.convertToBundlePosition(optItem.get());
+                    BundledPosition bp = httpRestService.convertToBundlePosition(optItem.get());
                     bundle.addPosition(bp);
                 }
                 selectedItemsDataProvider.refreshAll();
@@ -207,7 +207,7 @@ public class BundlesEditorDialog extends Dialog {
         if (createNew) deleteBundle.setEnabled(false);
         deleteBundle.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
         deleteBundle.addClickListener(c -> {
-            bundleService.deleteBundle(bundle.getId());
+            httpRestService.deleteBundle(bundle.getId());
             bundlesView.updateList();
             this.close();
         });
@@ -235,9 +235,9 @@ public class BundlesEditorDialog extends Dialog {
             if (createNew) {
                 bundle.setNameRus(nameField.getValue());
                 bundle.setNameEng(nameField.getValue());
-                bundleService.saveBundle(bundle);
+                httpRestService.saveBundle(bundle);
             } else {
-                bundleService.updateBundle(bundle);
+                httpRestService.updateBundle(bundle);
             }
             bundlesView.updateList();
             this.close();

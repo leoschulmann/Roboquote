@@ -4,10 +4,8 @@ import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
 import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.dto.ItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
-import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.entities.projections.BundleWithoutPositions;
-import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.javamoney.moneta.Money;
 import org.springframework.stereotype.Service;
@@ -22,9 +20,7 @@ import static java.time.format.DateTimeFormatter.ISO_DATE;
 
 @Service
 @RequiredArgsConstructor
-public class DtoConverter {
-
-    private final ItemRepository itemRepository;
+public class ItemBundleDtoConverter {
 
     public BundleDto convertFromBundle(Bundle bundle) {
         BundleDto dto = new BundleDto(bundle.getId(), bundle.getNameRus(), new ArrayList<>()); //todo i8n violation
@@ -36,18 +32,6 @@ public class DtoConverter {
 
     public List<BundleDto> convertFromProjections(List<BundleWithoutPositions> projections) { //todo i8n violation
         return projections.stream().map(p -> new BundleDto(p.getId(), p.getNameRus())).collect(Collectors.toList());
-    }
-
-    public Bundle convertToBundle(BundleDto dto) {
-        Bundle bundle = new Bundle();
-        bundle.setNameRus(dto.getName()); //todo i8n violation
-        dto.getItems().stream().map(this::convertFromBundleItemDto).forEach(bundle::addPosition);
-        return bundle;
-    }
-
-    public BundledPosition convertFromBundleItemDto(BundleItemDto itemDto) {
-        Item item = itemRepository.findById(itemDto.getItemId()).get();
-        return new BundledPosition(itemDto.getQty(), item);
     }
 
     public ItemDto convertToItemDto(Item i) {
@@ -65,7 +49,7 @@ public class DtoConverter {
         String sellingCur = d.getCurrencySelling();
         BigDecimal sellingAmt = BigDecimal.valueOf(d.getAmountSelling());
 
-        return new Item(d.getBrand(), d.getPartNumber(), d.getNameRus(), d.getNameEng(),
+        return new Item(d.getId(), d.getBrand(), d.getPartNumber(), d.getNameRus(), d.getNameEng(),
                 Money.of(buyingAmt, buyingCur), d.getSellingMargin(), Money.of(sellingAmt, sellingCur),
                 LocalDate.parse(d.getDateCreated(), ISO_DATE), LocalDate.parse(d.getDateModified(), ISO_DATE),
                 d.getOverriddenSellPrice());

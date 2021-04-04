@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class NewItemService {
 
     private final ItemRepository itemRepository;
-    private final DtoConverter dtoConverter;
+    private final ItemBundleDtoConverter dtoConverter;
 
     public List<ItemDto> getItemDtoByIds(List<Integer> ids) {
         List<Item> items = itemRepository.findAllById(ids);

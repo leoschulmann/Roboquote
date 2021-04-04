@@ -56,14 +56,14 @@ public class QuoteSectionHandlerSimpleImpl implements QuoteSectionHandler {
     public void updateSubtotalToCurrency(QuoteSection qs, String currency,
                                          BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
 
-        MonetaryAmount euros = calcSumByCurrency(qs.getPositions(), "EUR");;
-        MonetaryAmount dollars = calcSumByCurrency(qs.getPositions(), "USD");;
-        MonetaryAmount yens = calcSumByCurrency(qs.getPositions(), "JPY");;
+        MonetaryAmount euros = calcSumByCurrency(qs.getPositions(), "EUR");
+        MonetaryAmount dollars = calcSumByCurrency(qs.getPositions(), "USD");
+        MonetaryAmount yens = calcSumByCurrency(qs.getPositions(), "JPY");
         MonetaryAmount roubles = calcSumByCurrency(qs.getPositions(), "RUB");
         double charge = conv / 100 + 1.;
 
         switch (currency) {
-            case "RUB": //todo investigate cast
+            case "RUB":
                 qs.setTotal((Money) roubles.add(convertToRouble(euros, euroRate, charge))
                         .add(convertToRouble(dollars, dollarRate, charge))
                         .add(convertToRouble(yens, yenRate, charge)));

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NewQuoteService {
     private final QuoteRepo quoteRepo;
-    private final DtoService dtoService;
+    private final QuoteDtoConverter dtoService;
 
     public List<QuoteDto> findAll() {
         List<QuoteWithoutSections> projections = quoteRepo.getAllQuoteProjections();

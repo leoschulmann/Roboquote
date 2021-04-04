@@ -4,8 +4,7 @@ import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent;
 import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
 import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
-import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
-import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
+import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
@@ -51,7 +50,6 @@ import java.util.stream.Collectors;
 @Route(value = "compose", layout = MainLayout.class)
 public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private CurrencyFormatService currencyFormatter;
-    private InventoryItemToItemPositionConverter converter;
     private QuoteSectionHandler sectionHandler;
     private DownloadService downloadService;
     private CurrencyRatesService currencyRatesService;
@@ -59,7 +57,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private StringFormattingService stringFormattingService;
     private MoneyMathService moneyMathService;
     private ItemCachingService cachingService;
-    private BundleService bundleService;
+    private HttpRestService httpRestService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -80,17 +78,15 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private double exchangeConversionFee;
 
     public Compose(CurrencyFormatService currencyFormatter,
-                   InventoryItemToItemPositionConverter converter,
                    QuoteSectionHandler sectionHandler,
                    DownloadService downloadService,
                    CurrencyRatesService currencyRatesService,
                    QuoteService quoteService,
                    StringFormattingService stringFormattingService,
                    MoneyMathService moneyMathService,
-                   ItemCachingService cachingService, BundleService bundleService) {
+                   ItemCachingService cachingService, HttpRestService httpRestService) {
 
         this.currencyFormatter = currencyFormatter;
-        this.converter = converter;
         this.sectionHandler = sectionHandler;
         this.downloadService = downloadService;
         this.currencyRatesService = currencyRatesService;
@@ -98,7 +94,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         this.stringFormattingService = stringFormattingService;
         this.moneyMathService = moneyMathService;
         this.cachingService = cachingService;
-        this.bundleService = bundleService;
+        this.httpRestService = httpRestService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
         totalString = new Span();
@@ -253,7 +249,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addToGridBtn.addClickListener(click -> {
             if (searchBox.getValue() != null && avaiableGridsBox.getValue() != null) {
-                ItemPosition ip = converter.convert(searchBox.getValue());
+                ItemPosition ip = httpRestService.convertItemToItemPosition(searchBox.getValue());
                 QuoteSection qs = avaiableGridsBox.getValue().getQuoteSection();
                 sectionHandler.putToSection(qs, ip);
                 refreshSectionSubtotal(currency, qs);
@@ -324,9 +320,14 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                 new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{}))
         );
 
-        HorizontalLayout buttons = new HorizontalLayout(discountField, vatField, currencyCombo, addNewSectionBtn,
+        FormLayout buttons = new FormLayout(discountField, vatField, currencyCombo, addNewSectionBtn,
                 saveQuoteBtn);
-        buttons.setAlignItems(Alignment.BASELINE);
+        buttons.setResponsiveSteps(
+                new ResponsiveStep("25em", 1),
+                new ResponsiveStep("32em", 3),
+                new ResponsiveStep("40em", 5));
+
+//        buttons.setAlignItems(Alignment.BASELINE);
 
         addToClickableComponents(discountField, vatField, saveQuoteBtn, currencyCombo, addNewSectionBtn);
 
@@ -383,7 +384,6 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             }
         });
 
-
         return new VerticalLayout(totalString, totalWithDiscountString, includingVatValue, buttons);
     }
 
@@ -396,24 +396,27 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         tf.setWidth("32em");
         tf.setClearButtonVisible(true);
         addEmptySecBtn.setEnabled(false);
-        addEmptySecBtn.setWidthFull();
+        addEmptySecBtn.setWidth("32em");
         addEmptySecBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         tf.addValueChangeListener(event -> addEmptySecBtn.setEnabled(!event.getValue().isBlank()));
         addEmpty = new VerticalLayout(tf, addEmptySecBtn);
 
-        ComboBox<BundleDto> bundles = new ComboBox<>();
-        bundles.setItems(bundleService.getBundlesList());
+        ComboBox<Bundle> bundles = new ComboBox<>();
+        bundles.setItems(httpRestService.getAllBundlesNamesAndIds());
         bundles.setAllowCustomValue(false);
         bundles.setClearButtonVisible(true);
         bundles.setWidth("32em");
         Button addBundleBtn = new Button("Add bundle");
         addBundleBtn.setEnabled(false);
-        addBundleBtn.setWidthFull();
+        addBundleBtn.setWidth("32em");
         addBundleBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         bundles.addValueChangeListener(event -> addBundleBtn.setEnabled(!(event.getValue() == null)));
         addBundle = new VerticalLayout(bundles, addBundleBtn);
 
-        Dialog dialog = new Dialog(new HorizontalLayout(addEmpty, addBundle));
+        FormLayout layout = new FormLayout(addEmpty, addBundle);
+        layout.setResponsiveSteps(new ResponsiveStep("1em", 1),
+                new ResponsiveStep("65em", 2));
+        Dialog dialog = new Dialog(layout);
 
         addEmptySecBtn.addClickListener(click -> {
             QuoteSection qs = new QuoteSection(tf.getValue().trim());
@@ -424,14 +427,14 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         addBundleBtn.addClickListener(bang -> {
             int id = bundles.getValue().getId();
-            BundleDto dto = bundleService.getBundleDtoById(id);
-            QuoteSection qs = new QuoteSection(dto.getName());
+            Bundle bundle = httpRestService.getBundleById(id);
+            QuoteSection qs = new QuoteSection(bundle.getNameRus()); //todo i8n
             quoteService.addSections(quote, qs);
             addNewGrid(qs);
-            for (BundleItemDto pos : dto.getItems()) {
-                ItemPosition ip = converter.createItemPositionByItemId(pos.getItemId(), pos.getQty());
-                sectionHandler.putToSection(qs, ip);
-            }
+            bundle.getPositions().stream()
+                    .map(bp -> httpRestService.convertBundledPositionToItemPosition(bp))
+                    .forEach(ip -> sectionHandler.putToSection(qs, ip));
+
             refreshSectionSubtotal(currency, qs);
             fireEvent(new UniversalSectionChangedEvent(this));
             refreshTotal();

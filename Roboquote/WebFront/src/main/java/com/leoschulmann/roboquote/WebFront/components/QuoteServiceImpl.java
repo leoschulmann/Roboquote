@@ -3,6 +3,7 @@ package com.leoschulmann.roboquote.WebFront.components;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class QuoteServiceImpl implements QuoteService {
 
     @Value("${quoteservice.url}")
@@ -35,11 +37,7 @@ public class QuoteServiceImpl implements QuoteService {
     @Autowired
     AuthService authService;
 
-    final InventoryItemToItemPositionConverter itemConverter;
-
-    public QuoteServiceImpl(InventoryItemToItemPositionConverter itemConverter) {
-        this.itemConverter = itemConverter;
-    }
+    private final HttpRestService httpRestService;
 
     @Override
     public List<Quote> findAll() {
@@ -82,11 +80,8 @@ public class QuoteServiceImpl implements QuoteService {
         for (QuoteSection sourceSection : source.getSections()) {
             QuoteSection section = new QuoteSection(sourceSection.getName());
             section.setDiscount(sourceSection.getDiscount());
-            for (ItemPosition sourceIPos : sourceSection.getPositions()) {
-                //todo make service convert all ip's in one request
-                section.getPositions().add(
-                        itemConverter.createItemPositionByItemId(sourceIPos.getItemId(), sourceIPos.getQty()));
-            }
+            List<ItemPosition> itemPositions = httpRestService.batchCopyPositions(sourceSection.getPositions());
+            section.setPositions(itemPositions);
             quote.addSections(section);
         }
     }

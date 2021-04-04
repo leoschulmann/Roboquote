@@ -1,8 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.BundleService;
+import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
 import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
-import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -14,33 +13,32 @@ import com.vaadin.flow.router.Route;
 
 @Route(value = "bundles", layout = MainLayout.class)
 public class BundlesView extends VerticalLayout {
-    private final Grid<BundleDto> bundleGrid;
-    private final BundleService bundleService;
+    private final Grid<Bundle> bundleGrid;
+    private final HttpRestService httpRestService;
+
     private final ItemCachingService itemCachingService;
 
 
-    public BundlesView(BundleService bundleService, ItemCachingService itemCachingService) {
-        this.bundleService = bundleService;
+    public BundlesView(HttpRestService httpRestService, ItemCachingService itemCachingService) {
+        this.httpRestService = httpRestService;
         this.itemCachingService = itemCachingService;
         Button createButton = getCreateButton();
         bundleGrid = getGrid();
         add(createButton, bundleGrid);
     }
 
-    private Grid<BundleDto> getGrid() {
-        Grid<BundleDto> bundleGrid = new Grid<>(BundleDto.class);
+    private Grid<Bundle> getGrid() {
+        Grid<Bundle> bundleGrid = new Grid<>(Bundle.class);
         bundleGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COLUMN_BORDERS);
-        bundleGrid.setDataProvider(new ListDataProvider<>(bundleService.getBundlesList()));
+        bundleGrid.setDataProvider(new ListDataProvider<>(httpRestService.getAllBundlesNamesAndIds()));
         bundleGrid.removeAllColumns();
-        bundleGrid.addColumn(BundleDto::getName).setHeader("Name").setFlexGrow(1);
-//        bundleGrid.addComponentColumn(dto -> new Label(String.valueOf(
-//                dto.getItems().stream().mapToInt(BundleItemDto::getQty).sum()))).setHeader("# items")
-//                .setFlexGrow(0);
+        bundleGrid.addColumn(Bundle::getId).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
+        bundleGrid.addColumn(Bundle::getNameRus).setHeader("Name").setFlexGrow(1); //todo i8n
         bundleGrid.setWidth("65%");
         bundleGrid.addItemClickListener(c -> {
             int bunId = c.getItem().getId();
-            Bundle bundle = bundleService.getBundleById(bunId);
-            BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), bundleService,
+            Bundle bundle = httpRestService.getBundleById(bunId);
+            BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), httpRestService,
                     bundle, this);
             edDial.setWidth("85%");
             edDial.open();
@@ -54,7 +52,7 @@ public class BundlesView extends VerticalLayout {
         createButton.setWidth("65%");
         createButton.addClickListener(c -> {
             BundlesEditorDialog editorDialog = new BundlesEditorDialog(itemCachingService.getItemsFromCache(),
-                    bundleService, this);
+                    httpRestService, this);
             editorDialog.setWidth("85%");
             editorDialog.open();
         });
@@ -62,6 +60,6 @@ public class BundlesView extends VerticalLayout {
     }
 
     public void updateList() {
-        bundleGrid.setDataProvider(new ListDataProvider<>(bundleService.getBundlesList()));
+        bundleGrid.setDataProvider(new ListDataProvider<>(httpRestService.getAllBundlesNamesAndIds()));
     }
 }

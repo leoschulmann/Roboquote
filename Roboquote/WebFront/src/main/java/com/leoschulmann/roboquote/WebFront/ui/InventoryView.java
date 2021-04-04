@@ -1,11 +1,12 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.*;
+import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
+import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
+import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
-import com.leoschulmann.roboquote.itemservice.dto.ItemDto;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -33,7 +34,6 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 
 @Route(value = "inventory", layout = MainLayout.class)
 public class InventoryView extends VerticalLayout {
-    //    private final ItemService itemService;
     private final CurrencyFormatService currencyFormatService;
     private final ItemCachingService cachingService;
     private PaginatedGrid<Item> grid;
@@ -42,20 +42,16 @@ public class InventoryView extends VerticalLayout {
     private final ListDataProvider<Item> dataProvider;
     ArrayList<Item> data;
     private final HttpRestService httpService;
-    private final DtoConverter dtoConverter;
 
 
     public InventoryView(
-//            ItemService itemService,
             HttpRestService httpService,
             CurrencyFormatService currencyFormatService,
-            ItemCachingService cachingService, DtoConverter dtoConverter) {
+            ItemCachingService cachingService) {
 
-//        this.itemService = itemService;
         this.httpService = httpService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
-        this.dtoConverter = dtoConverter;
         data = new ArrayList<>();
         data.addAll(cachingService.getItemsFromCache());
         dataProvider = new ListDataProvider<>(data);
@@ -216,15 +212,13 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void create(InventoryCreateItemEvent event) {
-        ItemDto itemDto = dtoConverter.convertToItemDto(event.getEventItem());
-        httpService.saveItem(itemDto);
+        httpService.saveItem(event.getEventItem());
         closeDialog();
         updateList();
     }
 
     private void update(InventoryUpdateItemEvent event) {
-        ItemDto itemDto = dtoConverter.convertToItemDto(event.getEventItem());
-        httpService.updateItem(itemDto);
+        httpService.updateItem(event.getEventItem());
         updateList();
         closeDialog();
     }

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import static java.time.format.DateTimeFormatter.ISO_DATE;
 
 @Service
-public class DtoService {
+public class QuoteDtoConverter {
     public QuoteDto convertProjectionToDto(QuoteWithoutSections proj) {
         double priceAmount = proj.getFinalPrice().getNumberStripped().doubleValue();
         String priceCurrency = proj.getFinalPrice().getCurrency().getCurrencyCode();
@@ -44,7 +44,7 @@ public class DtoService {
                 finalPriceAmount, finalPriceCurrency);
     }
 
-    private QuoteSectionDto convertSectionToDto(QuoteSection qs) {
+    public QuoteSectionDto convertSectionToDto(QuoteSection qs) {
         List<ItemPositionDto> positionDtos =
                 qs.getPositions().stream().map(this::convertPositionToDto).collect(Collectors.toList());
         double amount = qs.getTotal().getNumberStripped().doubleValue();
@@ -54,7 +54,7 @@ public class DtoService {
                 amount, currency);
     }
 
-    private ItemPositionDto convertPositionToDto(ItemPosition ip) {
+    public ItemPositionDto convertPositionToDto(ItemPosition ip) {
         double amount = ip.getSellingPrice().getNumberStripped().doubleValue();
         String currency = ip.getSellingPrice().getCurrency().getCurrencyCode();
 
@@ -76,14 +76,14 @@ public class DtoService {
         return q;
     }
 
-    private QuoteSection convertDtoToSection(QuoteSectionDto dto) {
+    public QuoteSection convertDtoToSection(QuoteSectionDto dto) {
         QuoteSection qs = new QuoteSection(new ArrayList<>(), dto.getName(), dto.getDiscount(),
                 Money.of(dto.getTotalAmount(), dto.getTotalCurrency()));
         qs.addItemPositions(dto.getPositions().stream().map(this::convertDtoToItemPosition).toArray(ItemPosition[]::new));
         return qs;
     }
 
-    private ItemPosition convertDtoToItemPosition(ItemPositionDto dto) {
+    public ItemPosition convertDtoToItemPosition(ItemPositionDto dto) {
         return new ItemPosition(dto.getName(), dto.getPartNo(),
                 Money.of(dto.getSellingAmount(), dto.getSellingCurrency()), dto.getQty(), dto.getItemId());
     }
