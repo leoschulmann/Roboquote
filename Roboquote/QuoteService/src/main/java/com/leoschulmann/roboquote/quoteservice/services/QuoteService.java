@@ -3,7 +3,7 @@ package com.leoschulmann.roboquote.quoteservice.services;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 
 import java.util.List;
-
+@Deprecated
 public interface QuoteService {
     Quote saveQuote(Quote q);
 

@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
@@ -18,6 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Setter
+@Getter
+@NoArgsConstructor
 @Entity
 @Table(name = "quote_section")
 public class QuoteSection {
@@ -25,7 +31,6 @@ public class QuoteSection {
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
-
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonManagedReference
@@ -43,59 +48,12 @@ public class QuoteSection {
     @Type(type = "org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency")
     @JsonDeserialize(using = MoneyDeserializer.class)
     @JsonSerialize(using = MoneySerializer.class)
-    private Money total = Money.of(BigDecimal.ZERO, "EUR");
+    private Money total = Money.of(BigDecimal.ZERO, "EUR");  //todo maybe it should be transient
 
     @ManyToOne
     @JsonBackReference
     @JoinColumn(name = "q_ref", nullable = false)
     private Quote quote;
-
-    public QuoteSection() {
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public List<ItemPosition> getPositions() {
-        return positions;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getDiscount() {
-        return discount;
-    }
-
-    public void setDiscount(Integer discount) {
-        this.discount = discount;
-    }
-
-    public Quote getQuote() {
-        return quote;
-    }
-
-    public void setQuote(Quote quote) {
-        this.quote = quote;
-    }
-
-    public Money getTotal() {
-        return total;
-    }
-
-    public void setTotal(MonetaryAmount total) {
-        this.total = (Money) total;
-    }
 
     public QuoteSection(String name) {
         this.name = name;
@@ -108,6 +66,13 @@ public class QuoteSection {
             itemPosition.setSection(this);
             positions.add(itemPosition);
         });
+    }
+
+    public QuoteSection(List<ItemPosition> positions, String name, Integer discount, Money total) {
+        this.positions = positions;
+        this.name = name;
+        this.discount = discount;
+        this.total = total;
     }
 
     @JsonIgnore

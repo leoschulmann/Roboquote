@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
@@ -16,7 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Setter
+@Getter
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 public class Quote {
     @Id
     @Column(name = "id")
@@ -91,178 +99,8 @@ public class Quote {
 
     //todo make overridable price
 
-    public Quote() {
-    }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getNumber() {
-        return number;
-    }
-
-    public void setNumber(String number) {
-        this.number = number;
-    }
-
-    public LocalDate getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDate created) {
-        this.created = created;
-    }
-
-    public LocalDate getValidThru() {
-        return validThru;
-    }
-
-    public void setValidThru(LocalDate validThru) {
-        this.validThru = validThru;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public String getCustomer() {
-        return customer;
-    }
-
-    public void setCustomer(String customer) {
-        this.customer = customer;
-    }
-
-    public List<QuoteSection> getSections() {
-        return sections;
-    }
-
-    public void setSections(List<QuoteSection> sections) {
-        this.sections = sections;
-    }
-
-
-    public Integer getDiscount() {
-        return discount;
-    }
-
-    public void setDiscount(Integer discount) {
-        this.discount = discount;
-    }
-
-    public String getDealer() {
-        return dealer;
-    }
-
-    public void setDealer(String dealer) {
-        this.dealer = dealer;
-    }
-
-    public String getCustomerInfo() {
-        return customerInfo;
-    }
-
-    public void setCustomerInfo(String customerInfo) {
-        this.customerInfo = customerInfo;
-    }
-
-    public String getDealerInfo() {
-        return dealerInfo;
-    }
-
-    public void setDealerInfo(String dealerInfo) {
-        this.dealerInfo = dealerInfo;
-    }
-
-    public String getPaymentTerms() {
-        return paymentTerms;
-    }
-
-    public void setPaymentTerms(String paymentTerms) {
-        this.paymentTerms = paymentTerms;
-    }
-
-    public String getShippingTerms() {
-        return shippingTerms;
-    }
-
-    public void setShippingTerms(String shippingTerms) {
-        this.shippingTerms = shippingTerms;
-    }
-
-    public String getWarranty() {
-        return warranty;
-    }
-
-    public void setWarranty(String warranty) {
-        this.warranty = warranty;
-    }
-
-    public String getInstallation() {
-        return installation;
-    }
-
-    public void setInstallation(String installation) {
-        this.installation = installation;
-    }
-
-    public Integer getVat() {
-        return vat;
-    }
-
-    public void setVat(Integer vat) {
-        this.vat = vat;
-    }
-
-    public BigDecimal getEurRate() {
-        return eurRate;
-    }
-
-    public void setEurRate(BigDecimal eurRate) {
-        this.eurRate = eurRate;
-    }
-
-    public BigDecimal getUsdRate() {
-        return usdRate;
-    }
-
-    public void setUsdRate(BigDecimal usdRate) {
-        this.usdRate = usdRate;
-    }
-
-    public BigDecimal getJpyRate() {
-        return jpyRate;
-    }
-
-    public void setJpyRate(BigDecimal jpyRate) {
-        this.jpyRate = jpyRate;
-    }
-
-    public BigDecimal getConversionRate() {
-        return conversionRate;
-    }
-
-    public void setConversionRate(BigDecimal conversionRate) {
-        this.conversionRate = conversionRate;
-    }
-
-    public Money getFinalPrice() {
-        return finalPrice;
-    }
-
-    public void setFinalPrice(Money finalPrice) {
-        this.finalPrice = finalPrice;
-    }
-
+    //todo manage all these constructors. it's a mess
     public Quote(String number, LocalDate validThru, String customer, String dealer, String customerInfo, String dealerInfo) {
         this.number = number;
         this.validThru = validThru;
@@ -308,6 +146,32 @@ public class Quote {
         this.conversionRate = conversionRate;
         this.sections = new ArrayList<>();
         this.created = LocalDate.now();
+    }
+
+    public Quote(String number, LocalDate created, LocalDate validThru, Integer version, String customer,
+                 List<QuoteSection> sections, Integer discount, String dealer, String customerInfo, String dealerInfo,
+                 String paymentTerms, String shippingTerms, String warranty, String installation, Integer vat,
+                 BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate, BigDecimal conversionRate, Money finalPrice) {
+        this.number = number;
+        this.created = created;
+        this.validThru = validThru;
+        this.version = version;
+        this.customer = customer;
+        this.sections = sections;
+        this.discount = discount;
+        this.dealer = dealer;
+        this.customerInfo = customerInfo;
+        this.dealerInfo = dealerInfo;
+        this.paymentTerms = paymentTerms;
+        this.shippingTerms = shippingTerms;
+        this.warranty = warranty;
+        this.installation = installation;
+        this.vat = vat;
+        this.eurRate = eurRate;
+        this.usdRate = usdRate;
+        this.jpyRate = jpyRate;
+        this.conversionRate = conversionRate;
+        this.finalPrice = finalPrice;
     }
 
     public void addSections(QuoteSection... sec) {

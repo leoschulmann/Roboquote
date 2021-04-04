@@ -1,43 +1,30 @@
 package com.leoschulmann.roboquote.quoteservice.controllers;
 
-import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
-import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
-import com.leoschulmann.roboquote.quoteservice.services.ItemPositionService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@Deprecated
 public class QuoteController {
 
     private final QuoteService quoteService;
 
-    private final ItemPositionService itemPositionService;
-
-    public QuoteController(QuoteService quoteService, ItemPositionService itemPositionService) {
+    public QuoteController(QuoteService quoteService) {
         this.quoteService = quoteService;
-        this.itemPositionService = itemPositionService;
     }
 
     @PostMapping("/save")
     public ResponseEntity<Quote> saveQuote(@RequestBody Quote quote) {
         Quote q = quoteService.saveQuote(quote);
         return new ResponseEntity<>(q, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/add/{inventoryId}/{qty}")
-    public ResponseEntity<ItemPosition> getNewItemPosition(@PathVariable Integer inventoryId, @PathVariable Integer qty) {
-        ItemPosition i = null;
-        try {
-            i = itemPositionService.getNewItemPosition(inventoryId, qty);
-        } catch (NoInventoryItemFound noInventoryItemFound) {
-            noInventoryItemFound.printStackTrace();
-        }
-        return new ResponseEntity<>(i, HttpStatus.OK);
     }
 
     @GetMapping("/quote")
