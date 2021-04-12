@@ -77,8 +77,9 @@ public class QuoteDto {
     private String finalPriceCurrency;
 
 
-    public QuoteDto(String number, String created, Integer version, String customer, String dealer,
+    public QuoteDto(Integer id, String number, String created, Integer version, String customer, String dealer,
                     double finalPriceAmount, String finalPriceCurrency) {
+        this.id = id;
         this.number = number;
         this.created = created;
         this.version = version;

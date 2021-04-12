@@ -2,7 +2,7 @@ package com.leoschulmann.roboquote.quoteservice.controllers;
 
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,16 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/name")
+@RequiredArgsConstructor
 public class NamingController {
 
-    final NameGeneratingService generatingService;
-
-    final QuoteService quoteService;
-
-    public NamingController(@Qualifier(value = "nameGeneratingServiceImpl") NameGeneratingService generatingService, QuoteService quoteService) {
-        this.generatingService = generatingService;
-        this.quoteService = quoteService;
-    }
+    private final NameGeneratingService generatingService;
+    private final QuoteService quoteService;
 
     @GetMapping
     public ResponseEntity<String> generateName() {

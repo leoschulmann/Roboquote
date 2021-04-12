@@ -375,7 +375,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                 int id = postToDbAndGetID();
                 byte[] bytes = downloadService.downloadXlsx(id);
                 wrapper.setResource(new StreamResource(
-                        quoteService.getFullName(id) + downloadService.getExtension(),
+                        httpRestService.getFullName(id) + downloadService.getExtension(),
                         () -> new ByteArrayInputStream(bytes)));
                 buttons.add(wrapper);
                 disableClickableComponents();
@@ -484,7 +484,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         try {
             quoteBinder.writeBean(quote);
             quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
-            return quoteService.postNew(quote);
+            return httpRestService.postNew(quote);
         } catch (ValidationException e) {
             e.printStackTrace();
             return -1;

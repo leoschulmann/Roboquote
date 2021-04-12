@@ -1,7 +1,42 @@
 package com.leoschulmann.roboquote.quoteservice.services;
 
-public interface NameGeneratingService {
-    String generate();
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
+import com.leoschulmann.roboquote.quoteservice.repositories.QuoteRepo;
+import org.springframework.stereotype.Service;
 
-    Integer generateVer(String serial);
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Service
+public class NameGeneratingService {
+
+    private final QuoteRepo quoteRepo;
+
+    public NameGeneratingService(QuoteRepo quoteRepo) {
+        this.quoteRepo = quoteRepo;
+    }
+
+    private String getPrefix() {
+        return LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
+    }
+
+    private int getSuffix() {
+        int i = 1;
+        String prefix = getPrefix();
+        while (quoteRepo.existsByNumber(prefix + i)) {
+            i++;
+        }
+        return i;
+    }
+
+    public String generate() {
+        return getPrefix() + getSuffix();
+    }
+
+    public Integer generateVer(String serial) {
+        List<Quote> list = quoteRepo.findAllByNumber(serial);
+        int maxver = list.stream().mapToInt(Quote::getVersion).max().orElse(0);
+        return ++maxver;
+    }
 }

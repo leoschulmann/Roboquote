@@ -5,6 +5,8 @@ import org.javamoney.moneta.Money;
 import java.time.LocalDate;
 
 public interface QuoteWithoutSections {
+    Integer getId();
+
     LocalDate getCreatedDate();
 
     String getSerialNumber();

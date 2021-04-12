@@ -8,11 +8,15 @@ import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
+import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteDtoConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -168,5 +172,67 @@ public class HttpRestService {
             ip.setQty(qty);
             return ip;
         }).collect(Collectors.toList());
+    }
+
+    public List<Quote> findAllQuotes() {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "new/"))         //todo remove 'new'
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
+        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
+        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+    }
+
+    public Quote getQuoteById(int id) {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "new/" + id)) //todo remove 'new'
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        ResponseEntity<QuoteDto> response = restTemplate.exchange(request, QuoteDto.class);
+        QuoteDto dto = response.getBody();
+        if (dto == null) throw new RuntimeException("work in progress!"); //todo replace stub
+        return quoteDtoConverter.convertDtoToQuote(dto);
+    }
+
+    @Transactional
+    public int postNew(Quote quote) {
+        String serial = getNameFromService();
+        quote.setNumber(serial);
+        quote.setVersion(getVersionFromService(serial));
+
+        QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);
+        //todo remove 'new'
+        RequestEntity<QuoteDto> request = RequestEntity.post(URI.create(quoteUrl + "new/"))
+                .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
+                .body(dto);
+
+        ResponseEntity<Integer> response = restTemplate.exchange(request, Integer.class);
+        Integer id = response.getBody();
+        if (id == null) throw new RuntimeException("work in progress!"); //todo replace stub
+        return id;
+    }
+
+    private String getNameFromService() {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl))
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        String serial = response.getBody();
+        if (serial == null) throw new RuntimeException("work in progress!"); //todo replace stub
+        return serial;
+    }
+
+    private Integer getVersionFromService(String serial) {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl + serial)).accept(MediaType.APPLICATION_JSON)
+                .headers(auth.provideHttpHeadersWithCredentials()).build();
+        ResponseEntity<Integer> response = restTemplate.exchange(request, Integer.class);
+        Integer version = response.getBody();
+        if (version == null) throw new RuntimeException("work in progress!"); //todo replace stub
+        return version;
+    }
+
+    public String getFullName(int id) {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl + "forid/" + id))
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.TEXT_PLAIN).build();
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        String name = response.getBody();
+        if (name == null) throw new RuntimeException("work in progress!"); //todo replace stub
+        return name;
     }
 }

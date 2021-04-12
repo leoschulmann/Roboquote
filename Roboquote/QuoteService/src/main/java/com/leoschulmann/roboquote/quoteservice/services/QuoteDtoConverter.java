@@ -24,7 +24,7 @@ public class QuoteDtoConverter {
         double priceAmount = proj.getFinalPrice().getNumberStripped().doubleValue();
         String priceCurrency = proj.getFinalPrice().getCurrency().getCurrencyCode();
         String date = proj.getCreatedDate().format(ISO_DATE);
-        return new QuoteDto(proj.getSerialNumber(), date, proj.getVersion(), proj.getCustomer(),
+        return new QuoteDto(proj.getId(), proj.getSerialNumber(), date, proj.getVersion(), proj.getCustomer(),
                 proj.getDealer(), priceAmount, priceCurrency);
     }
 
@@ -86,5 +86,11 @@ public class QuoteDtoConverter {
     public ItemPosition convertDtoToItemPosition(ItemPositionDto dto) {
         return new ItemPosition(dto.getName(), dto.getPartNo(),
                 Money.of(dto.getSellingAmount(), dto.getSellingCurrency()), dto.getQty(), dto.getItemId());
+    }
+
+    public Quote convertDtoToMinimalQuote(QuoteDto dto) {
+        LocalDate crDate = LocalDate.parse(dto.getCreated(), ISO_DATE);
+        return new Quote(dto.getId(), dto.getNumber(), crDate, dto.getVersion(), dto.getDealer(), dto.getCustomer(),
+                Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()));
     }
 }

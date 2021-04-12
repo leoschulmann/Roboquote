@@ -6,7 +6,6 @@ import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -15,7 +14,6 @@ import org.javamoney.moneta.function.MonetaryFunctions;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class ExcelFileTest {  // removing 'public' prevents junit vintage to start and complain
 
     Quote quote;
-    @Qualifier("nameGeneratingServiceImpl")
     @Autowired
     public NameGeneratingService nameGenerator;
 

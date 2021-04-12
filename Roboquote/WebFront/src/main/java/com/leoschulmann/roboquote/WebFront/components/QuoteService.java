@@ -1,22 +1,54 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
+import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-public interface QuoteService {
-    List<Quote> findAll();
+@Service
+@RequiredArgsConstructor
+public class QuoteService {
 
-    Quote createNewVersion(Quote quote);
+    private final HttpRestService httpRestService;
 
-    Quote createNewFromTemplate(Quote quote);
+    public Quote createNewVersion(Quote source) {
+        //everything except ipos's, version and dates
+        Quote quote = new Quote(source.getNumber(), null, source.getCustomer(), source.getCustomerInfo(),
+                source.getDealer(), source.getDealerInfo(), source.getPaymentTerms(), source.getShippingTerms(),
+                source.getWarranty(), source.getInstallation(), source.getVat(), source.getDiscount(),
+                source.getEurRate(), source.getUsdRate(), source.getJpyRate(), source.getConversionRate());
 
-    void addSections(Quote quote, QuoteSection qs);
+        getSectionsCopy(source, quote);
+        return quote;
+    }
 
-    int postNew(Quote quote);
+    public Quote createNewFromTemplate(Quote source) {
+        Quote quote = new Quote(null, null, null, null, null, null, source.getPaymentTerms(), source.getShippingTerms(),
+                source.getWarranty(), source.getInstallation(), source.getVat(), source.getDiscount(),
+                source.getEurRate(), source.getUsdRate(), source.getJpyRate(), source.getConversionRate());
 
-    String getFullName(int id);
+        getSectionsCopy(source, quote);
+        return quote;
+    }
 
-    void removeSection(Quote quote, QuoteSection quoteSection);
+    public void addSections(Quote quote, QuoteSection qs) {
+        quote.addSections(qs);
+    }
+
+    private void getSectionsCopy(Quote source, Quote quote) {
+        for (QuoteSection sourceSection : source.getSections()) {
+            QuoteSection section = new QuoteSection(sourceSection.getName());
+            section.setDiscount(sourceSection.getDiscount());
+            List<ItemPosition> itemPositions = httpRestService.batchCopyPositions(sourceSection.getPositions());
+            section.setPositions(itemPositions);
+            quote.addSections(section);
+        }
+    }
+
+    public void removeSection(Quote quote, QuoteSection quoteSection) {
+        quote.removeSection(quoteSection);
+    }
 }

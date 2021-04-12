@@ -3,6 +3,7 @@ package com.leoschulmann.roboquote.quoteservice.test;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import com.leoschulmann.roboquote.quoteservice.services.QuoteDtoConverter;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import org.javamoney.moneta.Money;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,9 @@ class QuoteServiceTest {
     @Autowired
     QuoteService quoteService;
 
+    @Autowired
+    QuoteDtoConverter quoteDtoConverter;
+
     @BeforeEach
     public void initQuote() {
         quote = new Quote("000", LocalDate.now().plus(3, ChronoUnit.MONTHS), "test customer",
@@ -42,14 +46,14 @@ class QuoteServiceTest {
 
     @Test
     public void simpleQuoteSaveFind() {
-        Integer id = quoteService.saveQuote(quote).getId();
+        Integer id = quoteService.saveQuote(quoteDtoConverter.convertQuoteToDto(quote));
         Quote fromDB = quoteService.getQuote(id);
         assertEquals("000", fromDB.getNumber());
     }
 
     @Test
     public void testQuoteHasItem() {
-        Integer id = quoteService.saveQuote(quote).getId();
+        Integer id = quoteService.saveQuote(quoteDtoConverter.convertQuoteToDto(quote));
         Quote fromDB = quoteService.getQuote(id);
 
         assertEquals("Test item 1", fromDB.getSections().get(0).getPositions().get(0).getName());
@@ -89,7 +93,7 @@ class QuoteServiceTest {
 
         quote.addSections(qs1, qs2, qs3);
 
-        Integer id = quoteService.saveQuote(quote).getId();
+        Integer id = quoteService.saveQuote(quoteDtoConverter.convertQuoteToDto(quote));
         Quote fromDB = quoteService.getQuote(id);
 
         assertEquals(3, fromDB.getSections().size());

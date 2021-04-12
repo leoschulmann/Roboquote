@@ -174,6 +174,16 @@ public class Quote {
         this.finalPrice = finalPrice;
     }
 
+    public Quote(int id, String number, LocalDate created, Integer version, String dealer, String customer, Money finalPrice) {
+        this.id = id;
+        this.number = number;
+        this.created = created;
+        this.version = version;
+        this.dealer = dealer;
+        this.customer = customer;
+        this.finalPrice = finalPrice;
+    }
+
     public void addSections(QuoteSection... sec) {
         Arrays.stream(sec).forEach(quoteSection -> {
             sections.add(quoteSection);

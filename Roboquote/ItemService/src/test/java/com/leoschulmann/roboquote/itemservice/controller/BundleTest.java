@@ -10,7 +10,7 @@ import com.leoschulmann.roboquote.itemservice.exceptions.ExceptionProcessor;
 import com.leoschulmann.roboquote.itemservice.repositories.BundleRepository;
 import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
 import com.leoschulmann.roboquote.itemservice.services.BundleService;
-import com.leoschulmann.roboquote.itemservice.services.DtoConverter;
+import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
 import com.leoschulmann.roboquote.itemservice.util.TestFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,7 +51,7 @@ public class BundleTest {
 
     BundleService bundleService;
     BundleController bundleController;
-    DtoConverter dtoConverter;
+    ItemBundleDtoConverter dtoConverter;
     MockMvc mockMvc;
     ObjectMapper om;
 
@@ -65,8 +65,8 @@ public class BundleTest {
     void prepare() {
         Validator validator = Mockito.mock(Validator.class);
         Mockito.when(validator.validate(any(BundleItemDto.class))).thenReturn(new HashSet<>());
-        dtoConverter = new DtoConverter(itemRepository);
-        bundleService = new BundleService(bundleRepository, dtoConverter);
+        dtoConverter = new ItemBundleDtoConverter();
+        bundleService = new BundleService(bundleRepository, dtoConverter, itemRepository);
         bundleController = new BundleController(bundleService, validator);
 
         mockMvc = MockMvcBuilders.standaloneSetup(bundleController).setControllerAdvice(new ExceptionProcessor()).build();
@@ -136,7 +136,7 @@ public class BundleTest {
         List<BundleItemDto> items = List.of(new BundleItemDto(itemid, qty));
         BundleDto dto = new BundleDto("new name", items);
         String json = om.writeValueAsString(dto);
-        mockMvc.perform(put("/bundle/"+ bundleid).contentType("application/json").characterEncoding("UTF-8")
+        mockMvc.perform(put("/bundle/" + bundleid).contentType("application/json").characterEncoding("UTF-8")
                 .content(json)).andDo(print()).andExpect(status().isOk());
 
         MvcResult res = mockMvc.perform(get("/bundle/" + bundleid)).andReturn();

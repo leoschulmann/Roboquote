@@ -32,19 +32,24 @@ public class QuotesView extends VerticalLayout {
     private final DownloadService downloadService;
     private final MoneyMathService moneyMathService;
     private final StringFormattingService stringFormattingService;
+    private final HttpRestService httpRestService;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService,
-                      StringFormattingService stringFormattingService) {
+                      StringFormattingService stringFormattingService, HttpRestService httpRestService) {
         this.quoteService = quoteService;
         this.currencyFormatService = currencyFormatService;
         this.downloadService = downloadService;
         this.moneyMathService = moneyMathService;
         this.stringFormattingService = stringFormattingService;
+        this.httpRestService = httpRestService;
         Grid<Quote> grid = createGrid();
         updateGrid(grid);
         add(grid);
-        grid.addItemClickListener(event -> editQuote(event.getItem()));
+        grid.addItemClickListener(event -> {
+            int qId = event.getItem().getId();
+            editQuote(httpRestService.getQuoteById(qId));
+        });
     }
 
     private Grid<Quote> createGrid() {
@@ -72,7 +77,7 @@ public class QuotesView extends VerticalLayout {
     }
 
     private void updateGrid(Grid<Quote> grid) {
-        grid.setItems(quoteService.findAll());
+        grid.setItems(httpRestService.findAllQuotes());
     }
 
     private void editQuote(Quote quote) {
