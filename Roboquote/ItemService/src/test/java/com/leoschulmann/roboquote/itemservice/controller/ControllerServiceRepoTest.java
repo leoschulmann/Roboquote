@@ -5,8 +5,8 @@ import com.leoschulmann.roboquote.itemservice.config.TestJpaConfig;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.exceptions.ExceptionProcessor;
 import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
+import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
 import com.leoschulmann.roboquote.itemservice.services.ItemService;
-import com.leoschulmann.roboquote.itemservice.services.ItemServiceImpl;
 import org.javamoney.moneta.Money;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class ControllerServiceRepoTest {
 
     @Before
     public void prepare() {
-        itemService = new ItemServiceImpl(itemRepository);
+        itemService = new ItemService(itemRepository, new ItemBundleDtoConverter());
         itemController = new ItemController(itemService);
         mockMvc = MockMvcBuilders.standaloneSetup(itemController).setControllerAdvice(new ExceptionProcessor()).build();
         om = new ObjectMapper();

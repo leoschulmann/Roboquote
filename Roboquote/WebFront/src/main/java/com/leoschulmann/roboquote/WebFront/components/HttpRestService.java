@@ -46,9 +46,10 @@ public class HttpRestService {
     private final AuthService auth;
     private final ItemBundleDtoConverter itemBundleDtoConverter;
     private final QuoteDtoConverter quoteDtoConverter;
+    private final ConverterService converterService;
 
     public List<Item> getAllItems() {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl + "new"))         //todo remove 'new'
+        RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
         ItemDto[] arr = restTemplate.exchange(request, ItemDto[].class).getBody();
         if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
@@ -57,8 +58,7 @@ public class HttpRestService {
     }
 
     public Item getItem(int id) {
-        //todo remove 'new'
-        RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl + "new/" + id))
+        RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
         ItemDto dto = restTemplate.exchange(request, ItemDto.class).getBody();
         return itemBundleDtoConverter.convertToItem(dto); //todo handle nullable
@@ -66,7 +66,7 @@ public class HttpRestService {
 
     public List<Item> getItemsByIds(int... ids) {
         List<ItemId> idList = Arrays.stream(ids).mapToObj(ItemId::new).collect(Collectors.toList());
-        RequestEntity<List<ItemId>> request = RequestEntity.post(URI.create(itemUrl + "new/multiple")) //todo 'new'
+        RequestEntity<List<ItemId>> request = RequestEntity.post(URI.create(itemUrl + "multiple"))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).body(idList);
         ItemDto[] arr = restTemplate.exchange(request, ItemDto[].class).getBody();
         if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
@@ -76,13 +76,13 @@ public class HttpRestService {
     @Transactional
     public void saveItem(Item item) { //todo return id???
         ItemDto dto = itemBundleDtoConverter.convertToItemDto(item);
-        RequestEntity<ItemDto> request = RequestEntity.post(URI.create(itemUrl + "new/")) //todo 'new'
+        RequestEntity<ItemDto> request = RequestEntity.post(URI.create(itemUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).body(dto);
         restTemplate.exchange(request, Object.class);
     }
 
     public void deleteItem(int id) {
-        RequestEntity<Void> request = RequestEntity.delete(URI.create(itemUrl + "new/" + id)) //todo 'new'
+        RequestEntity<Void> request = RequestEntity.delete(URI.create(itemUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).build();
         restTemplate.exchange(request, Object.class);
     }
@@ -91,7 +91,7 @@ public class HttpRestService {
     public void updateItem(Item item) {
         int id = item.getId();
         ItemDto dto = itemBundleDtoConverter.convertToItemDto(item);
-        RequestEntity<ItemDto> request = RequestEntity.put(URI.create(itemUrl + "new/" + id)) //todo 'new'
+        RequestEntity<ItemDto> request = RequestEntity.put(URI.create(itemUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).body(dto);
         restTemplate.exchange(request, Object.class);
     }
@@ -150,32 +150,19 @@ public class HttpRestService {
         restTemplate.exchange(request, Object.class);
     }
 
-    public ItemPosition convertBundledPositionToItemPosition(BundledPosition bp) { //todo make some converter service
-        return new ItemPosition(bp.getItem().getNameRus(), bp.getItem().getPartno(), bp.getItem().getSellingPrice(),
-                bp.getQty(), bp.getItem().getId());
-    }
-
-    public BundledPosition convertToBundlePosition(Item item) {
-        return new BundledPosition(1, item);
-    }
-
-    public ItemPosition convertItemToItemPosition(Item item) {
-        return new ItemPosition(item.getNameRus(), item.getPartno(), item.getSellingPrice(), 1, item.getId());
-    }
-
     public List<ItemPosition> batchCopyPositions(List<ItemPosition> positions) {
         List<Item> items = getItemsByIds(positions.stream().mapToInt(ItemPosition::getItemId).toArray());
 
         return items.stream().map(i -> {
             int qty = positions.stream().filter(p -> p.getItemId() == i.getId()).findAny().get().getQty();
-            ItemPosition ip = convertItemToItemPosition(i);
+            ItemPosition ip = converterService.convertItemToItemPosition(i);
             ip.setQty(qty);
             return ip;
         }).collect(Collectors.toList());
     }
 
     public List<Quote> findAllQuotes() {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "new/"))         //todo remove 'new'
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
         QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
         if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
@@ -183,7 +170,7 @@ public class HttpRestService {
     }
 
     public Quote getQuoteById(int id) {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "new/" + id)) //todo remove 'new'
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
         ResponseEntity<QuoteDto> response = restTemplate.exchange(request, QuoteDto.class);
         QuoteDto dto = response.getBody();
@@ -198,8 +185,7 @@ public class HttpRestService {
         quote.setVersion(getVersionFromService(serial));
 
         QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);
-        //todo remove 'new'
-        RequestEntity<QuoteDto> request = RequestEntity.post(URI.create(quoteUrl + "new/"))
+        RequestEntity<QuoteDto> request = RequestEntity.post(URI.create(quoteUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(dto);
 

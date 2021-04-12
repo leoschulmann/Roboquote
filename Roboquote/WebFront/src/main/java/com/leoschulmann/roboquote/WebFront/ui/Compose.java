@@ -58,6 +58,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
     private MoneyMathService moneyMathService;
     private ItemCachingService cachingService;
     private HttpRestService httpRestService;
+    private final ConverterService converterService;
 
     private VerticalLayout gridsBlock;
     private List<SectionGrid> gridList;
@@ -84,7 +85,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                    QuoteService quoteService,
                    StringFormattingService stringFormattingService,
                    MoneyMathService moneyMathService,
-                   ItemCachingService cachingService, HttpRestService httpRestService) {
+                   ItemCachingService cachingService, HttpRestService httpRestService, ConverterService converterService) {
 
         this.currencyFormatter = currencyFormatter;
         this.sectionHandler = sectionHandler;
@@ -95,6 +96,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         this.moneyMathService = moneyMathService;
         this.cachingService = cachingService;
         this.httpRestService = httpRestService;
+        this.converterService = converterService;
         this.clickableComponents = new HashSet<>();
         this.gridList = new ArrayList<>();
         totalString = new Span();
@@ -249,7 +251,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addToGridBtn.addClickListener(click -> {
             if (searchBox.getValue() != null && avaiableGridsBox.getValue() != null) {
-                ItemPosition ip = httpRestService.convertItemToItemPosition(searchBox.getValue());
+                ItemPosition ip = converterService.convertItemToItemPosition(searchBox.getValue());
                 QuoteSection qs = avaiableGridsBox.getValue().getQuoteSection();
                 sectionHandler.putToSection(qs, ip);
                 refreshSectionSubtotal(currency, qs);
@@ -432,7 +434,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
             quoteService.addSections(quote, qs);
             addNewGrid(qs);
             bundle.getPositions().stream()
-                    .map(bp -> httpRestService.convertBundledPositionToItemPosition(bp))
+                    .map(converterService::convertBundledPositionToItemPosition)
                     .forEach(ip -> sectionHandler.putToSection(qs, ip));
 
             refreshSectionSubtotal(currency, qs);

@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
+import com.leoschulmann.roboquote.WebFront.components.ConverterService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
@@ -37,6 +38,7 @@ public class BundlesEditorDialog extends Dialog {
     private ListDataProvider<Item> availableItemsDataProvider;
     private ListDataProvider<BundledPosition> selectedItemsDataProvider;
     private HttpRestService httpRestService;
+    private final ConverterService converterService;
     private final Bundle bundle;
     private final List<Item> itemsCache;
     private final boolean createNew;
@@ -45,18 +47,20 @@ public class BundlesEditorDialog extends Dialog {
     private final BundlesView bundlesView;
 
 
-    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, Bundle bundle, BundlesView bundlesView) {
+    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, ConverterService converterService, Bundle bundle, BundlesView bundlesView) {
         this.itemsCache = itemscache;
         this.httpRestService = httpRestService;
+        this.converterService = converterService;
         this.bundle = bundle;
         this.bundlesView = bundlesView;
         createNew = false;
         build();
     }
 
-    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, BundlesView bundlesView) {
+    public BundlesEditorDialog(List<Item> itemscache, HttpRestService httpRestService, ConverterService converterService, BundlesView bundlesView) {
         this.itemsCache = itemscache;
         this.httpRestService = httpRestService;
+        this.converterService = converterService;
         this.bundle = new Bundle();
         this.bundlesView = bundlesView;
         createNew = true;
@@ -147,7 +151,7 @@ public class BundlesEditorDialog extends Dialog {
                     BundledPosition bp = optBP.get();
                     bp.setQty(bp.getQty() + 1);
                 } else {
-                    BundledPosition bp = httpRestService.convertToBundlePosition(optItem.get());
+                    BundledPosition bp = converterService.convertToBundlePosition(optItem.get());
                     bundle.addPosition(bp);
                 }
                 selectedItemsDataProvider.refreshAll();

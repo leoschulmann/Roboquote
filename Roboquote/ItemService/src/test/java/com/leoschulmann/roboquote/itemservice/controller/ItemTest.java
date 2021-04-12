@@ -9,7 +9,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.exceptions.ExceptionProcessor;
 import com.leoschulmann.roboquote.itemservice.repositories.ItemRepository;
 import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
-import com.leoschulmann.roboquote.itemservice.services.NewItemService;
+import com.leoschulmann.roboquote.itemservice.services.ItemService;
 import com.leoschulmann.roboquote.itemservice.util.TestFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,8 +40,8 @@ public class ItemTest {
     @Autowired
     ItemRepository itemRepository;
 
-    NewItemController itemController;
-    NewItemService itemService;
+    ItemController itemController;
+    ItemService itemService;
     ItemBundleDtoConverter dtoConverter;
     MockMvc mockMvc;
     ObjectMapper om;
@@ -49,8 +49,8 @@ public class ItemTest {
     @BeforeAll
     void prepare() {
         dtoConverter = new ItemBundleDtoConverter();
-        itemService = new NewItemService(itemRepository, dtoConverter);
-        itemController = new NewItemController(itemService);
+        itemService = new ItemService(itemRepository, dtoConverter);
+        itemController = new ItemController(itemService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(itemController).setControllerAdvice(new ExceptionProcessor()).build();
         om = new ObjectMapper();

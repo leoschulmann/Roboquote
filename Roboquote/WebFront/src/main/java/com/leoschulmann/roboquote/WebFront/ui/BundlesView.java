@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
+import com.leoschulmann.roboquote.WebFront.components.ConverterService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
 import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
@@ -17,11 +18,13 @@ public class BundlesView extends VerticalLayout {
     private final HttpRestService httpRestService;
 
     private final ItemCachingService itemCachingService;
+    private final ConverterService converterService;
 
 
-    public BundlesView(HttpRestService httpRestService, ItemCachingService itemCachingService) {
+    public BundlesView(HttpRestService httpRestService, ItemCachingService itemCachingService, ConverterService converterService) {
         this.httpRestService = httpRestService;
         this.itemCachingService = itemCachingService;
+        this.converterService = converterService;
         Button createButton = getCreateButton();
         bundleGrid = getGrid();
         add(createButton, bundleGrid);
@@ -39,7 +42,7 @@ public class BundlesView extends VerticalLayout {
             int bunId = c.getItem().getId();
             Bundle bundle = httpRestService.getBundleById(bunId);
             BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), httpRestService,
-                    bundle, this);
+                    converterService, bundle, this);
             edDial.setWidth("85%");
             edDial.open();
         });
@@ -52,7 +55,7 @@ public class BundlesView extends VerticalLayout {
         createButton.setWidth("65%");
         createButton.addClickListener(c -> {
             BundlesEditorDialog editorDialog = new BundlesEditorDialog(itemCachingService.getItemsFromCache(),
-                    httpRestService, this);
+                    httpRestService, converterService, this);
             editorDialog.setWidth("85%");
             editorDialog.open();
         });

@@ -15,7 +15,6 @@ import java.util.List;
 
 @Validated
 @Controller
-@RequestMapping("/new")
 @RequiredArgsConstructor
 public class QuoteController {
     private final QuoteService quoteService;
