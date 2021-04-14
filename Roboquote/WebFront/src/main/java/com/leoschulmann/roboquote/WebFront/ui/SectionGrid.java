@@ -32,6 +32,7 @@ public class SectionGrid extends Grid<ItemPosition> {
     private final Footer footer;
     private IntegerField field;
     private List<HasEnabled> clickables = new ArrayList<>();
+    private boolean textWrap = true;
 
     SectionGrid(QuoteSection qs, CurrencyFormatService currencyFormatter, StringFormattingService stringFormattingService) {
         super(ItemPosition.class);
@@ -39,11 +40,11 @@ public class SectionGrid extends Grid<ItemPosition> {
         setItems(quoteSection.getPositions());
 
         removeAllColumns();
-        addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS, LUMO_COMPACT);
         addComponentColumn(this::createDeleteButton).setSortable(false).setAutoWidth(true).setFlexGrow(0);
-        addColumn(ItemPosition::getName).setHeader("Item name").setSortable(false).setFlexGrow(1);
+        addColumn(ItemPosition::getName).setHeader("Item name").setSortable(false).setFlexGrow(1).setResizable(true);
         addComponentColumn(this::getQuantityField).setHeader("Quantity").setSortable(false).setAutoWidth(true).setFlexGrow(0);
-        addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setWidth("8em").setFlexGrow(0);
+        addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setWidth("6em").setFlexGrow(0);
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setWidth("8em").setFlexGrow(0);
         addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum").setWidth("8em").setFlexGrow(0);
         setHeightByRows(true);
@@ -52,6 +53,7 @@ public class SectionGrid extends Grid<ItemPosition> {
 
     private Component getQuantityField(ItemPosition itemPosition) {
         field = new IntegerField();
+        field.setWidth("6em");
         field.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         field.setMax(99);
         field.setMin(1);
@@ -115,6 +117,14 @@ public class SectionGrid extends Grid<ItemPosition> {
     void sectionChangedEvent(UniversalSectionChangedEvent event) {
         gridResetItems();
         redrawFooter();
+    }
+
+    public boolean isTextWrap() {
+        return textWrap;
+    }
+
+    public void setTextWrap(boolean textWrap) {
+        this.textWrap = textWrap;
     }
 }
 

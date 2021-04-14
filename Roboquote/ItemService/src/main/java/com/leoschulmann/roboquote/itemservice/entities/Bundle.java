@@ -1,10 +1,14 @@
 package com.leoschulmann.roboquote.itemservice.entities;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter @Setter
 @Table(name = "bundle")
 public class Bundle {
     @Id
@@ -27,42 +31,15 @@ public class Bundle {
 
     public void addPosition(BundledPosition pos) {
         positions.add(pos);
-        pos.setBundle(this);
-    }
-
-    public String getNameRus() {
-        return nameRus;
-    }
-
-    public void setNameRus(String nameRus) {
-        this.nameRus = nameRus;
-    }
-
-    public String getNameEng() {
-        return nameEng;
-    }
-
-    public void setNameEng(String nameEng) {
-        this.nameEng = nameEng;
-    }
-
-    public List<BundledPosition> getPositions() {
-        return positions;
-    }
-
-    public void setPositions(List<BundledPosition> positions) {
-        this.positions = positions;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+        pos.setParentBundle(this);
     }
 
     public void removePosition(BundledPosition bp) {
         positions.remove(bp);
+    }
+
+    @Override
+    public String toString() {
+        return nameRus;
     }
 }

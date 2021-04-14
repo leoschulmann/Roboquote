@@ -1,8 +1,8 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
+import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
 import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
-import com.leoschulmann.roboquote.WebFront.components.ItemService;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
@@ -12,7 +12,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
@@ -35,18 +34,22 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 
 @Route(value = "inventory", layout = MainLayout.class)
 public class InventoryView extends VerticalLayout {
-    private final ItemService itemService;
     private final CurrencyFormatService currencyFormatService;
-    private ItemCachingService cachingService;
+    private final ItemCachingService cachingService;
     private PaginatedGrid<Item> grid;
-    private InventoryForm form;
-    private Dialog dialog;
-    private ListDataProvider<Item> dataProvider;
+    private final InventoryForm form;
+    private final Dialog dialog;
+    private final ListDataProvider<Item> dataProvider;
     ArrayList<Item> data;
+    private final HttpRestService httpService;
 
-    public InventoryView(ItemService itemService, CurrencyFormatService currencyFormatService,
-                         ItemCachingService cachingService) {
-        this.itemService = itemService;
+
+    public InventoryView(
+            HttpRestService httpService,
+            CurrencyFormatService currencyFormatService,
+            ItemCachingService cachingService) {
+
+        this.httpService = httpService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
         data = new ArrayList<>();
@@ -209,19 +212,19 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void create(InventoryCreateItemEvent event) {
-        itemService.saveItem(event.getEventItem());
+        httpService.saveItem(event.getEventItem());
         closeDialog();
         updateList();
     }
 
     private void update(InventoryUpdateItemEvent event) {
-        itemService.updateItem(event.getEventItem());
+        httpService.updateItem(event.getEventItem());
         updateList();
         closeDialog();
     }
 
     private void delete(InventoryDeleteItemEvent event) {
-        itemService.deleteItem(event.getEventItem());
+        httpService.deleteItem(event.getEventItem().getId());
         updateList();
         closeDialog();
     }

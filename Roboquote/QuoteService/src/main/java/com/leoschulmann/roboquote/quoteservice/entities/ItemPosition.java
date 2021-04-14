@@ -6,13 +6,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
 import com.sun.istack.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.javamoney.moneta.Money;
 
 import javax.persistence.*;
 
+@Setter
+@Getter
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "item_position")
 public class ItemPosition {
     @Id
@@ -52,73 +60,6 @@ public class ItemPosition {
 
     @Column(name = "inventory_item_id")
     private Integer itemId;
-
-    public ItemPosition() {
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Money getSellingPrice() {
-        return sellingPrice;
-    }
-
-    public void setSellingPrice(Money sellingPrice) {
-        this.sellingPrice = sellingPrice;
-    }
-
-    public Integer getQty() {
-        return qty;
-    }
-
-    public void setQty(Integer qty) {
-        this.qty = qty;
-    }
-
-    public QuoteSection getSection() {
-        return section;
-    }
-
-    public void setSection(QuoteSection quote) {
-        this.section = quote;
-    }
-
-    public Integer getItemId() {
-        return itemId;
-    }
-
-    public void setItemId(Integer itemId) {
-        this.itemId = itemId;
-    }
-
-    public String getPartNo() {
-        return partNo;
-    }
-
-    public void setPartNo(String partNo) {
-        this.partNo = partNo;
-    }
-
-    public Money getSellingSum() {
-        return sellingSum;
-    }
-
-    public void setSellingSum(Money sellingSum) {
-        this.sellingSum = sellingSum;
-    }
 
     public ItemPosition(String name, String partNo, @NotNull Money sellingPrice, @NotNull Integer qty, Integer itemId) {
         this.name = name;

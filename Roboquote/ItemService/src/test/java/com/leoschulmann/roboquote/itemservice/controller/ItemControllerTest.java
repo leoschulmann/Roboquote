@@ -47,7 +47,7 @@ public class ItemControllerTest {
     @Test
     public void testGetAll() throws Exception {
         List<Item> list = List.of(item1, item2);
-        Mockito.doReturn(list).when(itemService).getAll();
+        Mockito.doReturn(list).when(itemService).getAllDtos();
         mockMvc.perform(MockMvcRequestBuilders.get("/item/"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("item2")));

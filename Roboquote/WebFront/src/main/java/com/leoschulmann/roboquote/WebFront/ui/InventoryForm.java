@@ -1,11 +1,10 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
+import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
-import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -34,6 +33,7 @@ import org.javamoney.moneta.Money;
 
 import javax.money.NumberValue;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public class InventoryForm extends FormLayout {
@@ -229,6 +229,7 @@ public class InventoryForm extends FormLayout {
         if (edit) saveButtonListener = saveBtn.addClickListener(click -> {
                     try {
                         itemBinder.writeBean(item);
+                        item.setModified(LocalDate.now());
                         fireEvent(new InventoryUpdateItemEvent(this, item));
                     } catch (ValidationException e) {
                         showValidationErrorDialog();
@@ -238,6 +239,8 @@ public class InventoryForm extends FormLayout {
         else saveButtonListener = saveBtn.addClickListener(click -> {
                     try {
                         itemBinder.writeBean(item);
+                        item.setCreated(LocalDate.now());
+                        item.setModified(LocalDate.now());
                         fireEvent(new InventoryCreateItemEvent(this, item));
                     } catch (ValidationException e) {
                         showValidationErrorDialog();

@@ -7,7 +7,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-
+@Deprecated
 public class ItemSerializer extends JsonSerializer<Item> {
 
     @Override

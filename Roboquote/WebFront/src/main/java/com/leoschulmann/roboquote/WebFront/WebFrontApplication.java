@@ -1,5 +1,7 @@
 package com.leoschulmann.roboquote.WebFront;
 
+import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
+import com.leoschulmann.roboquote.quoteservice.services.QuoteDtoConverter;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration;
@@ -15,6 +17,17 @@ public class WebFrontApplication {
 
 	@Bean
 	RestTemplate restTemplate() {
-		return new RestTemplate();
+		return new RestTemplate();     //todo register with responseErrorHandler
+
+	}
+
+	@Bean
+	ItemBundleDtoConverter itemBundleDtoConverter() {
+		return new ItemBundleDtoConverter();
+	}
+
+	@Bean
+	QuoteDtoConverter quoteDtoConverter() {
+		return new QuoteDtoConverter();
 	}
 }

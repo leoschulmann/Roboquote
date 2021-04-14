@@ -5,7 +5,6 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.leoschulmann.roboquote.quoteservice.repositories.QuoteRepo;
 import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingService;
-import com.leoschulmann.roboquote.quoteservice.services.NameGeneratingServiceImpl;
 import org.javamoney.moneta.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,7 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
-@Import(NameGeneratingServiceImpl.class)
+@Import(NameGeneratingService.class)
 public class QuoteJpaTest {
     @Autowired
     TestEntityManager entityManager;
