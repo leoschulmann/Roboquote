@@ -507,7 +507,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         gridList.add(sg);
         resetAvailableGridsCombobox();
 
-        layout.add(getGridHeaderPanel(accordion, quoteSection.getName(), sg), sg, sg.getFooter());
+        layout.add(getGridHeaderPanel(accordion, sg, quoteSection.getDiscount()), sg, sg.getFooter());
         accordion.add(quoteSection.getName(), layout);
         gridsBlock.add(accordion);
         refreshSectionSubtotal(currency, sg.getQuoteSection());
@@ -515,7 +515,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         fireEvent(new UniversalSectionChangedEvent(this));
     }
 
-    private HorizontalLayout getGridHeaderPanel(Accordion acc, String name, SectionGrid grid) {
+    private HorizontalLayout getGridHeaderPanel(Accordion acc, SectionGrid grid, Integer discount) {
         HorizontalLayout layout = new HorizontalLayout();
 
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
@@ -527,7 +527,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
                 sectionHandler.getSectionName(grid.getQuoteSection()), grid, acc));
         editNameBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
 
-        discountField.setValue(0);
+        discountField.setValue(discount);
         discountField.setHasControls(true);
         discountField.setMin(-99);
         discountField.setMax(99);

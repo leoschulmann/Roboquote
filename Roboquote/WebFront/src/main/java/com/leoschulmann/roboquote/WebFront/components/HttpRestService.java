@@ -157,6 +157,7 @@ public class HttpRestService {
             int qty = positions.stream().filter(p -> p.getItemId() == i.getId()).findAny().get().getQty();
             ItemPosition ip = converterService.convertItemToItemPosition(i);
             ip.setQty(qty);
+            ip.setSellingSum(ip.getSellingPrice().multiply(qty));
             return ip;
         }).collect(Collectors.toList());
     }
