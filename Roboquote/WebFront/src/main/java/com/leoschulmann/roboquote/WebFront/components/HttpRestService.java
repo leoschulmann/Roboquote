@@ -24,6 +24,7 @@ import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -181,8 +182,12 @@ public class HttpRestService {
 
     @Transactional
     public int postNew(Quote quote) {
-        String serial = getNameFromService();
-        quote.setNumber(serial);
+        String serial = Objects.requireNonNullElseGet(quote.getNumber(), () -> {
+            String str = getNameFromService();
+            quote.setNumber(str);
+            return str;
+        });
+
         quote.setVersion(getVersionFromService(serial));
 
         QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);

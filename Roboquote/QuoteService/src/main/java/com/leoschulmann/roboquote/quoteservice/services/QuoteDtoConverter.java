@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE;
@@ -65,7 +66,8 @@ public class QuoteDtoConverter {
     public Quote convertDtoToQuote(QuoteDto dto) {
         LocalDate crDate = LocalDate.parse(dto.getCreated(), ISO_DATE);
         LocalDate validThr = LocalDate.parse(dto.getValidThru(), ISO_DATE);
-        Quote q = new Quote(dto.getNumber(), crDate, validThr, dto.getVersion(), dto.getCustomer(),
+        int id = Objects.requireNonNullElse(dto.getId(), 0);
+        Quote q = new Quote(id, dto.getNumber(), crDate, validThr, dto.getVersion(), dto.getCustomer(),
                 new ArrayList<>(), dto.getDiscount(), dto.getDealer(), dto.getCustomerInfo(),
                 dto.getDealerInfo(), dto.getPaymentTerms(), dto.getShippingTerms(), dto.getWarranty(),
                 dto.getInstallation(), dto.getVat(), BigDecimal.valueOf(dto.getEurRate()),

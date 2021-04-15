@@ -148,32 +148,6 @@ public class Quote {
         this.created = LocalDate.now();
     }
 
-    public Quote(String number, LocalDate created, LocalDate validThru, Integer version, String customer,
-                 List<QuoteSection> sections, Integer discount, String dealer, String customerInfo, String dealerInfo,
-                 String paymentTerms, String shippingTerms, String warranty, String installation, Integer vat,
-                 BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate, BigDecimal conversionRate, Money finalPrice) {
-        this.number = number;
-        this.created = created;
-        this.validThru = validThru;
-        this.version = version;
-        this.customer = customer;
-        this.sections = sections;
-        this.discount = discount;
-        this.dealer = dealer;
-        this.customerInfo = customerInfo;
-        this.dealerInfo = dealerInfo;
-        this.paymentTerms = paymentTerms;
-        this.shippingTerms = shippingTerms;
-        this.warranty = warranty;
-        this.installation = installation;
-        this.vat = vat;
-        this.eurRate = eurRate;
-        this.usdRate = usdRate;
-        this.jpyRate = jpyRate;
-        this.conversionRate = conversionRate;
-        this.finalPrice = finalPrice;
-    }
-
     public Quote(int id, String number, LocalDate created, Integer version, String dealer, String customer, Money finalPrice) {
         this.id = id;
         this.number = number;
