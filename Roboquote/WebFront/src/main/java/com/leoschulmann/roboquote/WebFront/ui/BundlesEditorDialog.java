@@ -233,20 +233,22 @@ public class BundlesEditorDialog extends Dialog {
     }
 
     private Button createSaveBundle() {
-        saveBundleButton = new Button(createNew ? "Save" : "Update");
-        saveBundleButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        saveBundleButton.addClickListener(c -> {
+        Button btn = new Button(createNew ? "Save" : "Update");
+        btn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(c -> {
             if (createNew) {
                 bundle.setNameRus(nameField.getValue());
                 bundle.setNameEng(nameField.getValue());
                 httpRestService.saveBundle(bundle);
             } else {
+                bundle.setNameRus(nameField.getValue());
+                bundle.setNameEng(nameField.getValue());
                 httpRestService.updateBundle(bundle);
             }
             bundlesView.updateList();
             this.close();
         });
-        return saveBundleButton;
+        return btn;
     }
 
     private int countItems() {

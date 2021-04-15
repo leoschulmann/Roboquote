@@ -121,12 +121,16 @@ public class HttpRestService {
         bundle.setId(dto.getId());
         bundle.setNameRus(dto.getName()); //todo i8n
 
-        int[] itemIds = dto.getItems().stream().mapToInt(BundleItemDto::getItemId).toArray();
-        List<Item> items = this.getItemsByIds(itemIds);
-        List<BundledPosition> positions = items.stream().map(i -> {
-            int qty = dto.getItems().stream().filter(idto -> idto.getItemId() == i.getId()).findAny().get().getQty();
-            return new BundledPosition(qty, i);
-        }).collect(Collectors.toList());
+        int[] itemIds = dto.getItems().stream().mapToInt(BundleItemDto::getItemId).toArray(); //ordered
+        List<Item> items = this.getItemsByIds(itemIds);                                       //unordered
+        List<BundledPosition> positions = Arrays.stream(itemIds).mapToObj(itemid -> {
+                    int qty = dto.getItems().stream().filter(idto -> idto.getItemId() == itemid).findAny().get().getQty();
+                    Item item = items.stream().filter(item1 -> item1.getId() == itemid).findFirst().get();
+                    return new BundledPosition(qty, item);
+                }
+        ).collect(Collectors.toList());
+
+
         bundle.setPositions(positions);
         return bundle;
     }
