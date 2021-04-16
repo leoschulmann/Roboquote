@@ -17,8 +17,9 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
 
     List<Quote> findAllByNumber(String number);
 
-    @Query("select q.id as id, q.created as createdDate, q.number as serialNumber, q.version as version, " +
-            "q.customer as customer, q.dealer as dealer, q.finalPrice as finalPrice from Quote q")
+    @Query("select q.id as id, q.created as createdDate, q.createdTimestamp as createdDateTime," +
+            " q.number as serialNumber, q.version as version, q.customer as customer, q.dealer as dealer, " +
+            "q.finalPrice as finalPrice from Quote q")
     List<QuoteWithoutSections> getAllQuoteProjections();
 
     @Query("select q.number as serialNumber, q.version as version from Quote q where q.id = :id")

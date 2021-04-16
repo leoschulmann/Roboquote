@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneyDeserializer;
 import com.leoschulmann.roboquote.quoteservice.serializers.MoneySerializer;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,6 +15,7 @@ import org.javamoney.moneta.Money;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +23,6 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
 public class Quote {
     @Id
@@ -34,8 +33,12 @@ public class Quote {
     @Column(name = "serial", nullable = false)
     private String number;
 
-    @Column(name = "date_created", nullable = false)
+    //legacy table entries only. primary usage - createdTimestamp
+    @Column(name = "date_created")
     private LocalDate created;
+
+    @Column(name = "timestamp")
+    private LocalDateTime createdTimestamp;
 
     @Column(name = "date_valid")
     private LocalDate validThru;
@@ -89,6 +92,12 @@ public class Quote {
     @Column(name = "conversion_rate")
     private BigDecimal conversionRate;
 
+    @Column
+    private String comment;
+
+    @Column
+    private Boolean cancelled;
+
     @Columns(columns = {
             @Column(name = "final_price_currency"),
             @Column(name = "final_price_amount")})
@@ -109,7 +118,7 @@ public class Quote {
         this.customerInfo = customerInfo;
         this.dealerInfo = dealerInfo;
         this.sections = new ArrayList<>();
-        this.created = LocalDate.now();
+        this.createdTimestamp = LocalDateTime.now();
     }
 
     public Quote(String number, Integer version, String customer, String customerInfo,
@@ -133,7 +142,7 @@ public class Quote {
         this.jpyRate = jpyRate;
         this.conversionRate = conversionRate;
         this.sections = new ArrayList<>();
-        this.created = LocalDate.now();
+        this.createdTimestamp = LocalDateTime.now();
     }
 
     public Quote(Integer discount, Integer vat, BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate,
@@ -145,16 +154,44 @@ public class Quote {
         this.jpyRate = jpyRate;
         this.conversionRate = conversionRate;
         this.sections = new ArrayList<>();
-        this.created = LocalDate.now();
+        this.createdTimestamp = LocalDateTime.now();
     }
 
-    public Quote(int id, String number, LocalDate created, Integer version, String dealer, String customer, Money finalPrice) {
+    public Quote(int id, String number, LocalDateTime created, Integer version, String dealer, String customer, Money finalPrice) {
         this.id = id;
         this.number = number;
-        this.created = created;
+        this.createdTimestamp = created;
         this.version = version;
         this.dealer = dealer;
         this.customer = customer;
+        this.finalPrice = finalPrice;
+    }
+
+    public Quote(int id, String number, LocalDateTime createdTimestamp, LocalDate validThru, Integer version,
+                 String customer, List<QuoteSection> sections, Integer discount, String dealer, String customerInfo,
+                 String dealerInfo, String paymentTerms, String shippingTerms, String warranty, String installation,
+                 Integer vat, BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate, BigDecimal conversionRate,
+                 Money finalPrice) {
+        this.id = id;
+        this.number = number;
+        this.createdTimestamp = createdTimestamp;
+        this.validThru = validThru;
+        this.version = version;
+        this.customer = customer;
+        this.sections = sections;
+        this.discount = discount;
+        this.dealer = dealer;
+        this.customerInfo = customerInfo;
+        this.dealerInfo = dealerInfo;
+        this.paymentTerms = paymentTerms;
+        this.shippingTerms = shippingTerms;
+        this.warranty = warranty;
+        this.installation = installation;
+        this.vat = vat;
+        this.eurRate = eurRate;
+        this.usdRate = usdRate;
+        this.jpyRate = jpyRate;
+        this.conversionRate = conversionRate;
         this.finalPrice = finalPrice;
     }
 

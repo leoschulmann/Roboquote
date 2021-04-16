@@ -13,6 +13,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.SortDirection;
+import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import org.javamoney.moneta.Money;
@@ -21,6 +22,8 @@ import org.vaadin.olli.FileDownloadWrapper;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
@@ -33,6 +36,7 @@ public class QuotesView extends VerticalLayout {
     private final MoneyMathService moneyMathService;
     private final StringFormattingService stringFormattingService;
     private final HttpRestService httpRestService;
+    private final DateTimeFormatter dtf;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService,
@@ -43,12 +47,13 @@ public class QuotesView extends VerticalLayout {
         this.moneyMathService = moneyMathService;
         this.stringFormattingService = stringFormattingService;
         this.httpRestService = httpRestService;
+        dtf = DateTimeFormatter.ofPattern("dd MMM yy");
         Grid<Quote> grid = createGrid();
         updateGrid(grid);
         add(grid);
         grid.addItemClickListener(event -> {
             int qId = event.getItem().getId();
-            editQuote(httpRestService.getQuoteById(qId));
+            openQuote(httpRestService.getQuoteById(qId));
         });
     }
 
@@ -56,23 +61,25 @@ public class QuotesView extends VerticalLayout {
         PaginatedGrid<Quote> grid = new PaginatedGrid<>(Quote.class);
         grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
         grid.removeAllColumns();
-        grid.addColumn(Quote::getCreated).setHeader("Created").setSortable(true).setKey("created").setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(q -> q.getNumber() + "-" + q.getVersion()).setHeader("#").setSortable(true).setKey("serialNum").setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn((ValueProvider<Quote, String>) quote -> quote.getCreatedTimestamp().format(dtf))
+                .setHeader("Created").setSortable(true).setKey("created").setAutoWidth(true).setFlexGrow(0)
+                .setResizable(true).setComparator((ValueProvider<Quote, LocalDateTime>) Quote::getCreatedTimestamp);
+        grid.addColumn(q -> q.getNumber() + "-" + q.getVersion()).setHeader("#").setSortable(true).setKey("serialNum")
+                .setAutoWidth(true).setFlexGrow(0).setResizable(true);
         grid.addColumn(Quote::getCustomer).setHeader("Customer").setSortable(true).setResizable(true).setFlexGrow(1);
-        grid.addColumn(Quote::getDealer).setHeader("Dealer").setSortable(true).setFlexGrow(1);
+        grid.addColumn(Quote::getDealer).setHeader("Dealer").setSortable(true).setFlexGrow(1).setResizable(true);
         grid.addColumn(q -> currencyFormatService.formatMoney(q.getFinalPrice() == null ?
                 Money.of(BigDecimal.ZERO, "EUR") : q.getFinalPrice()))
                 .setHeader("Quote Price")
                 .setSortable(true).setComparator(q -> q.getFinalPrice() == null ? 0. : q.getFinalPrice().getNumber().doubleValue())
-                .setAutoWidth(true).setFlexGrow(0);
+                .setAutoWidth(true).setFlexGrow(0).setResizable(true);
 
         grid.setMultiSort(true);
 
         grid.setPageSize(15);
         grid.setPaginatorSize(5);
         GridSortOrder<Quote> byCreated = new GridSortOrder<>(grid.getColumnByKey("created"), SortDirection.DESCENDING);
-        GridSortOrder<Quote> bySerial = new GridSortOrder<>(grid.getColumnByKey("serialNum"), SortDirection.DESCENDING);
-        grid.sort(List.of(byCreated, bySerial));
+        grid.sort(List.of(byCreated));
         return grid;
     }
 
@@ -80,7 +87,7 @@ public class QuotesView extends VerticalLayout {
         grid.setItems(httpRestService.findAllQuotes());
     }
 
-    private void editQuote(Quote quote) {
+    private void openQuote(Quote quote) {
         try {
             Dialog qViewerDialog = new Dialog(
                     new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService)));

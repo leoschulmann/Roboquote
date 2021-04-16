@@ -20,7 +20,8 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 public class QuoteViewer extends VerticalLayout {
     private CurrencyFormatService currencyService;
 
-    public QuoteViewer(Quote q, CurrencyFormatService currencyService, MoneyMathService moneyMathService,
+    public QuoteViewer(Quote q, CurrencyFormatService currencyService,
+                       MoneyMathService moneyMathService,
                        StringFormattingService stringFormatter) {
         this.currencyService = currencyService;
         add(new Span("id: " + q.getId() + ";\tQuote No: " + q.getNumber() + "-" + q.getVersion() +
@@ -29,7 +30,7 @@ public class QuoteViewer extends VerticalLayout {
                 (q.getCustomerInfo().isBlank() ? "" : " (" + q.getCustomerInfo() + ")")));
         add(new Span("Dealer: " + q.getDealer() +
                 (q.getDealerInfo().isBlank() ? "" : " (" + q.getDealerInfo() + ")")));
-        add(new Span("Created: " + q.getCreated().format(DateTimeFormatter.ISO_LOCAL_DATE) +
+        add(new Span("Created: " + q.getCreatedTimestamp().format(DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm")) +
                 ";\tValid: " + q.getValidThru().format(DateTimeFormatter.ISO_LOCAL_DATE)));
         add(new Span("Payment: " + q.getPaymentTerms() + ";\t" + "Shipping: " + q.getShippingTerms()));
         add(new Span("Installation: " + q.getInstallation() + ";\tWarranty: " + q.getWarranty()));

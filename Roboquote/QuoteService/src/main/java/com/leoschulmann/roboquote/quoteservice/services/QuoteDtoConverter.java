@@ -12,25 +12,27 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 @Service
 public class QuoteDtoConverter {
     public QuoteDto convertProjectionToDto(QuoteWithoutSections proj) {
         double priceAmount = proj.getFinalPrice().getNumberStripped().doubleValue();
         String priceCurrency = proj.getFinalPrice().getCurrency().getCurrencyCode();
-        String date = proj.getCreatedDate().format(ISO_DATE);
+        String date = getCreatedTimeAsString(proj.getCreatedDate(), proj.getCreatedDateTime());
         return new QuoteDto(proj.getId(), proj.getSerialNumber(), date, proj.getVersion(), proj.getCustomer(),
                 proj.getDealer(), priceAmount, priceCurrency);
     }
 
     public QuoteDto convertQuoteToDto(Quote q) {
-        String created = q.getCreated().format(ISO_DATE);
+        String created = getCreatedTimeAsString(q.getCreated(), q.getCreatedTimestamp());
         String validThru = q.getValidThru().format(ISO_DATE);
         double finalPriceAmount = q.getFinalPrice().getNumberStripped().doubleValue();
         String finalPriceCurrency = q.getFinalPrice().getCurrency().getCurrencyCode();
@@ -64,10 +66,10 @@ public class QuoteDtoConverter {
     }
 
     public Quote convertDtoToQuote(QuoteDto dto) {
-        LocalDate crDate = LocalDate.parse(dto.getCreated(), ISO_DATE);
+        LocalDateTime createdDateTime = LocalDateTime.parse(dto.getCreated(), ISO_LOCAL_DATE_TIME);
         LocalDate validThr = LocalDate.parse(dto.getValidThru(), ISO_DATE);
         int id = Objects.requireNonNullElse(dto.getId(), 0);
-        Quote q = new Quote(id, dto.getNumber(), crDate, validThr, dto.getVersion(), dto.getCustomer(),
+        Quote q = new Quote(id, dto.getNumber(), createdDateTime, validThr, dto.getVersion(), dto.getCustomer(),
                 new ArrayList<>(), dto.getDiscount(), dto.getDealer(), dto.getCustomerInfo(),
                 dto.getDealerInfo(), dto.getPaymentTerms(), dto.getShippingTerms(), dto.getWarranty(),
                 dto.getInstallation(), dto.getVat(), BigDecimal.valueOf(dto.getEurRate()),
@@ -91,8 +93,13 @@ public class QuoteDtoConverter {
     }
 
     public Quote convertDtoToMinimalQuote(QuoteDto dto) {
-        LocalDate crDate = LocalDate.parse(dto.getCreated(), ISO_DATE);
-        return new Quote(dto.getId(), dto.getNumber(), crDate, dto.getVersion(), dto.getDealer(), dto.getCustomer(),
+        LocalDateTime createdDateTime = LocalDateTime.parse(dto.getCreated(), ISO_LOCAL_DATE_TIME);
+        return new Quote(dto.getId(), dto.getNumber(), createdDateTime, dto.getVersion(), dto.getDealer(), dto.getCustomer(),
                 Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()));
+    }
+
+    private String getCreatedTimeAsString(LocalDate date, LocalDateTime dateTime) {
+        LocalDateTime ldt = dateTime == null ? date.atStartOfDay() : dateTime;
+        return ldt.format(ISO_LOCAL_DATE_TIME);
     }
 }
