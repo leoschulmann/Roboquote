@@ -38,6 +38,9 @@ public class QuoteService {
     public String getQuoteFullName(int id) {
         QuoteSerialAndVersion projection = quoteRepo.getSerialAndVersionForId(id);
         return projection.getSerialNumber() + "-" + projection.getVersion();
+    }
 
+    public void addComment(int id, String comment) {
+        quoteRepo.addComment(id, comment);
     }
 }

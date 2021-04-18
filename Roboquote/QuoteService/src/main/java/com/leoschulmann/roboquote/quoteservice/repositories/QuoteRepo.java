@@ -4,9 +4,11 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteSerialAndVersion;
 import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteWithoutSections;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,9 +21,14 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
 
     @Query("select q.id as id, q.created as createdDate, q.createdTimestamp as createdDateTime," +
             " q.number as serialNumber, q.version as version, q.customer as customer, q.dealer as dealer, " +
-            "q.finalPrice as finalPrice from Quote q")
+            "q.finalPrice as finalPrice, q.comment as comment from Quote q")
     List<QuoteWithoutSections> getAllQuoteProjections();
 
     @Query("select q.number as serialNumber, q.version as version from Quote q where q.id = :id")
     QuoteSerialAndVersion getSerialAndVersionForId(@Param("id") int id);
+
+    @Transactional
+    @Modifying
+    @Query("update Quote q set q.comment = :comment where q.id = :id")
+    void addComment(int id, String comment);
 }

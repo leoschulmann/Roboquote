@@ -76,9 +76,11 @@ public class QuoteDto {
 
     private String finalPriceCurrency;
 
+    private String comment;
+
 
     public QuoteDto(Integer id, String number, String created, Integer version, String customer, String dealer,
-                    double finalPriceAmount, String finalPriceCurrency) {
+                    double finalPriceAmount, String finalPriceCurrency, String comment) {
         this.id = id;
         this.number = number;
         this.created = created;
@@ -87,5 +89,6 @@ public class QuoteDto {
         this.dealer = dealer;
         this.finalPriceAmount = finalPriceAmount;
         this.finalPriceCurrency = finalPriceCurrency;
+        this.comment = comment;
     }
 }

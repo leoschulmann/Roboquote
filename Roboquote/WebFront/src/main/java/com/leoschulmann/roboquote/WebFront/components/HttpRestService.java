@@ -231,4 +231,11 @@ public class HttpRestService {
         if (name == null) throw new RuntimeException("work in progress!"); //todo replace stub
         return name;
     }
+
+    public void addComment(int id, String value) {
+        RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "comment/" + id))
+                .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
+                .body(value);
+        restTemplate.exchange(request, String.class);
+    }
 }

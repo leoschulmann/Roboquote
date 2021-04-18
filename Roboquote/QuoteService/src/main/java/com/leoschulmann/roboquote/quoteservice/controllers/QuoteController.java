@@ -36,4 +36,10 @@ public class QuoteController {
         QuoteDto dto = quoteService.getById(id);
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }
+
+    @PostMapping("/comment/{id}")
+    public ResponseEntity<Object> addComment(@PathVariable @ExistingQuote int id, @RequestBody String comment) {
+        quoteService.addComment(id, comment);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

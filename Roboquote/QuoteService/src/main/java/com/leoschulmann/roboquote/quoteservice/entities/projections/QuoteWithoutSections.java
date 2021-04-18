@@ -21,4 +21,6 @@ public interface QuoteWithoutSections {
     String getDealer();
 
     Money getFinalPrice();
+
+    String getComment();
 }

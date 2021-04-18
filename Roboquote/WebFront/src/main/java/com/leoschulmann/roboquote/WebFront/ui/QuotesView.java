@@ -12,6 +12,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
@@ -37,6 +39,7 @@ public class QuotesView extends VerticalLayout {
     private final StringFormattingService stringFormattingService;
     private final HttpRestService httpRestService;
     private final DateTimeFormatter dtf;
+    private final Grid<Quote> grid;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService,
@@ -48,7 +51,7 @@ public class QuotesView extends VerticalLayout {
         this.stringFormattingService = stringFormattingService;
         this.httpRestService = httpRestService;
         dtf = DateTimeFormatter.ofPattern("dd MMM yy");
-        Grid<Quote> grid = createGrid();
+       grid = createGrid();
         updateGrid(grid);
         add(grid);
         grid.addItemClickListener(event -> {
@@ -59,7 +62,7 @@ public class QuotesView extends VerticalLayout {
 
     private Grid<Quote> createGrid() {
         PaginatedGrid<Quote> grid = new PaginatedGrid<>(Quote.class);
-        grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        grid.addThemeVariants(LUMO_COMPACT, LUMO_ROW_STRIPES, LUMO_COLUMN_BORDERS);
         grid.removeAllColumns();
         grid.addColumn((ValueProvider<Quote, String>) quote -> quote.getCreatedTimestamp().format(dtf))
                 .setHeader("Created").setSortable(true).setKey("created").setAutoWidth(true).setFlexGrow(0)
@@ -68,6 +71,7 @@ public class QuotesView extends VerticalLayout {
                 .setAutoWidth(true).setFlexGrow(0).setResizable(true);
         grid.addColumn(Quote::getCustomer).setHeader("Customer").setSortable(true).setResizable(true).setFlexGrow(1);
         grid.addColumn(Quote::getDealer).setHeader("Dealer").setSortable(true).setFlexGrow(1).setResizable(true);
+        grid.addColumn(Quote::getComment).setHeader("Comment").setSortable(false).setFlexGrow(0).setResizable(true);
         grid.addColumn(q -> currencyFormatService.formatMoney(q.getFinalPrice() == null ?
                 Money.of(BigDecimal.ZERO, "EUR") : q.getFinalPrice()))
                 .setHeader("Quote Price")
@@ -96,7 +100,9 @@ public class QuotesView extends VerticalLayout {
             Button asTemplateBtn = createAsTemplateBtn(quote, qViewerDialog);
             Button appendNewVersionBtn = createNewQuoteVersion(quote.getNumber(), quote.getVersion(), quote, qViewerDialog);
             Button closeBtn = createCloseBtn(qViewerDialog);
-            HorizontalLayout btnPanel = new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn, closeBtn);
+            Button addCommentBtn = createCommentButton(quote, qViewerDialog);
+            HorizontalLayout btnPanel = new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn,
+                    addCommentBtn, closeBtn);
             btnPanel.setJustifyContentMode(JustifyContentMode.CENTER);
             btnPanel.setAlignItems(Alignment.CENTER);
             qViewerDialog.add(btnPanel);
@@ -112,6 +118,28 @@ public class QuotesView extends VerticalLayout {
             new Dialog(vl).open();
             e.printStackTrace();
         }
+    }
+
+    private Button createCommentButton(Quote quote, Dialog qViewerDialog) {
+        Button button = new Button("Add comment");
+        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+        Dialog dialog = new Dialog();
+
+        TextField textField = new TextField();
+        textField.setWidth("30em");
+        textField.setValue(Objects.requireNonNullElse(quote.getComment(), ""));
+        Button ok = new Button("OK", click -> {
+            httpRestService.addComment(quote.getId(), textField.getValue());
+            updateGrid(grid);
+            qViewerDialog.close();
+            dialog.close();
+        });
+        ok.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
+        VerticalLayout vl = new VerticalLayout(textField, ok);
+        vl.setAlignItems(Alignment.CENTER);
+        dialog.add(vl);
+        button.addClickListener(c -> dialog.open());
+        return button;
     }
 
     private FileDownloadWrapper createDownloadWrapper(String serialNumber, Integer version, int id) {

@@ -13,6 +13,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import javax.money.MonetaryAmount;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
@@ -34,6 +35,7 @@ public class QuoteViewer extends VerticalLayout {
                 ";\tValid: " + q.getValidThru().format(DateTimeFormatter.ISO_LOCAL_DATE)));
         add(new Span("Payment: " + q.getPaymentTerms() + ";\t" + "Shipping: " + q.getShippingTerms()));
         add(new Span("Installation: " + q.getInstallation() + ";\tWarranty: " + q.getWarranty()));
+        add(new Span("Comment: " + Objects.requireNonNullElse(q.getComment(), "[]")));
         add(new Span("EUR: " + q.getEurRate().toString() + ";\tUSD: " + q.getUsdRate().toString() +
                 ";\tJPY: " + q.getJpyRate().toString() + ";\t(+" + q.getConversionRate().toString() + "%)"));
         add(new Hr());

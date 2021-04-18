@@ -148,6 +148,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         TextField shippingTerms = new TextField("Shipping Terms");
         TextField warranty = new TextField("Warranty");
         TextField installation = new TextField("Installation");
+        TextField comment = new TextField("Comment");
 
         DatePicker validThru = new DatePicker("Valid through date");
         validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
@@ -158,7 +159,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         columnLayout.add(customerInfo, 2);
         columnLayout.add(dealer);
         columnLayout.add(dealerInfo, 2);
-        columnLayout.add(paymentTerms, shippingTerms, warranty, installation, validThru);
+        columnLayout.add(paymentTerms, shippingTerms, warranty, installation, validThru, comment);
         columnLayout.add(createRatesBlock(), 3);
         add(columnLayout);
 
@@ -170,6 +171,7 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         quoteBinder.bind(shippingTerms, Quote::getShippingTerms, Quote::setShippingTerms);
         quoteBinder.bind(warranty, Quote::getWarranty, Quote::setWarranty);
         quoteBinder.bind(installation, Quote::getInstallation, Quote::setInstallation);
+        quoteBinder.bind(comment, Quote::getComment, Quote::setComment);
         quoteBinder.forField(validThru).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
 
         Accordion accordion = new Accordion();

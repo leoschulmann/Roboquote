@@ -28,7 +28,7 @@ public class QuoteDtoConverter {
         String priceCurrency = proj.getFinalPrice().getCurrency().getCurrencyCode();
         String date = getCreatedTimeAsString(proj.getCreatedDate(), proj.getCreatedDateTime());
         return new QuoteDto(proj.getId(), proj.getSerialNumber(), date, proj.getVersion(), proj.getCustomer(),
-                proj.getDealer(), priceAmount, priceCurrency);
+                proj.getDealer(), priceAmount, priceCurrency, proj.getComment());
     }
 
     public QuoteDto convertQuoteToDto(Quote q) {
@@ -44,7 +44,7 @@ public class QuoteDtoConverter {
                 sectionDtos, q.getDiscount(), q.getDealer(), q.getCustomerInfo(), q.getDealerInfo(), q.getPaymentTerms(),
                 q.getShippingTerms(), q.getWarranty(), q.getInstallation(), q.getVat(), q.getEurRate().doubleValue(),
                 q.getUsdRate().doubleValue(), q.getJpyRate().doubleValue(), q.getConversionRate().doubleValue(),
-                finalPriceAmount, finalPriceCurrency);
+                finalPriceAmount, finalPriceCurrency, q.getComment());
     }
 
     public QuoteSectionDto convertSectionToDto(QuoteSection qs) {
@@ -75,7 +75,7 @@ public class QuoteDtoConverter {
                 dto.getInstallation(), dto.getVat(), BigDecimal.valueOf(dto.getEurRate()),
                 BigDecimal.valueOf(dto.getUsdRate()), BigDecimal.valueOf(dto.getJpyRate()),
                 BigDecimal.valueOf(dto.getConversionRate()),
-                Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()));
+                Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()), dto.getComment());
         q.addSections(dto.getSections().stream().map(this::convertDtoToSection).toArray(QuoteSection[]::new));
         return q;
     }
@@ -95,7 +95,7 @@ public class QuoteDtoConverter {
     public Quote convertDtoToMinimalQuote(QuoteDto dto) {
         LocalDateTime createdDateTime = LocalDateTime.parse(dto.getCreated(), ISO_LOCAL_DATE_TIME);
         return new Quote(dto.getId(), dto.getNumber(), createdDateTime, dto.getVersion(), dto.getDealer(), dto.getCustomer(),
-                Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()));
+                Money.of(dto.getFinalPriceAmount(), dto.getFinalPriceCurrency()), dto.getComment());
     }
 
     private String getCreatedTimeAsString(LocalDate date, LocalDateTime dateTime) {
