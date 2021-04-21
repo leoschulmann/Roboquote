@@ -158,7 +158,7 @@ public class Quote {
     }
 
     public Quote(int id, String number, LocalDateTime created, Integer version, String dealer, String customer,
-                 Money finalPrice, String comment) {
+                 Money finalPrice, String comment, boolean cancelled) {
         this.id = id;
         this.number = number;
         this.createdTimestamp = created;
@@ -167,13 +167,14 @@ public class Quote {
         this.customer = customer;
         this.finalPrice = finalPrice;
         this.comment = comment;
+        this.cancelled = cancelled;
     }
 
     public Quote(int id, String number, LocalDateTime createdTimestamp, LocalDate validThru, Integer version,
                  String customer, List<QuoteSection> sections, Integer discount, String dealer, String customerInfo,
                  String dealerInfo, String paymentTerms, String shippingTerms, String warranty, String installation,
                  Integer vat, BigDecimal eurRate, BigDecimal usdRate, BigDecimal jpyRate, BigDecimal conversionRate,
-                 Money finalPrice, String comment) {
+                 Money finalPrice, String comment, Boolean cancelled) {
         this.id = id;
         this.number = number;
         this.createdTimestamp = createdTimestamp;
@@ -196,6 +197,7 @@ public class Quote {
         this.conversionRate = conversionRate;
         this.finalPrice = finalPrice;
         this.comment = comment;
+        this.cancelled = cancelled;
     }
 
     public void addSections(QuoteSection... sec) {

@@ -109,7 +109,7 @@ class NewQuoteControllerTest {
         ItemPositionDto ipd = new ItemPositionDto(-1, "item", "000", 100., "USD", 5, 42);
         QuoteSectionDto qsd = new QuoteSectionDto(-1, new ArrayList<>(), "section", 5, 42., "JPY");
         QuoteDto qd = new QuoteDto(-1, "123", "2021-10-10", "2021-10-10", 1, "", new ArrayList<QuoteSectionDto>(),
-                3, "", "", "", "", "", "", "", 20, 1., 1., 1., 1., 500., "RUB", "comment");
+                3, "", "", "", "", "", "", "", 20, 1., 1., 1., 1., 500., "RUB", "comment", false);
         qsd.getPositions().add(ipd);
         qd.getSections().add(qsd);
 

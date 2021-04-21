@@ -4,13 +4,15 @@ import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.SortDirection;
@@ -31,6 +33,7 @@ import java.util.Objects;
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
 @Route(value = "quotes", layout = MainLayout.class)
+@CssImport(value = "./styles/styles.css", themeFor = "vaadin-grid")
 public class QuotesView extends VerticalLayout {
     private final QuoteService quoteService;
     private final CurrencyFormatService currencyFormatService;
@@ -40,6 +43,7 @@ public class QuotesView extends VerticalLayout {
     private final HttpRestService httpRestService;
     private final DateTimeFormatter dtf;
     private final Grid<Quote> grid;
+    private boolean showCancelled = false;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService,
@@ -51,13 +55,23 @@ public class QuotesView extends VerticalLayout {
         this.stringFormattingService = stringFormattingService;
         this.httpRestService = httpRestService;
         dtf = DateTimeFormatter.ofPattern("dd MMM yy");
-       grid = createGrid();
+        grid = createGrid();
         updateGrid(grid);
-        add(grid);
+        add(createCheckbox(), grid);
         grid.addItemClickListener(event -> {
             int qId = event.getItem().getId();
             openQuote(httpRestService.getQuoteById(qId));
         });
+    }
+
+    private Checkbox createCheckbox() {
+        Checkbox cb = new Checkbox("Show cancelled quotes");
+        cb.setValue(showCancelled);
+        cb.addValueChangeListener(e -> {
+            showCancelled = e.getValue();
+            updateGrid(grid);
+        });
+        return cb;
     }
 
     private Grid<Quote> createGrid() {
@@ -79,7 +93,7 @@ public class QuotesView extends VerticalLayout {
                 .setAutoWidth(true).setFlexGrow(0).setResizable(true);
 
         grid.setMultiSort(true);
-
+        grid.setClassNameGenerator(quote -> quote.getCancelled() ? "strikethrough" : "");
         grid.setPageSize(15);
         grid.setPaginatorSize(5);
         GridSortOrder<Quote> byCreated = new GridSortOrder<>(grid.getColumnByKey("created"), SortDirection.DESCENDING);
@@ -88,7 +102,7 @@ public class QuotesView extends VerticalLayout {
     }
 
     private void updateGrid(Grid<Quote> grid) {
-        grid.setItems(httpRestService.findAllQuotes());
+        grid.setItems(showCancelled ? httpRestService.findAllQuotes() : httpRestService.findAllUncancelledQuotes());
     }
 
     private void openQuote(Quote quote) {
@@ -101,11 +115,16 @@ public class QuotesView extends VerticalLayout {
             Button appendNewVersionBtn = createNewQuoteVersion(quote.getNumber(), quote.getVersion(), quote, qViewerDialog);
             Button closeBtn = createCloseBtn(qViewerDialog);
             Button addCommentBtn = createCommentButton(quote, qViewerDialog);
-            HorizontalLayout btnPanel = new HorizontalLayout(asTemplateBtn, downloadXlsxWrapper, appendNewVersionBtn,
-                    addCommentBtn, closeBtn);
-            btnPanel.setJustifyContentMode(JustifyContentMode.CENTER);
-            btnPanel.setAlignItems(Alignment.CENTER);
-            qViewerDialog.add(btnPanel);
+            Button cancelBtn = createCancelButton(quote, qViewerDialog);
+            FormLayout responsiveLayout = new FormLayout();
+            responsiveLayout.setResponsiveSteps(
+                    new FormLayout.ResponsiveStep("25em", 1),
+                    new FormLayout.ResponsiveStep("32em", 2),
+                    new FormLayout.ResponsiveStep("40em", 3));
+
+            responsiveLayout.add(asTemplateBtn, appendNewVersionBtn, downloadXlsxWrapper,
+                    addCommentBtn, cancelBtn, closeBtn);
+            qViewerDialog.add(responsiveLayout);
             qViewerDialog.setWidth("80%");
             qViewerDialog.open();
         } catch (
@@ -118,6 +137,19 @@ public class QuotesView extends VerticalLayout {
             new Dialog(vl).open();
             e.printStackTrace();
         }
+    }
+
+    private Button createCancelButton(Quote quote, Dialog viewerDialog) {
+        boolean cancelAction = !quote.getCancelled();
+        Button button = new Button();
+        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+        button.setText(cancelAction ? "Cancel quote" : "Uncancel quote");
+        button.addClickListener(c -> {
+            httpRestService.setCancelled(quote.getId(), cancelAction);
+            updateGrid(grid);
+            viewerDialog.close();
+        });
+        return button;
     }
 
     private Button createCommentButton(Quote quote, Dialog qViewerDialog) {
@@ -148,13 +180,14 @@ public class QuotesView extends VerticalLayout {
         FileDownloadWrapper wrapper = new FileDownloadWrapper(
                 new StreamResource(serialNumber + "-" + version + downloadService.getExtension(),
                         () -> new ByteArrayInputStream(downloadService.downloadXlsx(id))));
+        downloadXlsxBtn.setWidthFull();
         wrapper.wrapComponent(downloadXlsxBtn);
         return wrapper;
     }
 
     private Button createAsTemplateBtn(Quote quote, Dialog qViewerDialog) {
         Button btn = new Button("Use as a template");
-        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_CONTRAST);
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         btn.addClickListener(click -> getUI().ifPresent(ui -> {
             Quote templatedQuote = quoteService.createNewFromTemplate(quote);
             ui.getSession().setAttribute(Quote.class, templatedQuote);

@@ -23,4 +23,6 @@ public interface QuoteWithoutSections {
     Money getFinalPrice();
 
     String getComment();
+
+    Boolean getCancelled();
 }

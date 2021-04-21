@@ -175,6 +175,14 @@ public class HttpRestService {
         return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
     }
 
+    public List<Quote> findAllUncancelledQuotes() {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "uncancelled"))
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
+        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
+        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+    }
+
     public Quote getQuoteById(int id) {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
@@ -236,6 +244,13 @@ public class HttpRestService {
         RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "comment/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(value);
+        restTemplate.exchange(request, String.class);
+    }
+
+    public void setCancelled(int id, boolean cancel) {
+        RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "cancel/" + id))
+                .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
+                .body(String.valueOf(cancel));
         restTemplate.exchange(request, String.class);
     }
 }

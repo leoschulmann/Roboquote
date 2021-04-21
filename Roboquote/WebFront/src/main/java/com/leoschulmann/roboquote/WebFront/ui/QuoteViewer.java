@@ -26,7 +26,7 @@ public class QuoteViewer extends VerticalLayout {
                        StringFormattingService stringFormatter) {
         this.currencyService = currencyService;
         add(new Span("id: " + q.getId() + ";\tQuote No: " + q.getNumber() + "-" + q.getVersion() +
-                "\t(" + q.getFinalPrice().getCurrency().getCurrencyCode() + ")"));
+                "\t(" + q.getFinalPrice().getCurrency().getCurrencyCode() + ") " + (q.getCancelled() ? "CANCELLED" : "")));
         add(new Span("Customer: " + q.getCustomer() +
                 (q.getCustomerInfo().isBlank() ? "" : " (" + q.getCustomerInfo() + ")")));
         add(new Span("Dealer: " + q.getDealer() +

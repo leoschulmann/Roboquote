@@ -21,8 +21,14 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
 
     @Query("select q.id as id, q.created as createdDate, q.createdTimestamp as createdDateTime," +
             " q.number as serialNumber, q.version as version, q.customer as customer, q.dealer as dealer, " +
-            "q.finalPrice as finalPrice, q.comment as comment from Quote q")
+            "q.finalPrice as finalPrice, q.comment as comment, q.cancelled as cancelled from Quote q")
     List<QuoteWithoutSections> getAllQuoteProjections();
+
+    @Query("select q.id as id, q.created as createdDate, q.createdTimestamp as createdDateTime," +
+            " q.number as serialNumber, q.version as version, q.customer as customer, q.dealer as dealer, " +
+            "q.finalPrice as finalPrice, q.comment as comment, q.cancelled as cancelled from Quote q " +
+            "where q.cancelled = false or q.cancelled is null")
+    List<QuoteWithoutSections> getAllUncancelledQuoteProjections();
 
     @Query("select q.number as serialNumber, q.version as version from Quote q where q.id = :id")
     QuoteSerialAndVersion getSerialAndVersionForId(@Param("id") int id);
@@ -31,4 +37,10 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
     @Modifying
     @Query("update Quote q set q.comment = :comment where q.id = :id")
     void addComment(int id, String comment);
+
+    @Transactional
+    @Modifying
+    @Query("update Quote q set q.cancelled = :action where q.id = :id")
+    void setCancelled(int id, boolean action);
+
 }

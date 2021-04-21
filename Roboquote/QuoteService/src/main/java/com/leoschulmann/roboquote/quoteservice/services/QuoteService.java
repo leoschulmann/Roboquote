@@ -22,6 +22,11 @@ public class QuoteService {
         return projections.stream().map(dtoService::convertProjectionToDto).collect(Collectors.toList());
     }
 
+    public List<QuoteDto> findAllUncancelled() {
+        List<QuoteWithoutSections> projections = quoteRepo.getAllUncancelledQuoteProjections();
+        return projections.stream().map(dtoService::convertProjectionToDto).collect(Collectors.toList());
+    }
+
     public QuoteDto getById(int id) {
         Quote quote = getQuote(id);
         return dtoService.convertQuoteToDto(quote);
@@ -42,5 +47,9 @@ public class QuoteService {
 
     public void addComment(int id, String comment) {
         quoteRepo.addComment(id, comment);
+    }
+
+    public void setQuoteCancelled(int id, boolean action) {
+        quoteRepo.setCancelled(id, action);
     }
 }
