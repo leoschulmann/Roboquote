@@ -106,9 +106,9 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         includingVatValue = new Span();
         includingVatValue.getElement().getStyle().set("margin-left", "auto");
         add(getInventoryLookup());
-        gridsBlock = createGridsBlock();
 
         add(createQuoteInfoBlock());
+        gridsBlock = new VerticalLayout();
         add(gridsBlock);
         add(createFinishBlock());
     }
@@ -307,10 +307,6 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         return moneyMathService.getSum(gridList.stream()
                 .map(grid -> grid.getQuoteSection().getTotalDiscounted())
                 .collect(Collectors.toList()));
-    }
-
-    private VerticalLayout createGridsBlock() {
-        return new VerticalLayout();
     }
 
     private VerticalLayout createFinishBlock() {
@@ -523,6 +519,8 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
         Button editNameBtn = new Button(VaadinIcon.EDIT.create());
         IntegerField discountField = new IntegerField("Discount, %");
         Button wrapButton = new Button(VaadinIcon.LINES.create());
+        Button moveUpBtn = new Button(VaadinIcon.ARROW_UP.create());
+        Button moveDownBtn = new Button(VaadinIcon.ARROW_DOWN.create());
         Button deleteBtn = new Button(VaadinIcon.CLOSE_CIRCLE.create());
 
         editNameBtn.addClickListener(c -> showNewSectionDialog(
@@ -559,12 +557,41 @@ public class Compose extends VerticalLayout implements AfterNavigationObserver {
 
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 
+        moveUpBtn.addClickListener(click -> { //todo refactor
+            int toIndex = gridList.indexOf(grid) - 1;
+            if (toIndex >= 0) {
+                gridList.remove(grid);
+                gridList.add(toIndex, grid);
 
-        addToClickableComponents(deleteBtn, editNameBtn, wrapButton, discountField);
+                gridsBlock.remove(acc);
+                gridsBlock.addComponentAtIndex(toIndex, acc);
+                quoteService.sectionMoveUp(quote, grid.getQuoteSection());
+                resetAvailableGridsCombobox();
+            } else showValidationErrorDialog();
+        });
+
+        moveUpBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+
+        moveDownBtn.addClickListener(click -> {
+            int toIndex = gridList.indexOf(grid) + 1;
+            if (toIndex < gridList.size()) {
+                gridList.remove(grid);
+                gridList.add(toIndex, grid);
+
+                gridsBlock.remove(acc);
+                gridsBlock.addComponentAtIndex(toIndex, acc);
+                quoteService.sectionMoveDown(quote, grid.getQuoteSection());
+                resetAvailableGridsCombobox();
+            } else showValidationErrorDialog();
+        });
+
+        moveDownBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+
+        addToClickableComponents(deleteBtn, editNameBtn, wrapButton, discountField, moveUpBtn, moveDownBtn);
 
         layout.getStyle().set("margin-left", "auto");
         layout.setAlignItems(Alignment.END);
-        layout.add(discountField, editNameBtn, wrapButton, deleteBtn);
+        layout.add(discountField, editNameBtn, wrapButton, moveUpBtn, moveDownBtn, deleteBtn);
         return layout;
     }
 
