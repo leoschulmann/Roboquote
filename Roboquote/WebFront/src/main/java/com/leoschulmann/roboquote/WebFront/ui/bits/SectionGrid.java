@@ -1,10 +1,7 @@
-package com.leoschulmann.roboquote.WebFront.ui;
+package com.leoschulmann.roboquote.WebFront.ui.bits;
 
-import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.StringFormattingService;
-import com.leoschulmann.roboquote.WebFront.events.ComposeDeleteItemPositionEvent;
-import com.leoschulmann.roboquote.WebFront.events.ComposeItemPositionQuantityEvent;
-import com.leoschulmann.roboquote.WebFront.events.UniversalSectionChangedEvent;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.Component;
@@ -23,9 +20,15 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.shared.Registration;
+import org.javamoney.moneta.format.AmountFormatParams;
+import org.javamoney.moneta.format.CurrencyStyle;
 
+import javax.money.format.AmountFormatQueryBuilder;
+import javax.money.format.MonetaryAmountFormat;
+import javax.money.format.MonetaryFormats;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
@@ -36,8 +39,19 @@ public class SectionGrid extends Grid<ItemPosition> {
     private final List<HasEnabled> clickables = new ArrayList<>();
     private boolean textWrap = true;
     private ItemPosition draggedItem;
+    private static final MonetaryAmountFormat FORMATTER;
 
-    SectionGrid(QuoteSection qs, CurrencyFormatService currencyFormatter, StringFormattingService stringFormattingService) {
+    static {
+        FORMATTER = MonetaryFormats.getAmountFormat(
+                AmountFormatQueryBuilder
+                        .of(Locale.FRANCE)
+                        .set(CurrencyStyle.SYMBOL)
+                        .set(AmountFormatParams.PATTERN, "#,###,###.## ¤")
+                        .build());
+    }
+
+
+    public SectionGrid(QuoteSection qs, StringFormattingService stringFormattingService) {
         super(ItemPosition.class);
         this.quoteSection = qs;
         setDataProvider(new ListDataProvider<>(quoteSection.getPositions()));
@@ -48,8 +62,8 @@ public class SectionGrid extends Grid<ItemPosition> {
         addColumn(ItemPosition::getName).setHeader("Item name").setSortable(false).setFlexGrow(1).setResizable(true);
         addComponentColumn(this::getQuantityField).setHeader("Quantity").setSortable(false).setAutoWidth(true).setFlexGrow(0);
         addColumn(ItemPosition::getPartNo).setHeader("Part No").setSortable(false).setWidth("6em").setFlexGrow(0);
-        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingPrice())).setHeader("Price").setWidth("8em").setFlexGrow(0);
-        addColumn(ip -> currencyFormatter.formatMoney(ip.getSellingSum())).setHeader("Sum").setWidth("8em").setFlexGrow(0);
+        addColumn(ip -> FORMATTER.format(ip.getSellingPrice())).setHeader("Price").setWidth("8em").setFlexGrow(0);
+        addColumn(ip -> FORMATTER.format(ip.getSellingSum())).setHeader("Sum").setWidth("8em").setFlexGrow(0);
         setHeightByRows(true);
 
         setupDragNdrop();
@@ -94,6 +108,14 @@ public class SectionGrid extends Grid<ItemPosition> {
         field.addValueChangeListener(event -> {
             fireEvent(new ComposeItemPositionQuantityEvent(this, itemPosition, event.getValue()));
             getDataProvider().refreshAll();
+            redrawFooter();//todo remove with old 'Compose'
+
+
+            int qty = field.getValue();
+            itemPosition.setQty(qty);
+            itemPosition.setSellingSum(itemPosition.getSellingPrice().multiply(qty));
+            fireEvent(new GridChangedEvent(this));
+            getDataProvider().refreshAll();
             redrawFooter();
         });
         clickables.add(field);
@@ -105,7 +127,11 @@ public class SectionGrid extends Grid<ItemPosition> {
         deleteItemPositionBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
 
         deleteItemPositionBtn.addClickListener(c -> {
-            fireEvent(new ComposeDeleteItemPositionEvent(this, itemPosition));
+            fireEvent(new ComposeDeleteItemPositionEvent(this, itemPosition)); //todo remove with old 'Compose'
+            quoteSection.getPositions().remove(itemPosition);
+
+
+            fireEvent(new GridChangedEvent(this));
             getDataProvider().refreshAll();
             redrawFooter();
         });
@@ -130,7 +156,7 @@ public class SectionGrid extends Grid<ItemPosition> {
         return quoteSection.getName();
     }
 
-    Footer getFooter() {
+    public Footer getFooter() {
         return footer;
     }
 
@@ -138,14 +164,20 @@ public class SectionGrid extends Grid<ItemPosition> {
         footer.update();
     }
 
-    protected <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
     }
 
-    void sectionChangedEvent(UniversalSectionChangedEvent event) {
+    public void sectionChangedEvent(UniversalSectionChangedEvent event) {  //todo remove with old 'Compose'
         getDataProvider().refreshAll();
         redrawFooter();
     }
+
+    public void update(UpdateGridEvent event) {
+        getDataProvider().refreshAll();
+        redrawFooter();
+    }
+
 
     public boolean isTextWrap() {
         return textWrap;
