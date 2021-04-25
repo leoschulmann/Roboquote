@@ -34,10 +34,6 @@ public class QuoteService {
         return quote;
     }
 
-    public void addSections(Quote quote, QuoteSection qs) {
-        quote.addSections(qs);
-    }
-
     private void getSectionsCopy(Quote source, Quote quote) {
         for (QuoteSection sourceSection : source.getSections()) {
             QuoteSection section = new QuoteSection(sourceSection.getName());
@@ -48,19 +44,4 @@ public class QuoteService {
         }
     }
 
-    public void removeSection(Quote quote, QuoteSection quoteSection) {
-        quote.removeSection(quoteSection);
-    }
-
-    public void sectionMoveUp(Quote quote, QuoteSection quoteSection) {
-        int toIndex = quote.getSections().indexOf(quoteSection) - 1;
-        quote.getSections().remove(quoteSection);
-        quote.getSections().add(toIndex, quoteSection);
-    }
-
-    public void sectionMoveDown(Quote quote, QuoteSection quoteSection) {
-        int toIndex = quote.getSections().indexOf(quoteSection) + 1;
-        quote.getSections().remove(quoteSection);
-        quote.getSections().add(toIndex, quoteSection);
-    }
 }

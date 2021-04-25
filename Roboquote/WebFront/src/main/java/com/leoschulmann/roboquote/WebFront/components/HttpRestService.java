@@ -156,14 +156,12 @@ public class HttpRestService {
     }
 
     public List<ItemPosition> batchCopyPositions(List<ItemPosition> positions) {
-        List<Item> items = getItemsByIds(positions.stream().mapToInt(ItemPosition::getItemId).toArray());
-
-        return items.stream().map(i -> {
-            int qty = positions.stream().filter(p -> p.getItemId() == i.getId()).findAny().get().getQty();
-            ItemPosition ip = converterService.convertItemToItemPosition(i);
-            ip.setQty(qty);
-            ip.setSellingSum(ip.getSellingPrice().multiply(qty));
-            return ip;
+        int[] itemIds = positions.stream().mapToInt(ItemPosition::getItemId).toArray(); //ordered
+        List<Item> items = getItemsByIds(itemIds);                                      //unordered
+        return Arrays.stream(itemIds).mapToObj(itemid -> {
+            int qty = positions.stream().filter(ip -> ip.getItemId() == itemid).findFirst().get().getQty();
+            Item i = items.stream().filter(item -> item.getId() == itemid).findFirst().get();
+            return converterService.convertItemToItemPosition(i, qty);
         }).collect(Collectors.toList());
     }
 

@@ -23,29 +23,6 @@ public class QuoteSectionHandler {
         } else section.getPositions().add(ip);
     }
 
-    public void deletePosition(QuoteSection quoteSection, ItemPosition itemPosition) {
-        getOptionalItemPosition(quoteSection, itemPosition).ifPresent(p -> quoteSection.getPositions().remove(p));
-    }
-
-    public void setQty(QuoteSection quoteSection, ItemPosition itemPosition, Integer value) {
-        getOptionalItemPosition(quoteSection, itemPosition).ifPresent(p -> {
-            p.setQty(value);
-            p.setSellingSum(p.getSellingPrice().multiply(value));
-        });
-    }
-
-    public void setSectionDiscount(QuoteSection quoteSection, Integer discount) {
-        quoteSection.setDiscount(discount);
-    }
-
-    public void setSectionName(QuoteSection quoteSection, String value) {
-        quoteSection.setName(value);
-    }
-
-    public String getSectionName(QuoteSection quoteSection) {
-        return quoteSection.getName();
-    }
-
     public void updateSubtotalToCurrency(QuoteSection qs, String currency,
                                          BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate, Double conv) {
 
@@ -107,9 +84,5 @@ public class QuoteSectionHandler {
         if (source.getCurrency().getCurrencyCode().equals(target)) return source;
         MonetaryAmount rubs = convertToRouble(source, sourceRate, 1.);
         return convertFromRouble(rubs, target, targetRate, charge);
-    }
-
-    private Optional<ItemPosition> getOptionalItemPosition(QuoteSection quoteSection, ItemPosition itemPosition) {
-        return quoteSection.getPositions().stream().filter(ip -> ip == itemPosition).findFirst();
     }
 }

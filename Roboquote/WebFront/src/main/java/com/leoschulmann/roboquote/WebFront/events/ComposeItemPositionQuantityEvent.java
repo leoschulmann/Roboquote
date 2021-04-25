@@ -1,6 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.events;
 
-import com.leoschulmann.roboquote.WebFront.ui.SectionGrid;
+import com.leoschulmann.roboquote.WebFront.ui.bits.SectionGrid;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.vaadin.flow.component.ComponentEvent;
 

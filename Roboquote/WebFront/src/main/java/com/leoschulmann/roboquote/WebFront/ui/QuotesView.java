@@ -192,7 +192,7 @@ public class QuotesView extends VerticalLayout {
             Quote templatedQuote = quoteService.createNewFromTemplate(quote);
             ui.getSession().setAttribute(Quote.class, templatedQuote);
             qViewerDialog.close();
-            ui.navigate(Compose.class);
+            ui.navigate(NewQuote.class);
         }));
         return btn;
     }
@@ -204,7 +204,7 @@ public class QuotesView extends VerticalLayout {
             Quote newVerQuote = quoteService.createNewVersion(quote);
             ui.getSession().setAttribute(Quote.class, newVerQuote);
             qViewerDialog.close();
-            ui.navigate(Compose.class);
+            ui.navigate(NewQuote.class);
         }));
         return btn;
     }
