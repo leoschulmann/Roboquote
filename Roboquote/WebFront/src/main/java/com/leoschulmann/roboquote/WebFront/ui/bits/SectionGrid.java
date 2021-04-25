@@ -106,17 +106,8 @@ public class SectionGrid extends Grid<ItemPosition> {
         field.setHasControls(true);
         field.setValue(itemPosition.getQty());
         field.addValueChangeListener(event -> {
-            fireEvent(new ComposeItemPositionQuantityEvent(this, itemPosition, event.getValue()));
-            getDataProvider().refreshAll();
-            redrawFooter();//todo remove with old 'Compose'
-
-
             int qty = field.getValue();
-            itemPosition.setQty(qty);
-            itemPosition.setSellingSum(itemPosition.getSellingPrice().multiply(qty));
-            fireEvent(new GridChangedEvent(this));
-            getDataProvider().refreshAll();
-            redrawFooter();
+            fireEvent(new GridChangedQtyClickedEvent(this, qty, itemPosition));
         });
         clickables.add(field);
         return field;
@@ -127,13 +118,7 @@ public class SectionGrid extends Grid<ItemPosition> {
         deleteItemPositionBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
 
         deleteItemPositionBtn.addClickListener(c -> {
-            fireEvent(new ComposeDeleteItemPositionEvent(this, itemPosition)); //todo remove with old 'Compose'
-            quoteSection.getPositions().remove(itemPosition);
-
-
-            fireEvent(new GridChangedEvent(this));
-            getDataProvider().refreshAll();
-            redrawFooter();
+            fireEvent(new GridDeletedPositionClickedEvent(this, itemPosition));
         });
         clickables.add(deleteItemPositionBtn);
         return deleteItemPositionBtn;
@@ -141,6 +126,7 @@ public class SectionGrid extends Grid<ItemPosition> {
 
     public void disableClickables() {
         clickables.stream().filter(Objects::nonNull).forEach(c -> c.setEnabled(false));
+        setRowsDraggable(false);
     }
 
     public QuoteSection getQuoteSection() {
@@ -164,20 +150,10 @@ public class SectionGrid extends Grid<ItemPosition> {
         footer.update();
     }
 
-    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
-        return getEventBus().addListener(eventType, listener);
-    }
-
-    public void sectionChangedEvent(UniversalSectionChangedEvent event) {  //todo remove with old 'Compose'
+    public void update(RedrawGridAndSubtotalsEvent event) {
         getDataProvider().refreshAll();
         redrawFooter();
     }
-
-    public void update(UpdateGridEvent event) {
-        getDataProvider().refreshAll();
-        redrawFooter();
-    }
-
 
     public boolean isTextWrap() {
         return textWrap;
@@ -185,6 +161,10 @@ public class SectionGrid extends Grid<ItemPosition> {
 
     public void setTextWrap(boolean textWrap) {
         this.textWrap = textWrap;
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
     }
 }
 

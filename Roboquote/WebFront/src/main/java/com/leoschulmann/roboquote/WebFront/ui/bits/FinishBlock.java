@@ -1,6 +1,8 @@
 package com.leoschulmann.roboquote.WebFront.ui.bits;
 
 import com.leoschulmann.roboquote.WebFront.events.*;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -9,6 +11,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.shared.Registration;
 import lombok.Getter;
 import org.vaadin.olli.FileDownloadWrapper;
 
@@ -31,7 +34,7 @@ public class FinishBlock extends VerticalLayout {
     public FinishBlock(String currency, Integer discount, Integer vat) {
         super();
         addListener(DisableClickableComponents.class, this::disable);
-        addListener(QuotePersistedEvent.class, this::setDownloadFile);
+//        addListener(QuotePersistedEvent.class, this::setDownloadFile);
 
         discountField = new IntegerField();
         discountField.setValue(discount);
@@ -65,6 +68,7 @@ public class FinishBlock extends VerticalLayout {
         dlButt = new Button("Download");
         wrapper = new FileDownloadWrapper(new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{})));
         dlButt.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_PRIMARY);
+        dlButt.setEnabled(false);
         wrapper.wrapComponent(dlButt);
 
 
@@ -73,7 +77,7 @@ public class FinishBlock extends VerticalLayout {
         buttons.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("25em", 1),
                 new FormLayout.ResponsiveStep("32em", 3),
-                new FormLayout.ResponsiveStep("40em", 5));
+                new FormLayout.ResponsiveStep("40em", 6));
 
 
         totalString = new Span();
@@ -88,7 +92,7 @@ public class FinishBlock extends VerticalLayout {
         add(totalString, totalWithDiscountString, includingVatValue, buttons);
     }
 
-    private void disable(DisableClickableComponents e) {
+    public void disable(DisableClickableComponents e) {
         discountField.setEnabled(false);
         vatField.setEnabled(false);
         currencyCombo.setEnabled(false);
@@ -96,7 +100,12 @@ public class FinishBlock extends VerticalLayout {
         saveQuoteBtn.setEnabled(false);
     }
 
-    private void setDownloadFile(QuotePersistedEvent e) {
-        wrapper.setResource(new StreamResource(e.getName(), () -> new ByteArrayInputStream(e.getBytes())));
+    public void setDownloadFile(String name, byte[] bytes) {
+        wrapper.setResource(new StreamResource(name, () -> new ByteArrayInputStream(bytes)));
+        dlButt.setEnabled(true);
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
     }
 }

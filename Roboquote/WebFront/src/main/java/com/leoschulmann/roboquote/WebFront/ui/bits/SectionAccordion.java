@@ -1,6 +1,7 @@
 package com.leoschulmann.roboquote.WebFront.ui.bits;
 
 import com.leoschulmann.roboquote.WebFront.components.StringFormattingService;
+import com.leoschulmann.roboquote.WebFront.events.DisableClickableComponents;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.html.Span;
@@ -13,7 +14,6 @@ public class SectionAccordion extends Accordion {
     private final SectionGrid grid;
     private final SectionButtons control;
 
-
     public SectionAccordion(QuoteSection quoteSection, StringFormattingService stringFormattingService) {
         this.quoteSection = quoteSection;
 
@@ -22,10 +22,6 @@ public class SectionAccordion extends Accordion {
         content.setWidthFull();
         grid = new SectionGrid(quoteSection, stringFormattingService);
         control = new SectionButtons(grid, quoteSection.getDiscount());
-//
-//        grid.addListener(ComposeDeleteItemPositionEvent.class, main::itemPositionDeleted);
-//        grid.addListener(ComposeItemPositionQuantityEvent.class, main::itemPositionQuantityChanged);
-//        main.addListener(UniversalSectionChangedEvent.class, grid::sectionChangedEvent);
         content.add(control, grid, grid.getFooter());
 
         add(quoteSection.getName(), content);
@@ -33,6 +29,10 @@ public class SectionAccordion extends Accordion {
 
     public void refreshName() {
         getOpenedPanel().ifPresent(panel -> panel.setSummary(new Span(quoteSection.getName())));
-        grid.getFooter().update();
+    }
+
+    public void disable(DisableClickableComponents e) {
+        control.disable();
+        grid.disableClickables();
     }
 }

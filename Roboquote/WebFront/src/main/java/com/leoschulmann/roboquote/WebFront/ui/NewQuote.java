@@ -9,14 +9,9 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -41,16 +36,15 @@ import java.util.stream.Collectors;
 @Route(value = "new", layout = MainLayout.class)
 public class NewQuote extends VerticalLayout implements AfterNavigationObserver {
 
-    private final CurrencyFormatService currencyFormatter;
     private final CurrencyRatesService currencyRatesService;
     private final QuoteSectionHandler sectionHandler;
     private final DownloadService downloadService;
-    private final QuoteService quoteService;
     private final StringFormattingService stringFormattingService;
     private final MoneyMathService moneyMathService;
     private final ItemCachingService cachingService;
     private final HttpRestService httpRestService;
     private final ConverterService converterService;
+
     private final GridsBlock gridsBlock;
     private final Binder<Quote> quoteBinder = new Binder<>(Quote.class);
     private Integer discount = 0;
@@ -62,12 +56,14 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     private BigDecimal yenRate;
     private double exchangeConversionFee;
 
-    public NewQuote(CurrencyFormatService currencyFormatter, CurrencyRatesService currencyRatesService, QuoteSectionHandler sectionHandler, DownloadService downloadService, QuoteService quoteService, StringFormattingService stringFormattingService, MoneyMathService moneyMathService, ItemCachingService cachingService, HttpRestService httpRestService, ConverterService converterService) {
-        this.currencyFormatter = currencyFormatter;
+    public NewQuote(CurrencyRatesService currencyRatesService,
+                    QuoteSectionHandler sectionHandler, DownloadService downloadService,
+                    StringFormattingService stringFormattingService,
+                    MoneyMathService moneyMathService, ItemCachingService cachingService,
+                    HttpRestService httpRestService, ConverterService converterService) {
         this.currencyRatesService = currencyRatesService;
         this.sectionHandler = sectionHandler;
         this.downloadService = downloadService;
-        this.quoteService = quoteService;
         this.stringFormattingService = stringFormattingService;
         this.moneyMathService = moneyMathService;
         this.cachingService = cachingService;
@@ -90,6 +86,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
                         //empty quote with default rates, vat, discount and one empty quote section
                         Quote q = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
                                 BigDecimal.ONE, BigDecimal.valueOf(2));
+                        q.setValidThru(LocalDate.now().plus(3, ChronoUnit.MONTHS));
                         q.addSections(new QuoteSection("New quote section"));
                         return q;
                     });
@@ -97,109 +94,78 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             ui.getSession().setAttribute(Quote.class, null); //delete session payload if any
             quoteBinder.readBean(quote);
             quote.getSections().forEach(this::addNewGrid);
-            resetAvailableGridsCombobox();
+            recalculateAndRedrawTotalsAndSubtotals();
         });
     }
 
     private InventoryLookup createInventoryLookup() {
         InventoryLookup lookup = new InventoryLookup(gridsBlock.getGridsAsList(), cachingService.getItemsFromCache());
+        addListener(DisableClickableComponents.class, lookup::disable);
+
         lookup.addListener(InventoryLookupAddClickedEvent.class, e -> {
             ItemPosition ip = converterService.convertItemToItemPosition(e.getItem());
             QuoteSection qs = e.getGrid().getQuoteSection();
             sectionHandler.putToSection(qs, ip);
-            refreshSectionSubtotal(currency, qs);
-            fireEvent(new UpdateGridEvent(this)); //todo
-            refreshTotal();
+            recalculateSectionSubtotal(currency, qs);
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
         lookup.addListener(InventoryLookupRefreshButtonEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
             cachingService.updateCache();
             lookup.setItems(cachingService.getItemsFromCache());
         });
 
-        addListener(UpdateAvailableGridsEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
-            lookup.updateGrids(gridsBlock.getGridsAsList());
-        });
+        addListener(UpdateAvailableGridsEvent.class, e -> lookup.updateGrids(gridsBlock.getGridsAsList()));
 
         return lookup;
     }
 
-    //todo move to bits package as class
-    private Accordion createQuoteInfoBlock() {
-        FormLayout columnLayout = new FormLayout();
-        columnLayout.setResponsiveSteps(
-                new ResponsiveStep("25em", 1),
-                new ResponsiveStep("32em", 2),
-                new ResponsiveStep("40em", 3));
-        TextField customer = new TextField("Customer"); //todo lookup in DB
-        TextField customerInfo = new TextField("Customer info");
-        TextField dealer = new TextField("Dealer");
-        TextField dealerInfo = new TextField("Dealer info");
-        TextField paymentTerms = new TextField("Payment Terms");
-        TextField shippingTerms = new TextField("Shipping Terms");
-        TextField warranty = new TextField("Warranty");
-        TextField installation = new TextField("Installation");
-        TextField comment = new TextField("Comment");
+    private InfoAccordion createQuoteInfoBlock() {
+        InfoAccordion acc = new InfoAccordion();
+        addListener(DisableClickableComponents.class, acc::disable);
 
-        DatePicker validThru = new DatePicker("Valid through date");
-        validThru.setValue(LocalDate.now().plus(3, ChronoUnit.MONTHS));
+        acc.addRatesBlock(createRatesBlock());
 
-        //todo add to clickables
-//        addToClickableComponents(validThru, warranty, customer, customerInfo, dealer,
-//                dealerInfo, paymentTerms, shippingTerms, installation);
-//
-        columnLayout.add(customer);
-        columnLayout.add(customerInfo, 2);
-        columnLayout.add(dealer);
-        columnLayout.add(dealerInfo, 2);
-        columnLayout.add(paymentTerms, shippingTerms, warranty, installation, validThru, comment);
-        columnLayout.add(createRatesBlock(), 3);
-        add(columnLayout);
-
-        quoteBinder.forField(customer).asRequired().bind(Quote::getCustomer, Quote::setCustomer);
-        quoteBinder.bind(customerInfo, Quote::getCustomerInfo, Quote::setCustomerInfo);
-        quoteBinder.bind(dealer, Quote::getDealer, Quote::setDealer);
-        quoteBinder.bind(dealerInfo, Quote::getDealerInfo, Quote::setDealerInfo);
-        quoteBinder.bind(paymentTerms, Quote::getPaymentTerms, Quote::setPaymentTerms);
-        quoteBinder.bind(shippingTerms, Quote::getShippingTerms, Quote::setShippingTerms);
-        quoteBinder.bind(warranty, Quote::getWarranty, Quote::setWarranty);
-        quoteBinder.bind(installation, Quote::getInstallation, Quote::setInstallation);
-        quoteBinder.bind(comment, Quote::getComment, Quote::setComment);
-        quoteBinder.forField(validThru).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
-
-        Accordion accordion = new Accordion();
-        accordion.setWidthFull();
-        accordion.add("Quote details", columnLayout);
-        return accordion;
+        quoteBinder.forField(acc.getCustomer()).asRequired().bind(Quote::getCustomer, Quote::setCustomer);
+        quoteBinder.bind(acc.getCustomerInfo(), Quote::getCustomerInfo, Quote::setCustomerInfo);
+        quoteBinder.bind(acc.getDealer(), Quote::getDealer, Quote::setDealer);
+        quoteBinder.bind(acc.getDealerInfo(), Quote::getDealerInfo, Quote::setDealerInfo);
+        quoteBinder.bind(acc.getPaymentTerms(), Quote::getPaymentTerms, Quote::setPaymentTerms);
+        quoteBinder.bind(acc.getShippingTerms(), Quote::getShippingTerms, Quote::setShippingTerms);
+        quoteBinder.bind(acc.getWarranty(), Quote::getWarranty, Quote::setWarranty);
+        quoteBinder.bind(acc.getInstallation(), Quote::getInstallation, Quote::setInstallation);
+        quoteBinder.bind(acc.getComment(), Quote::getComment, Quote::setComment);
+        quoteBinder.forField(acc.getValidThru()).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
+        return acc;
     }
 
     private RatesPanel createRatesBlock() {
         RatesPanel ratesPanel = new RatesPanel();
 
-        addListener(RatesUpdatedEvent.class, e -> {
-            ratesPanel.updateUsd(e);
-            ratesPanel.updateEur(e);
-            ratesPanel.updateJpy(e);
+        ratesPanel.addListener(RatesPanelUpdateClickedEvent.class, e ->
+                ratesPanel.updateAllCurrencies(currencyRatesService.getRubEurRate(),
+                        currencyRatesService.getRubUSDRate(), currencyRatesService.getRubJPYRate()));
+
+        ratesPanel.addListener(EuroFieldChangedEvent.class, e -> {
+            euroRate = e.getSource().getValue();
+            recalculateAndRedrawTotalsAndSubtotals();
         });
 
-        addListener(DisableClickableComponents.class, ratesPanel::disable);
+        ratesPanel.addListener(DollarFieldChangedEvent.class, e -> {
+            dollarRate = e.getSource().getValue();
+            recalculateAndRedrawTotalsAndSubtotals();
 
-        ratesPanel.addListener(RatesPanelUpdateClickedEvent.class, e -> {
-            euroRate = currencyRatesService.getRubEurRate();
-            dollarRate = currencyRatesService.getRubUSDRate();
-            yenRate = currencyRatesService.getRubJPYRate();
-            fireEvent(new RatesUpdatedEvent(this));
         });
+        ratesPanel.addListener(YenFieldChangedEvent.class, e -> {
+            yenRate = e.getSource().getValue();
+            recalculateAndRedrawTotalsAndSubtotals();
 
-        ratesPanel.addListener(EuroFieldChangedEvent.class, e -> euroRate = e.getSource().getValue());
-        ratesPanel.addListener(DollarFieldChangedEvent.class, e -> dollarRate = e.getSource().getValue());
-        ratesPanel.addListener(YenFieldChangedEvent.class, e -> yenRate = e.getSource().getValue());
-        ratesPanel.addListener(ExchangeRateFieldChangedEvent.class, e -> exchangeConversionFee = e.getSource().getValue());
-        //todo update totals?
+        });
+        ratesPanel.addListener(ExchangeRateFieldChangedEvent.class, e -> {
+            exchangeConversionFee = e.getSource().getValue();
+            recalculateAndRedrawTotalsAndSubtotals();
+        });
 
         fireEvent(new RatesUpdatedEvent(this));
 
@@ -214,61 +180,76 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
     private FinishBlock createFinishBlock() {
         FinishBlock finishBlock = new FinishBlock(currency, discount, vat);
+        addListener(DisableClickableComponents.class, finishBlock::disable);
 
-        addListener(GlobalDiscountEvent.class, event -> {
-            System.err.println(event.getClass().getSimpleName());
+        AddSectionDialog dialog = new AddSectionDialog(httpRestService.getAllBundlesNamesAndIds());
 
+        finishBlock.addListener(GlobalDiscountEvent.class, event -> {
             discount = event.getSource().getDiscountField().getValue();
 
             if (discount < 0) event.getSource().getDiscountField().setLabel("Markup, %");
             else event.getSource().getDiscountField().setLabel("Discount, %");
-//            refreshTotal();//todo ??
+
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
-        addListener(VatEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
+        finishBlock.addListener(VatEvent.class, e -> {
             vat = e.getSource().getVatField().getValue();
-            e.getSource().getIncludingVatValue().setText(stringFormattingService.getVat(getTotalMoney(), discount, vat));
-//            refreshTotal();//todo ??
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
-        addListener(CurrencyChangedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
+        finishBlock.addListener(CurrencyChangedEvent.class, e -> {
             currency = e.getSource().getCurrencyCombo().getValue();
-            MonetaryAmount ma = getTotalMoney();
-            e.getSource().getTotalString().setText(stringFormattingService.getCombined(ma));
-            e.getSource().getTotalWithDiscountString().setText(stringFormattingService.getCombinedWithDiscountOrMarkup(ma, discount));
-//            refreshAll(); //todo ???
-//            fireEvent(new UniversalSectionChangedEvent(this));
+            recalculateAndRedrawTotalsAndSubtotals();
         });
 
-        addListener(FinishBlockAddSectionClickedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
+        finishBlock.addListener(FinishBlockAddSectionClickedEvent.class, e -> dialog.open());
 
-            showNewSectionDialog();});
+        dialog.addListener(SectionDialogAddEmptySectionButtonClicked.class, e -> {
+            String name = e.getName();
+            QuoteSection quoteSection = new QuoteSection(name);
+            addNewGrid(quoteSection);
+            dialog.close();
+        });
 
-        addListener(FinishBlockSaveClickedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
+        dialog.addListener(SectionDialogAddBundledSectionButtonClicked.class, e -> {
+            int id = e.getId();
+            Bundle bundle = httpRestService.getBundleById(id);
+            QuoteSection qs = new QuoteSection(bundle.getNameRus()); //todo i8n
+            addNewGrid(qs);
+            bundle.getPositions().stream()
+                    .map(converterService::convertBundledPositionToItemPosition)
+                    .forEach(ip -> sectionHandler.putToSection(qs, ip));
 
-            if (quoteBinder.validate().isOk() && gridsNotEmpty()) {
+            recalculateAndRedrawTotalsAndSubtotals();
+            dialog.close();
+        });
+
+        finishBlock.addListener(FinishBlockSaveClickedEvent.class, e -> {
+            boolean noEmptyGrids = gridsBlock.getGridsAsList().stream().noneMatch(s -> s.getQuoteSection()
+                    .getPositions().size() == 0);
+
+            if (quoteBinder.validate().isOk() && noEmptyGrids) {
                 int id = postToDbAndGetID();  //persisting starts here
                 fireEvent(new QuotePersistedEvent(this,
                         httpRestService.getFullName(id) + downloadService.getExtension(),
                         downloadService.downloadXlsx(id)));
+
                 fireEvent(new DisableClickableComponents(this));
+
             } else {
                 List<String> msg = new ArrayList<>();
                 if (quoteBinder.validate().hasErrors()) msg.add("Please fill marked fields");
-                if (!gridsNotEmpty()) msg.add("Some sections are empty");
+                if (!noEmptyGrids) msg.add("Some sections are empty");
                 String[] arr = new String[msg.size()];
 
                 new ErrorDialog(msg.toArray(arr)).open();
             }
         });
 
-        addListener(RefreshTotalEvent.class, e -> {
+        addListener(QuotePersistedEvent.class, e -> finishBlock.setDownloadFile(e.getName(), e.getBytes()));
+
+        addListener(RecalculateAndRedrawTotalEvent.class, e -> {
             MonetaryAmount am = getTotalMoney();
             finishBlock.getTotalString().setText(stringFormattingService.getCombined(am));
             finishBlock.getTotalWithDiscountString().setText(stringFormattingService.getCombinedWithDiscountOrMarkup(am, discount));
@@ -289,91 +270,17 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         return finishBlock;
     }
 
-    private void refreshTotal() {
-        fireEvent(new RefreshTotalEvent(this));
-    }
-
-    private void refreshSectionSubtotal(String currency, QuoteSection qs) {
+    private void recalculateSectionSubtotal(String currency, QuoteSection qs) {
         sectionHandler.updateSubtotalToCurrency(qs, currency,
                 euroRate, dollarRate, yenRate, exchangeConversionFee);
     }
 
-//    private void refreshAll() {
-//        gridList.stream().map(SectionGrid::getQuoteSection)
-//                .forEach(qs -> refreshSectionSubtotal(currency, qs));
-//        refreshTotal();
-//    }
-
-    private MonetaryAmount getTotalMoney() {
-        return moneyMathService.getSum(gridsBlock.getGridsAsList().stream()
-                .map(grid -> grid.getQuoteSection().getTotalDiscounted())
-                .collect(Collectors.toList()));
-    }
-
-    private void showNewSectionDialog() {
-        VerticalLayout addEmpty;
-        VerticalLayout addBundle;
-
-        TextField tf = new TextField();
-        Button addEmptySecBtn = new Button("Add empty section");
-        tf.setWidth("32em");
-        tf.setClearButtonVisible(true);
-        addEmptySecBtn.setEnabled(false);
-        addEmptySecBtn.setWidth("32em");
-        addEmptySecBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        tf.addValueChangeListener(event -> addEmptySecBtn.setEnabled(!event.getValue().isBlank()));
-        addEmpty = new VerticalLayout(tf, addEmptySecBtn);
-
-        ComboBox<Bundle> bundles = new ComboBox<>();
-        bundles.setItems(httpRestService.getAllBundlesNamesAndIds());
-        bundles.setAllowCustomValue(false);
-        bundles.setClearButtonVisible(true);
-        bundles.setWidth("32em");
-        Button addBundleBtn = new Button("Add bundle");
-        addBundleBtn.setEnabled(false);
-        addBundleBtn.setWidth("32em");
-        addBundleBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        bundles.addValueChangeListener(event -> addBundleBtn.setEnabled(!(event.getValue() == null)));
-        addBundle = new VerticalLayout(bundles, addBundleBtn);
-
-        FormLayout layout = new FormLayout(addEmpty, addBundle);
-        layout.setResponsiveSteps(new ResponsiveStep("1em", 1),
-                new ResponsiveStep("65em", 2));
-        Dialog dialog = new Dialog(layout);
-
-        addEmptySecBtn.addClickListener(click -> {
-            QuoteSection qs = new QuoteSection(tf.getValue().trim());
-            addNewGrid(qs);
-            dialog.close();
-        });
-
-        addBundleBtn.addClickListener(bang -> {
-            int id = bundles.getValue().getId();
-            Bundle bundle = httpRestService.getBundleById(id);
-            QuoteSection qs = new QuoteSection(bundle.getNameRus()); //todo i8n
-            addNewGrid(qs);
-            bundle.getPositions().stream()
-                    .map(converterService::convertBundledPositionToItemPosition)
-                    .forEach(ip -> sectionHandler.putToSection(qs, ip));
-
-            refreshSectionSubtotal(currency, qs);
-//            fireEvent(new UniversalSectionChangedEvent(this));
-            refreshTotal();
-
-            dialog.close();
-        });
-        dialog.open();
-    }
-
-    private boolean gridsNotEmpty() {
-        return gridsBlock.getGridsAsList().stream().noneMatch(s -> s.getQuoteSection().getPositions().size() == 0);
-    }
-
     private int postToDbAndGetID() {
         try {
-            Quote quote = new Quote();
+            Quote quote = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
+                    BigDecimal.ONE, BigDecimal.valueOf(2));
             quoteBinder.writeBean(quote);
-            //todo write all sections
+            quote.setSections(gridsBlock.getGridsAsList().stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList()));
             quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
             return httpRestService.postNew(quote);
         } catch (ValidationException e) {
@@ -384,10 +291,9 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
     private void addNewGrid(QuoteSection quoteSection) {
         SectionAccordion sectionAccordion = new SectionAccordion(quoteSection, stringFormattingService);
+        addListener(DisableClickableComponents.class, sectionAccordion::disable);
 
         sectionAccordion.getControl().addListener(AccordionEditNameClickedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
             TextField tf = new TextField();
             tf.setValue(quoteSection.getName());
             Button addBtn = new Button("Set");
@@ -400,8 +306,8 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             addBtn.addClickListener(click -> {
                         quoteSection.setName(tf.getValue().trim());
                         sectionAccordion.refreshName();
-//                                fireEvent(new UniversalSectionChangedEvent(this));
-                        resetAvailableGridsCombobox();
+                        fireEvent(new RedrawGridAndSubtotalsEvent(this));
+                        fireEvent(new UpdateAvailableGridsEvent(this));
                         dialog.close();
                     }
             );
@@ -409,68 +315,78 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         });
 
         sectionAccordion.getControl().addListener(AccordionDiscountChangedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
             quoteSection.setDiscount(e.getSource().getDiscountField().getValue());
-            refreshSectionSubtotal(currency, quoteSection);
-            refreshTotal(); //todo check
-//            fireEvent(new UniversalSectionChangedEvent(this));
+            recalculateSectionSubtotal(currency, quoteSection);
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
         sectionAccordion.getControl().addListener(AccordionDeleteSectionEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
-            gridsBlock.removeGrid(sectionAccordion);
-            resetAvailableGridsCombobox();
-            refreshTotal();
+            gridsBlock.removeAccordeon(sectionAccordion);
+            fireEvent(new UpdateAvailableGridsEvent(this));
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
         sectionAccordion.getControl().addListener(AccordionMoveUpEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
             int fromIndex = gridsBlock.indexOf(sectionAccordion);
             int toIndex = fromIndex - 1;
             if (toIndex >= 0) {
                 gridsBlock.moveAccordion(sectionAccordion, toIndex);
             } else new ErrorDialog("Can't move up").open();
-            // resetAvailableGridsCombobox();
+            fireEvent(new UpdateAvailableGridsEvent(this));
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
         });
 
         sectionAccordion.getControl().addListener(AccordionMoveDownEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
             int fromIndex = gridsBlock.indexOf(sectionAccordion);
             int toIndex = fromIndex + 1;
             if (toIndex < gridsBlock.getComponentCount()) {
                 gridsBlock.moveAccordion(sectionAccordion, toIndex);
             } else new ErrorDialog("Can't move down").open();
-            //          resetAvailableGridsCombobox();
+            fireEvent(new UpdateAvailableGridsEvent(this));
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
         });
 
-        sectionAccordion.getGrid().addListener(GridChangedEvent.class, e -> {
-            System.err.println(e.getClass().getSimpleName());
-
-            refreshSectionSubtotal(currency, quoteSection);
+        sectionAccordion.getGrid().addListener(GridChangedQtyClickedEvent.class, e -> {
+            ItemPosition ip = e.getItemPosition();
+            ip.setQty(e.getQty());
+            ip.setSellingSum(ip.getSellingPrice().multiply(e.getQty()));
+            recalculateSectionSubtotal(currency, quoteSection);
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
-        addListener(UpdateGridEvent.class, event -> sectionAccordion.getGrid().update(event));
+        sectionAccordion.getGrid().addListener(GridDeletedPositionClickedEvent.class, e -> {
+            quoteSection.getPositions().remove(e.getItemPosition());
+            recalculateSectionSubtotal(currency, quoteSection);
+            fireEvent(new RedrawGridAndSubtotalsEvent(this));
+            fireEvent(new RecalculateAndRedrawTotalEvent(this));
+        });
+
+        addListener(RedrawGridAndSubtotalsEvent.class, event -> sectionAccordion.getGrid().update(event));
+
+        addListener(RecalculateSubtotalTotalEvent.class, e -> gridsBlock.getGridsAsList().stream()
+                .map(SectionGrid::getQuoteSection).forEach(qs -> recalculateSectionSubtotal(currency, qs)));
 
         gridsBlock.add(sectionAccordion);
+
+        fireEvent(new RedrawGridAndSubtotalsEvent(this));
+        fireEvent(new UpdateAvailableGridsEvent(this));
+    }
+
+    private MonetaryAmount getTotalMoney() {
+        return moneyMathService.getSum(gridsBlock.getGridsAsList().stream()
+                .map(grid -> grid.getQuoteSection().getTotalDiscounted())
+                .collect(Collectors.toList()));
+    }
+
+    private void recalculateAndRedrawTotalsAndSubtotals() {
+        fireEvent(new RecalculateSubtotalTotalEvent(this));
+        fireEvent(new RedrawGridAndSubtotalsEvent(this));
+        fireEvent(new RecalculateAndRedrawTotalEvent(this));
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
-    }
-
-    private void resetAvailableGridsCombobox() {
-        fireEvent(new UpdateAvailableGridsEvent(this));
-    }
-
-    private void onComponentEvent(RatesPanelUpdateClickedEvent event) {
-        euroRate = currencyRatesService.getRubEurRate();
-        dollarRate = currencyRatesService.getRubUSDRate();
-        yenRate = currencyRatesService.getRubJPYRate();
-        fireEvent(new RatesUpdatedEvent(this));
-        //todo update totals??
     }
 }

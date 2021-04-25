@@ -13,6 +13,8 @@ import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.shared.Registration;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 @Getter
 public class RatesPanel extends HorizontalLayout {
     private final Button update;
@@ -49,25 +51,10 @@ public class RatesPanel extends HorizontalLayout {
 
         setAlignItems(Alignment.END);
     }
-
-    public void updateUsd(RatesUpdatedEvent e) {
-        dollar.setValue(e.getSource().getDollarRate());
-    }
-
-    public void updateEur(RatesUpdatedEvent e) {
-        euro.setValue(e.getSource().getDollarRate());
-    }
-
-    public void updateJpy(RatesUpdatedEvent e) {
-        yen.setValue(e.getSource().getYenRate());
-    }
-
-    public void disable(DisableClickableComponents e) {
-        update.setEnabled(false);
-        euro.setEnabled(false);
-        dollar.setEnabled(false);
-        yen.setEnabled(false);
-        conversionRate.setEnabled(false);
+    public void updateAllCurrencies(BigDecimal euroRate, BigDecimal dollarRate, BigDecimal yenRate) {
+        euro.setValue(euroRate);
+        dollar.setValue(dollarRate);
+        yen.setValue(yenRate);
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {

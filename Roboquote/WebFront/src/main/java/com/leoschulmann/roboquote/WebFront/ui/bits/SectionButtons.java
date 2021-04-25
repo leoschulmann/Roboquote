@@ -23,8 +23,6 @@ public class SectionButtons extends HorizontalLayout {
     private final Button deleteBtn;
 
     public SectionButtons(SectionGrid grid, Integer discount) {
-        addListener(DisableClickableComponents.class, this::disable);
-
         editNameBtn = new Button(VaadinIcon.EDIT.create());
         discountField = new IntegerField("Discount, %");
         wrapButton = new Button(VaadinIcon.LINES.create());
@@ -67,13 +65,8 @@ public class SectionButtons extends HorizontalLayout {
         add(discountField, editNameBtn, wrapButton, moveUpBtn, moveDownBtn, deleteBtn);
     }
 
-    private void disable(DisableClickableComponents e) {
-        discountField.setEnabled(false);
-        editNameBtn.setEnabled(false);
-        wrapButton.setEnabled(false);
-        moveUpBtn.setEnabled(false);
-        moveDownBtn.setEnabled(false);
-        deleteBtn.setEnabled(false);
+    public void disable() {
+        setEnabled(false);
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {

@@ -92,11 +92,8 @@ public class InventoryLookup extends HorizontalLayout {
     }
 
 
-    private void disable(DisableClickableComponents e) {
-        searchBox.setEnabled(false);
-        grids.setEnabled(false);
-        addToGridBtn.setEnabled(false);
-        refreshItems.setEnabled(false);
+    public void disable(DisableClickableComponents e) {
+        setEnabled(false);
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {

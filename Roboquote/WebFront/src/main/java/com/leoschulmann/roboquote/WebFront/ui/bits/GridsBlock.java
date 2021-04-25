@@ -17,12 +17,12 @@ public class GridsBlock extends VerticalLayout {
                 .collect(Collectors.toList());
     }
 
-    public void removeGrid(SectionAccordion sectionAccordion) {
+    public void removeAccordeon(SectionAccordion sectionAccordion) {
         remove(sectionAccordion);
     }
 
     public void moveAccordion(SectionAccordion sectionAccordion, int toIndex) {
-        removeGrid(sectionAccordion);
+        removeAccordeon(sectionAccordion);
         addComponentAtIndex(toIndex, sectionAccordion);
     }
 
