@@ -19,4 +19,11 @@ public class ConverterService {
     public ItemPosition convertItemToItemPosition(Item item) {
         return new ItemPosition(item.getNameRus(), item.getPartno(), item.getSellingPrice(), 1, item.getId());
     }
+
+    public ItemPosition convertItemToItemPosition(Item item, int qty) {
+        ItemPosition ip = convertItemToItemPosition(item);
+        ip.setQty(qty);
+        ip.setSellingSum(ip.getSellingPrice().multiply(qty));
+        return ip;
+    }
 }
