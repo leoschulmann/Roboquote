@@ -2,13 +2,13 @@ package com.leoschulmann.roboquote.quoteservice.services;
 
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
-import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteSerialAndVersion;
-import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteWithoutSections;
+import com.leoschulmann.roboquote.quoteservice.entities.projections.*;
 import com.leoschulmann.roboquote.quoteservice.repositories.QuoteRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +32,7 @@ public class QuoteService {
         return dtoService.convertQuoteToDto(quote);
     }
 
-     public Quote getQuote(int id) {
+    public Quote getQuote(int id) {
         return quoteRepo.findDistinctById(id).get();
     }
 
@@ -51,5 +51,30 @@ public class QuoteService {
 
     public void setQuoteCancelled(int id, boolean action) {
         quoteRepo.setCancelled(id, action);
+    }
+
+    public List<List<String>> getDistinctQuoteTerms() {
+
+        List<String> installations = quoteRepo.getDistinctInstallations().stream()
+                .filter(Objects::nonNull).map(InstallationProjection::getInstallation)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        List<String> payments = quoteRepo.getDistinctPayments().stream()
+                .filter(Objects::nonNull).map(PaymentProjection::getPayment)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        List<String> shippings = quoteRepo.getDistinctShipping().stream()
+                .filter(Objects::nonNull).map(ShippingProjection::getShipping)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        List<String> warranties = quoteRepo.getDistinctWarranties().stream()
+                .filter(Objects::nonNull).map(WarrantyProjection::getWarranty)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        return List.of(installations, payments, shippings, warranties);
     }
 }

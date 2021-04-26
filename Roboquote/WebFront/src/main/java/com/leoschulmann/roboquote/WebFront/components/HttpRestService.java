@@ -58,6 +58,12 @@ public class HttpRestService {
         return Arrays.stream(arr).map(itemBundleDtoConverter::convertToItem).collect(Collectors.toList());
     }
 
+    public String[][] getDistinctTerms() {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "terms"))
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        return restTemplate.exchange(request, String[][].class).getBody();
+    }
+
     public Item getItem(int id) {
         RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();

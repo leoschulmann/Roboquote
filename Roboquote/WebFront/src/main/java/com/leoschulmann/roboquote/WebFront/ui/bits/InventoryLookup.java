@@ -59,6 +59,7 @@ public class InventoryLookup extends HorizontalLayout {
         grids.setItems(sectionGrids);
         addToGridBtn = new Button("ADD");
         refreshItems = new Button(VaadinIcon.REFRESH.create());
+        refreshItems.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
 
         addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addToGridBtn.addClickListener(click -> fireEvent(

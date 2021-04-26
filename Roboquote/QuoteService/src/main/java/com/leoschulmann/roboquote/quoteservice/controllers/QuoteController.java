@@ -54,4 +54,9 @@ public class QuoteController {
         quoteService.setQuoteCancelled(id, action);
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+    @GetMapping("/terms")
+    public ResponseEntity<List<List<String>>> getDistinctTerms() {
+        return new ResponseEntity<>(quoteService.getDistinctQuoteTerms(), HttpStatus.OK);
+    }
 }

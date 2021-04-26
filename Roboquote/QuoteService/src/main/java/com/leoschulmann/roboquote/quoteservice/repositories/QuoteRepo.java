@@ -1,8 +1,7 @@
 package com.leoschulmann.roboquote.quoteservice.repositories;
 
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
-import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteSerialAndVersion;
-import com.leoschulmann.roboquote.quoteservice.entities.projections.QuoteWithoutSections;
+import com.leoschulmann.roboquote.quoteservice.entities.projections.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -43,4 +42,15 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
     @Query("update Quote q set q.cancelled = :action where q.id = :id")
     void setCancelled(int id, boolean action);
 
+    @Query("select distinct q.installation as installation from Quote q")
+    List<InstallationProjection> getDistinctInstallations();
+
+    @Query("select distinct q.paymentTerms as payment from Quote q")
+    List<PaymentProjection> getDistinctPayments();
+
+    @Query("select distinct q.shippingTerms as shipping from Quote q")
+    List<ShippingProjection> getDistinctShipping();
+
+    @Query("select distinct q.warranty as warranty from Quote q")
+    List<WarrantyProjection> getDistinctWarranties();
 }

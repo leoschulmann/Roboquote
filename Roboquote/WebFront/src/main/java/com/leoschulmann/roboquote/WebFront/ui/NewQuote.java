@@ -41,7 +41,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     private final DownloadService downloadService;
     private final StringFormattingService stringFormattingService;
     private final MoneyMathService moneyMathService;
-    private final ItemCachingService cachingService;
+    private final CachingService cachingService;
     private final HttpRestService httpRestService;
     private final ConverterService converterService;
 
@@ -59,7 +59,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     public NewQuote(CurrencyRatesService currencyRatesService,
                     QuoteSectionHandler sectionHandler, DownloadService downloadService,
                     StringFormattingService stringFormattingService,
-                    MoneyMathService moneyMathService, ItemCachingService cachingService,
+                    MoneyMathService moneyMathService, CachingService cachingService,
                     HttpRestService httpRestService, ConverterService converterService) {
         this.currencyRatesService = currencyRatesService;
         this.sectionHandler = sectionHandler;
@@ -112,7 +112,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         });
 
         lookup.addListener(InventoryLookupRefreshButtonEvent.class, e -> {
-            cachingService.updateCache();
+            cachingService.updateItemCache();
             lookup.setItems(cachingService.getItemsFromCache());
         });
 
@@ -123,6 +123,10 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
     private InfoAccordion createQuoteInfoBlock() {
         InfoAccordion acc = new InfoAccordion();
+        acc.getInstallation().setItems(cachingService.getDistinctInstallationTerms());
+        acc.getPaymentTerms().setItems(cachingService.getDistinctPaymentTerms());
+        acc.getShippingTerms().setItems(cachingService.getDistinctShippingTerms());
+        acc.getWarranty().setItems(cachingService.getDistinctwarrantyTerms());
         addListener(DisableClickableComponents.class, acc::disable);
 
         acc.addRatesBlock(createRatesBlock());
