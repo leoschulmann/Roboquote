@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.quoteservice.controllers;
 
+import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import com.leoschulmann.roboquote.quoteservice.validation.ExistingQuote;
@@ -56,7 +57,7 @@ public class QuoteController {
     }
 
     @GetMapping("/terms")
-    public ResponseEntity<List<List<String>>> getDistinctTerms() {
+    public ResponseEntity<DistinctTermsDto> getDistinctTerms() {
         return new ResponseEntity<>(quoteService.getDistinctQuoteTerms(), HttpStatus.OK);
     }
 }

@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.quoteservice.services;
 
+import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.projections.*;
@@ -53,7 +54,7 @@ public class QuoteService {
         quoteRepo.setCancelled(id, action);
     }
 
-    public List<List<String>> getDistinctQuoteTerms() {
+    public DistinctTermsDto getDistinctQuoteTerms() {
 
         List<String> installations = quoteRepo.getDistinctInstallations().stream()
                 .filter(Objects::nonNull).map(InstallationProjection::getInstallation)
@@ -75,6 +76,6 @@ public class QuoteService {
                 .filter(i -> !i.isBlank())
                 .collect(Collectors.toList());
 
-        return List.of(installations, payments, shippings, warranties);
+        return new DistinctTermsDto(installations, payments, shippings, warranties);
     }
 }

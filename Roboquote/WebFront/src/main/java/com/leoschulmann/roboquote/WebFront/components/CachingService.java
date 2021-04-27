@@ -1,13 +1,13 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.annotation.SessionScope;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -34,12 +34,14 @@ public class CachingService {
 
     public void updateItemCache() {
         itemCache = httpService.getAllItems();
+    }
 
-        String[][] terms = httpService.getDistinctTerms();
-        installationsCache = Arrays.asList(terms[0]);
-        paymentCache = Arrays.asList(terms[1]);
-        shippingCache = Arrays.asList(terms[2]);
-        warrantyCache = Arrays.asList(terms[3]);
+    public void updateTermsCache() {
+        DistinctTermsDto terms = httpService.getDistinctTerms();
+        installationsCache = terms.getInstallationTerms();
+        paymentCache = terms.getPaymentTerms();
+        shippingCache = terms.getShippingTerms();
+        warrantyCache = terms.getWarranty();
     }
 
     public List<String> getDistinctInstallationTerms() {

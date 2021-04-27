@@ -8,6 +8,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.leoschulmann.roboquote.itemservice.entities.BundledPosition;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
+import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
@@ -58,10 +59,10 @@ public class HttpRestService {
         return Arrays.stream(arr).map(itemBundleDtoConverter::convertToItem).collect(Collectors.toList());
     }
 
-    public String[][] getDistinctTerms() {
+    public DistinctTermsDto getDistinctTerms() {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "terms"))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        return restTemplate.exchange(request, String[][].class).getBody();
+        return restTemplate.exchange(request, DistinctTermsDto.class).getBody();
     }
 
     public Item getItem(int id) {
