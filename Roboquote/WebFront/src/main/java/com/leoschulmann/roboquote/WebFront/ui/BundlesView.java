@@ -2,7 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.ConverterService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
-import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
+import com.leoschulmann.roboquote.WebFront.components.CachingService;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -17,13 +17,13 @@ public class BundlesView extends VerticalLayout {
     private final Grid<Bundle> bundleGrid;
     private final HttpRestService httpRestService;
 
-    private final ItemCachingService itemCachingService;
+    private final CachingService cachingService;
     private final ConverterService converterService;
 
 
-    public BundlesView(HttpRestService httpRestService, ItemCachingService itemCachingService, ConverterService converterService) {
+    public BundlesView(HttpRestService httpRestService, CachingService cachingService, ConverterService converterService) {
         this.httpRestService = httpRestService;
-        this.itemCachingService = itemCachingService;
+        this.cachingService = cachingService;
         this.converterService = converterService;
         Button createButton = getCreateButton();
         bundleGrid = getGrid();
@@ -41,7 +41,7 @@ public class BundlesView extends VerticalLayout {
         bundleGrid.addItemClickListener(c -> {
             int bunId = c.getItem().getId();
             Bundle bundle = httpRestService.getBundleById(bunId);
-            BundlesEditorDialog edDial = new BundlesEditorDialog(itemCachingService.getItemsFromCache(), httpRestService,
+            BundlesEditorDialog edDial = new BundlesEditorDialog(cachingService.getItemsFromCache(), httpRestService,
                     converterService, bundle, this);
             edDial.setWidth("85%");
             edDial.open();
@@ -54,7 +54,7 @@ public class BundlesView extends VerticalLayout {
         createButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         createButton.setWidth("65%");
         createButton.addClickListener(c -> {
-            BundlesEditorDialog editorDialog = new BundlesEditorDialog(itemCachingService.getItemsFromCache(),
+            BundlesEditorDialog editorDialog = new BundlesEditorDialog(cachingService.getItemsFromCache(),
                     httpRestService, converterService, this);
             editorDialog.setWidth("85%");
             editorDialog.open();

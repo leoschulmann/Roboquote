@@ -2,6 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui.bits;
 
 import com.leoschulmann.roboquote.WebFront.events.DisableClickableComponents;
 import com.vaadin.flow.component.accordion.Accordion;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -14,10 +15,10 @@ public class InfoAccordion extends Accordion {
     private final TextField customerInfo;
     private final TextField dealer;
     private final TextField dealerInfo;
-    private final TextField paymentTerms;
-    private final TextField shippingTerms;
-    private final TextField warranty;
-    private final TextField installation;
+    private final ComboBox<String> paymentTerms;
+    private final ComboBox<String> shippingTerms;
+    private final ComboBox<String> warranty;
+    private final ComboBox<String> installation;
     private final TextField comment;
     private final DatePicker validThru;
 
@@ -33,10 +34,27 @@ public class InfoAccordion extends Accordion {
         customerInfo = new TextField("Customer info");
         dealer = new TextField("Dealer");
         dealerInfo = new TextField("Dealer info");
-        paymentTerms = new TextField("Payment Terms");
-        shippingTerms = new TextField("Shipping Terms");
-        warranty = new TextField("Warranty");
-        installation = new TextField("Installation");
+
+        paymentTerms = new ComboBox<>("Payment Terms");
+        paymentTerms.setAllowCustomValue(true);
+        paymentTerms.setClearButtonVisible(true);
+        paymentTerms.addCustomValueSetListener(e -> paymentTerms.setValue(e.getDetail()));
+
+        shippingTerms = new ComboBox<>("Shipping Terms");
+        shippingTerms.setAllowCustomValue(true);
+        shippingTerms.setClearButtonVisible(true);
+        shippingTerms.addCustomValueSetListener(e -> shippingTerms.setValue(e.getDetail()));
+
+        warranty = new ComboBox<>("Warranty");
+        warranty.setAllowCustomValue(true);
+        warranty.setClearButtonVisible(true);
+        warranty.addCustomValueSetListener(e -> warranty.setValue(e.getDetail()));
+
+        installation = new ComboBox<>("Installation");
+        installation.setAllowCustomValue(true);
+        installation.setClearButtonVisible(true);
+        installation.addCustomValueSetListener(e -> installation.setValue(e.getDetail()));
+
         comment = new TextField("Comment");
         validThru = new DatePicker("Valid through date");
 

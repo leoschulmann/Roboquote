@@ -2,7 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui.bits;
 
 import com.leoschulmann.roboquote.WebFront.events.DisableClickableComponents;
 import com.leoschulmann.roboquote.WebFront.events.InventoryLookupAddClickedEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryLookupRefreshButtonEvent;
+import com.leoschulmann.roboquote.WebFront.events.RefreshButtonEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -59,6 +59,7 @@ public class InventoryLookup extends HorizontalLayout {
         grids.setItems(sectionGrids);
         addToGridBtn = new Button("ADD");
         refreshItems = new Button(VaadinIcon.REFRESH.create());
+        refreshItems.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
 
         addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addToGridBtn.addClickListener(click -> fireEvent(
@@ -68,7 +69,7 @@ public class InventoryLookup extends HorizontalLayout {
         grids.setWidthFull();
         grids.setPlaceholder("Quote section");
         addToGridBtn.setWidth("15%");
-        refreshItems.addClickListener(click -> fireEvent(new InventoryLookupRefreshButtonEvent(this)));
+        refreshItems.addClickListener(click -> fireEvent(new RefreshButtonEvent(this)));
         add(refreshItems, searchBox, grids, addToGridBtn);
     }
 

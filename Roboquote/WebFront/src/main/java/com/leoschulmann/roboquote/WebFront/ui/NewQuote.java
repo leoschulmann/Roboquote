@@ -41,7 +41,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     private final DownloadService downloadService;
     private final StringFormattingService stringFormattingService;
     private final MoneyMathService moneyMathService;
-    private final ItemCachingService cachingService;
+    private final CachingService cachingService;
     private final HttpRestService httpRestService;
     private final ConverterService converterService;
 
@@ -59,7 +59,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     public NewQuote(CurrencyRatesService currencyRatesService,
                     QuoteSectionHandler sectionHandler, DownloadService downloadService,
                     StringFormattingService stringFormattingService,
-                    MoneyMathService moneyMathService, ItemCachingService cachingService,
+                    MoneyMathService moneyMathService, CachingService cachingService,
                     HttpRestService httpRestService, ConverterService converterService) {
         this.currencyRatesService = currencyRatesService;
         this.sectionHandler = sectionHandler;
@@ -111,8 +111,12 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
-        lookup.addListener(InventoryLookupRefreshButtonEvent.class, e -> {
-            cachingService.updateCache();
+        lookup.addListener(RefreshButtonEvent.class, e -> {
+            fireEvent(new RefreshCachesEvent(this));
+        });
+
+        addListener(RefreshCachesEvent.class, e -> {
+            cachingService.updateItemCache();
             lookup.setItems(cachingService.getItemsFromCache());
         });
 
@@ -123,7 +127,21 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
     private InfoAccordion createQuoteInfoBlock() {
         InfoAccordion acc = new InfoAccordion();
+        cachingService.updateTermsCache();
+        acc.getInstallation().setItems(cachingService.getDistinctInstallationTerms());
+        acc.getPaymentTerms().setItems(cachingService.getDistinctPaymentTerms());
+        acc.getShippingTerms().setItems(cachingService.getDistinctShippingTerms());
+        acc.getWarranty().setItems(cachingService.getDistinctwarrantyTerms());
+
         addListener(DisableClickableComponents.class, acc::disable);
+
+        addListener(RefreshCachesEvent.class, e -> {
+            cachingService.updateTermsCache();
+            acc.getInstallation().setItems(cachingService.getDistinctInstallationTerms());
+            acc.getPaymentTerms().setItems(cachingService.getDistinctPaymentTerms());
+            acc.getShippingTerms().setItems(cachingService.getDistinctShippingTerms());
+            acc.getWarranty().setItems(cachingService.getDistinctwarrantyTerms());
+        });
 
         acc.addRatesBlock(createRatesBlock());
 
@@ -131,10 +149,10 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         quoteBinder.bind(acc.getCustomerInfo(), Quote::getCustomerInfo, Quote::setCustomerInfo);
         quoteBinder.bind(acc.getDealer(), Quote::getDealer, Quote::setDealer);
         quoteBinder.bind(acc.getDealerInfo(), Quote::getDealerInfo, Quote::setDealerInfo);
-        quoteBinder.bind(acc.getPaymentTerms(), Quote::getPaymentTerms, Quote::setPaymentTerms);
-        quoteBinder.bind(acc.getShippingTerms(), Quote::getShippingTerms, Quote::setShippingTerms);
-        quoteBinder.bind(acc.getWarranty(), Quote::getWarranty, Quote::setWarranty);
-        quoteBinder.bind(acc.getInstallation(), Quote::getInstallation, Quote::setInstallation);
+        quoteBinder. forField(acc.getPaymentTerms()).asRequired().bind(Quote::getPaymentTerms, Quote::setPaymentTerms);
+        quoteBinder. forField(acc.getShippingTerms()).asRequired().bind(Quote::getShippingTerms, Quote::setShippingTerms);
+        quoteBinder. forField(acc.getWarranty()).asRequired().bind(Quote::getWarranty, Quote::setWarranty);
+        quoteBinder. forField(acc.getInstallation()).asRequired().bind(Quote::getInstallation, Quote::setInstallation);
         quoteBinder.bind(acc.getComment(), Quote::getComment, Quote::setComment);
         quoteBinder.forField(acc.getValidThru()).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
         return acc;

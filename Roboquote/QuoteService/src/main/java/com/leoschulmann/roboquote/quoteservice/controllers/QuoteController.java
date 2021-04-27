@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.quoteservice.controllers;
 
+import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import com.leoschulmann.roboquote.quoteservice.validation.ExistingQuote;
@@ -53,5 +54,10 @@ public class QuoteController {
     public ResponseEntity<Object> cancelQuote(@PathVariable @ExistingQuote int id, @RequestBody boolean action) {
         quoteService.setQuoteCancelled(id, action);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping("/terms")
+    public ResponseEntity<DistinctTermsDto> getDistinctTerms() {
+        return new ResponseEntity<>(quoteService.getDistinctQuoteTerms(), HttpStatus.OK);
     }
 }

@@ -2,7 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
-import com.leoschulmann.roboquote.WebFront.components.ItemCachingService;
+import com.leoschulmann.roboquote.WebFront.components.CachingService;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
@@ -35,7 +35,7 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 @Route(value = "inventory", layout = MainLayout.class)
 public class InventoryView extends VerticalLayout {
     private final CurrencyFormatService currencyFormatService;
-    private final ItemCachingService cachingService;
+    private final CachingService cachingService;
     private PaginatedGrid<Item> grid;
     private final InventoryForm form;
     private final Dialog dialog;
@@ -47,7 +47,7 @@ public class InventoryView extends VerticalLayout {
     public InventoryView(
             HttpRestService httpService,
             CurrencyFormatService currencyFormatService,
-            ItemCachingService cachingService) {
+            CachingService cachingService) {
 
         this.httpService = httpService;
         this.currencyFormatService = currencyFormatService;
@@ -202,7 +202,7 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void updateList() {
-        cachingService.updateCache();
+        cachingService.updateItemCache();
         data.clear();
         data.addAll(cachingService.getItemsFromCache());
     }
