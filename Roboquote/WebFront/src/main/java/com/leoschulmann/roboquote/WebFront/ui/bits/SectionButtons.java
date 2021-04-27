@@ -35,8 +35,8 @@ public class SectionButtons extends HorizontalLayout {
 
         discountField.setValue(discount);
         discountField.setHasControls(true);
-        discountField.setMin(-99);
-        discountField.setMax(99);
+        discountField.setMin(-300);
+        discountField.setMax(100);
         discountField.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         discountField.addValueChangeListener(c -> {
             discountField.setLabel(c.getValue() < 0 ? "Markup, %" : "Discount, %");

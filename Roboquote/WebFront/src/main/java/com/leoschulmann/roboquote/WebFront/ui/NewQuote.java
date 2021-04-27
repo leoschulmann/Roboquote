@@ -15,7 +15,9 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.BinderValidationStatus;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.ValidationResult;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
@@ -145,15 +147,41 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
         acc.addRatesBlock(createRatesBlock());
 
-        quoteBinder.forField(acc.getCustomer()).asRequired().bind(Quote::getCustomer, Quote::setCustomer);
-        quoteBinder.bind(acc.getCustomerInfo(), Quote::getCustomerInfo, Quote::setCustomerInfo);
-        quoteBinder.bind(acc.getDealer(), Quote::getDealer, Quote::setDealer);
-        quoteBinder.bind(acc.getDealerInfo(), Quote::getDealerInfo, Quote::setDealerInfo);
-        quoteBinder. forField(acc.getPaymentTerms()).asRequired().bind(Quote::getPaymentTerms, Quote::setPaymentTerms);
-        quoteBinder. forField(acc.getShippingTerms()).asRequired().bind(Quote::getShippingTerms, Quote::setShippingTerms);
-        quoteBinder. forField(acc.getWarranty()).asRequired().bind(Quote::getWarranty, Quote::setWarranty);
-        quoteBinder. forField(acc.getInstallation()).asRequired().bind(Quote::getInstallation, Quote::setInstallation);
-        quoteBinder.bind(acc.getComment(), Quote::getComment, Quote::setComment);
+        quoteBinder.forField(acc.getCustomer())
+                .withValidator(s -> s.length() > 2 && s.length() < 255, "Invalid customer name length")
+                .asRequired().bind(Quote::getCustomer, Quote::setCustomer);
+
+        quoteBinder.forField(acc.getCustomerInfo())
+                .withValidator(s -> s.length() < 255, "Customer info is too long")
+                .bind(Quote::getCustomerInfo, Quote::setCustomerInfo);
+
+        quoteBinder.forField(acc.getDealer())
+                .withValidator(s -> s.length() < 255, "Dealer name is too long")
+                .bind(Quote::getDealer, Quote::setDealer);
+
+        quoteBinder.forField(acc.getDealerInfo())
+                .withValidator(s -> s.length() < 255, "Dealer info is too long")
+                .bind(Quote::getDealerInfo, Quote::setDealerInfo);
+
+        quoteBinder.forField(acc.getPaymentTerms())
+                .withValidator(s -> s.length() > 2 && s.length() < 255, "Invalid payment terms length")
+                .asRequired().bind(Quote::getPaymentTerms, Quote::setPaymentTerms);
+
+        quoteBinder.forField(acc.getShippingTerms())
+                .withValidator(s -> s.length() > 2 && s.length() < 255, "Invalid shipping terms length")
+                .asRequired().bind(Quote::getShippingTerms, Quote::setShippingTerms);
+
+        quoteBinder.forField(acc.getWarranty())
+                .withValidator(s -> s.length() > 2 && s.length() < 255, "Invalid warranty length")
+                .asRequired().bind(Quote::getWarranty, Quote::setWarranty);
+
+        quoteBinder.forField(acc.getInstallation())
+                .withValidator(s -> s.length() > 2 && s.length() < 255, "Invalid installation length")
+                .asRequired().bind(Quote::getInstallation, Quote::setInstallation);
+
+        quoteBinder.forField(acc.getComment()).withValidator(s -> s.length() < 255, "Comment is too long")
+                .bind(Quote::getComment, Quote::setComment);
+
         quoteBinder.forField(acc.getValidThru()).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
         return acc;
     }
@@ -187,11 +215,22 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
         fireEvent(new RatesUpdatedEvent(this));
 
-        quoteBinder.forField(ratesPanel.getConversionRate()).asRequired().bind(quote -> quote.getConversionRate().doubleValue(),
+        quoteBinder.forField(ratesPanel.getConversionRate())
+                .withValidator(value -> value >= -99 && value <= 99, "Bad conversion rate")
+                .asRequired().bind(quote -> quote.getConversionRate().doubleValue(),
                 (quote1, conversionRate1) -> quote1.setConversionRate(BigDecimal.valueOf(conversionRate1)));
-        quoteBinder.forField(ratesPanel.getEuro()).asRequired().bind(Quote::getEurRate, Quote::setEurRate);
-        quoteBinder.forField(ratesPanel.getDollar()).asRequired().bind(Quote::getUsdRate, Quote::setUsdRate);
-        quoteBinder.forField(ratesPanel.getYen()).asRequired().bind(Quote::getJpyRate, Quote::setJpyRate);
+
+        quoteBinder.forField(ratesPanel.getEuro())
+                .withValidator(value -> value.compareTo(BigDecimal.ONE) > 0 && value.compareTo(BigDecimal.valueOf(1000)) < 0,
+                        "Bad Euro rate").asRequired().bind(Quote::getEurRate, Quote::setEurRate);
+
+        quoteBinder.forField(ratesPanel.getDollar())
+                .withValidator(value -> value.compareTo(BigDecimal.ONE) > 0 && value.compareTo(BigDecimal.valueOf(1000)) < 0,
+                        "Bad USD rate").asRequired().bind(Quote::getUsdRate, Quote::setUsdRate);
+
+        quoteBinder.forField(ratesPanel.getYen())
+                .withValidator(value -> value.compareTo(BigDecimal.valueOf(0.01)) > 0 && value.compareTo(BigDecimal.valueOf(10)) < 0,
+                        "Bad JPY rate").asRequired().bind(Quote::getJpyRate, Quote::setJpyRate);
 
         return ratesPanel;
     }
@@ -244,10 +283,11 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         });
 
         finishBlock.addListener(FinishBlockSaveClickedEvent.class, e -> {
+            BinderValidationStatus<Quote> validationStatus = quoteBinder.validate();
             boolean noEmptyGrids = gridsBlock.getGridsAsList().stream().noneMatch(s -> s.getQuoteSection()
                     .getPositions().size() == 0);
 
-            if (quoteBinder.validate().isOk() && noEmptyGrids) {
+            if (validationStatus.isOk() && noEmptyGrids) {
                 int id = postToDbAndGetID();  //persisting starts here
                 fireEvent(new QuotePersistedEvent(this,
                         httpRestService.getFullName(id) + downloadService.getExtension(),
@@ -257,11 +297,14 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
             } else {
                 List<String> msg = new ArrayList<>();
-                if (quoteBinder.validate().hasErrors()) msg.add("Please fill marked fields");
+                if (validationStatus.hasErrors()) {
+                    List<String> errors = validationStatus.getValidationErrors().stream()
+                            .map(ValidationResult::getErrorMessage).collect(Collectors.toList());
+                    msg.addAll(errors);
+                }
                 if (!noEmptyGrids) msg.add("Some sections are empty");
-                String[] arr = new String[msg.size()];
 
-                new ErrorDialog(msg.toArray(arr)).open();
+                new ErrorDialog(msg).open();
             }
         });
 
@@ -282,8 +325,12 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             }
         });
 
-        quoteBinder.forField(finishBlock.getDiscountField()).asRequired().bind(Quote::getDiscount, Quote::setDiscount);
-        quoteBinder.forField(finishBlock.getVatField()).asRequired().bind(Quote::getVat, Quote::setVat);
+        quoteBinder.forField(finishBlock.getDiscountField())
+                .withValidator(value -> value >= -99 && value <= 99, "Bad discount value")
+                .asRequired().bind(Quote::getDiscount, Quote::setDiscount);
+        quoteBinder.forField(finishBlock.getVatField())
+                .withValidator(value -> value >= 0 && value <= 99, "Bad VAT value")
+                .asRequired().bind(Quote::getVat, Quote::setVat);
 
         return finishBlock;
     }

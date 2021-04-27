@@ -62,6 +62,8 @@ public class InventoryLookup extends HorizontalLayout {
         refreshItems.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
 
         addToGridBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addToGridBtn.setEnabled(false);
+        grids.addValueChangeListener(e -> addToGridBtn.setEnabled(e.getValue() != null));
         addToGridBtn.addClickListener(click -> fireEvent(
                 new InventoryLookupAddClickedEvent(this, searchBox.getValue(), grids.getValue())));
         searchBox.setWidthFull();
