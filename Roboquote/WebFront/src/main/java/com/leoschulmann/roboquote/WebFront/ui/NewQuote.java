@@ -27,6 +27,7 @@ import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -432,6 +433,23 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
         addListener(RecalculateSubtotalTotalEvent.class, e -> gridsBlock.getGridsAsList().stream()
                 .map(SectionGrid::getQuoteSection).forEach(qs -> recalculateSectionSubtotal(currency, qs)));
+
+        sectionAccordion.getGrid().getFooter().addListener(OverridePriceClicked.class, e -> {
+
+            Money m = (sectionAccordion.getQuoteSection().getDiscount() == 0) ?
+                    sectionAccordion.getQuoteSection().getTotal() :
+                    (Money) sectionAccordion.getQuoteSection().getTotalDiscounted();
+
+            OverridePriceDialog d = new OverridePriceDialog(m.getNumberStripped(), m.getCurrency().getCurrencyCode());
+            d.getOverride().addClickListener(c -> {
+                BigDecimal overridden = d.getPrice().getValue();
+                BigDecimal coeff = BigDecimal.ONE.subtract(m.getNumberStripped().divide(
+                        overridden, 6, RoundingMode.HALF_UP)); //todo implement as discount
+                d.close();
+            });
+
+            d.open();
+        });
 
         gridsBlock.add(sectionAccordion);
 
