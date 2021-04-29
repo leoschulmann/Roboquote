@@ -5,6 +5,8 @@ import org.javamoney.moneta.Money;
 import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -16,17 +18,17 @@ public class StringFormattingService {
         return "TOTAL: " + currencyFormatService.formatMoney(am);
     }
 
-    public String getCombinedWithDiscountOrMarkup(MonetaryAmount am, Integer discount) {
-        if (discount == 0) return "";
-        if (discount > 0) {
-            return "TOTAL (incl. discount " + discount + "%): "
+    public String getCombinedWithDiscountOrMarkup(MonetaryAmount am, BigDecimal discount) {
+        if (discount.equals(BigDecimal.ZERO)) return "";
+        if (discount.compareTo(BigDecimal.ZERO) > 0) {
+            return "TOTAL (incl. discount " + discount.setScale(0, RoundingMode.HALF_UP) + "%): "
                     + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount));
         }
-        return "TOTAL (incl. markup " + Math.abs(discount) + "%): "
+        return "TOTAL (incl. markup " + discount.abs().setScale(0, RoundingMode.HALF_UP) + "%): "
                 + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(am, discount));
     }
 
-    public String getVat(MonetaryAmount am, Integer discount, Integer vat) {
+    public String getVat(MonetaryAmount am, BigDecimal discount, Integer vat) {
         if (vat == 0) return "";
         return ("incl. VAT " + vat + "%: " + currencyFormatService.formatMoney(moneyMathService.calculateIncludedTax(
                 moneyMathService.calculateDiscountedPrice(am, discount), vat)));
@@ -36,13 +38,13 @@ public class StringFormattingService {
         return "Subtotal " + name + ": " + currencyFormatService.formatMoney(total);
     }
 
-    public String getSubtotalDisc(String name, Money subtotal, int discount) {
-        if (discount == 0) return "";
-        if (discount > 0) {
-            return "Subtotal " + name + " (incl. discount " + discount + "%): "
+    public String getSubtotalDisc(String name, Money subtotal, BigDecimal discount) {
+        if (discount.equals(BigDecimal.ZERO)) return "";
+        if (discount.compareTo(BigDecimal.ZERO) > 0) {
+            return "Subtotal " + name + " (incl. discount " + discount.setScale(0, RoundingMode.HALF_UP) + "%): "
                     + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(subtotal, discount));
         }
-        return "Subtotal " + name + " (incl. markup " + Math.abs(discount) + "%): "
+        return "Subtotal " + name + " (incl. markup " + discount.abs().setScale(0, RoundingMode.HALF_UP) + "%): "
                 + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(subtotal, discount));
     }
 }

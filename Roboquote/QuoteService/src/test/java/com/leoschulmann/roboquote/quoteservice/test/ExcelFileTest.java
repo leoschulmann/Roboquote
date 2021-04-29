@@ -21,6 +21,7 @@ import javax.money.MonetaryAmount;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -62,8 +63,8 @@ class ExcelFileTest {  // removing 'public' prevents junit vintage to start and 
 
         qs1.addItemPositions(ip1, ip2);
         qs2.addItemPositions(ip3, ip4);
-        qs1.setDiscount(10);
-        qs2.setDiscount(95);
+        qs1.setDiscount(BigDecimal.valueOf(10));
+        qs2.setDiscount(BigDecimal.valueOf(95));
         quote.addSections(qs2, qs1);
         quote.setDiscount(15);
 

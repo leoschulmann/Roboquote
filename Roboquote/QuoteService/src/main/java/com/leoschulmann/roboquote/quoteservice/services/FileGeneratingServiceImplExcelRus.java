@@ -11,8 +11,6 @@ import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
 import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
@@ -20,8 +18,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @Service
@@ -83,13 +86,13 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
             }
         }
 
-        List<String> qDetails;
-        qDetails = getListOfDetails(quote);
+        List<String> qDetails = getListOfDetails(quote);
 
-        IntStream.range(0, qDetails.size())
-                .forEach(i -> sheet.getRow(8 + i)
-                        .getCell(0)
-                        .setCellValue(qDetails.get(i)));
+        for (int i = 0; i < qDetails.size(); i++) {
+            sheet.getRow(8 + i)
+                    .getCell(0)
+                    .setCellValue(qDetails.get(i));
+        }
 
         drawColumnHeaders();
 
@@ -118,6 +121,7 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
         qDetails = List.of(
                 new StringBuilder("Коммерческое предложение №")
                         .append(quote.getNumber())
+                        .append("-")
                         .append(quote.getVersion())
                         .append(", действительно до ")
                         .append(quote.getValidThru().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).toString(),
@@ -159,10 +163,10 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
             writePosition(positions.get(i), i == positions.size() - 1);
         }
         drawWideLine();
-        Cell subtotals = drawSubtotals(0, section.getName(), section.getTotal());
+        Cell subtotals = drawSubtotals(BigDecimal.ZERO, section.getName(), section.getTotal());
         Cell subtotalsWithDiscount = null;
 
-        if (section.getDiscount() != 0) {
+        if (!section.getDiscount().equals(BigDecimal.ZERO)) {
             subtotalsWithDiscount = drawSubtotals(section.getDiscount(), section.getName(), section.getTotalDiscounted());
         }
         summarizingCellsAddress.add(subtotalsWithDiscount == null ? subtotals.getAddress().formatAsString()
@@ -181,16 +185,17 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
         RegionUtil.setBorderTop(BorderStyle.MEDIUM, region, sheet);
     }
 
-    private Cell drawSubtotals(int discount, String name, MonetaryAmount money) {
+    private Cell drawSubtotals(BigDecimal discount, String name, MonetaryAmount money) {
         int idx = sheet.getLastRowNum() + 1;
         Row row = sheet.createRow(idx);
         createBlankCells(row);
         sheet.addMergedRegion(new CellRangeAddress(idx, idx, 0, 3));
         String content;
 
-        if (discount == 0) content = "ВСЕГО " + name;
-        else if (discount > 0) content = "ВСЕГО " + name + " (со скидкой " + discount + "%)";
-        else content = "ВСЕГО " + name + " (с наценкой " + Math.abs(discount) + "%)";
+        if (discount.equals(BigDecimal.ZERO)) content = "ВСЕГО " + name;
+        else if (discount.compareTo(BigDecimal.ZERO) > 0) {
+            content = "ВСЕГО " + name + " (со скидкой " + discount.setScale(0, RoundingMode.HALF_UP) + "%)";
+        } else content = "ВСЕГО " + name + " (с наценкой " + discount.abs().setScale(0, RoundingMode.HALF_UP) + "%)";
 
         row.getCell(0).setCellValue(content);
         row.getCell(4).setCellValue(money.getNumber().doubleValue());
@@ -268,7 +273,7 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
             createBlankCells(taxRow);
             CellRangeAddress taxRegion = new CellRangeAddress(idx, idx, 0, 3);
             sheet.addMergedRegion(taxRegion);
-            taxRow.getCell(0).setCellValue("в т.ч. НДС " + quote.getVat() + "%):");
+            taxRow.getCell(0).setCellValue("(в т.ч. НДС " + quote.getVat() + "%):");
 
             String formula = totalCell.getAddress().formatAsString()
                     + " * (" + quote.getVat() + "/100) / ((" + quote.getVat() + "/100) +1 )";

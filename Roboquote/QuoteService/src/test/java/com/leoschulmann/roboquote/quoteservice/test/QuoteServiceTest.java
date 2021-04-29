@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -83,13 +84,13 @@ class QuoteServiceTest {
         ItemPosition ip9 = new ItemPosition(UUID.randomUUID().toString(), "0", Money.of(900, "EUR"), 2, -1);
 
         qs1.addItemPositions(ip1, ip2, ip3);
-        qs1.setDiscount(5);
+        qs1.setDiscount(BigDecimal.valueOf(5));
 
         qs2.addItemPositions(ip4, ip5, ip6);
-        qs2.setDiscount(10);
+        qs2.setDiscount(BigDecimal.valueOf(10));
 
         qs3.addItemPositions(ip7, ip8, ip9);
-        qs3.setDiscount(15);
+        qs3.setDiscount(BigDecimal.valueOf(15));
 
         quote.addSections(qs1, qs2, qs3);
 

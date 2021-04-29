@@ -11,6 +11,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.shared.Registration;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 public class Footer extends VerticalLayout {
     private final Span total;
     private final Span totalDiscounted;
@@ -31,9 +33,9 @@ public class Footer extends VerticalLayout {
                 .set("font-weight", "bold");
         add(total, totalDiscounted);
 
-        overridePrice = VaadinIcon.ROCKET.create();
+        overridePrice = VaadinIcon.MAGIC.create();
         overridePrice.setSize("1em");
-        overridePrice.setColor("red");
+        overridePrice.setColor("purple");
 
         overridePrice.addClickListener(c -> fireEvent(new OverridePriceClicked(grid)));
     }
@@ -43,12 +45,12 @@ public class Footer extends VerticalLayout {
 
     void update() {
 
-        int disc = grid.getQuoteSection().getDiscount();
+        BigDecimal disc = grid.getQuoteSection().getDiscount();
         total.setText(stringFormattingService.getSubtotal(grid.getName(), grid.getQuoteSection().getTotal()) + " ");
         totalDiscounted.setText(stringFormattingService.getSubtotalDisc(grid.getName(),
                 grid.getQuoteSection().getTotal(), disc) + " ");
 
-        if (disc != 0) {
+        if (!disc.equals(BigDecimal.ZERO)) {
             totalDiscounted.setVisible(true);
             total.getElement().getStyle().remove("font-weight").set("text-decoration", "line-through");
             totalDiscounted.add(overridePrice);

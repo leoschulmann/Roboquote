@@ -55,7 +55,7 @@ public class QuoteDtoConverter {
         double amount = qs.getTotal().getNumberStripped().doubleValue();
         String currency = qs.getTotal().getCurrency().getCurrencyCode();
 
-        return new QuoteSectionDto(qs.getId(), positionDtos, qs.getName(), qs.getDiscount(),
+        return new QuoteSectionDto(qs.getId(), positionDtos, qs.getName(), qs.getDiscount().toPlainString(),
                 amount, currency);
     }
 
@@ -83,7 +83,7 @@ public class QuoteDtoConverter {
     }
 
     public QuoteSection convertDtoToSection(QuoteSectionDto dto) {
-        QuoteSection qs = new QuoteSection(new ArrayList<>(), dto.getName(), dto.getDiscount(),
+        QuoteSection qs = new QuoteSection(new ArrayList<>(), dto.getName(), new BigDecimal(dto.getDiscount()),
                 Money.of(dto.getTotalAmount(), dto.getTotalCurrency()));
         qs.addItemPositions(dto.getPositions().stream().map(this::convertDtoToItemPosition).toArray(ItemPosition[]::new));
         return qs;

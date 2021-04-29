@@ -17,6 +17,7 @@ import org.javamoney.moneta.Money;
 import javax.money.MonetaryAmount;
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,8 +40,8 @@ public class QuoteSection {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "discount", columnDefinition = "decimal(3,1) default 0.0")
-    private Integer discount;
+    @Column(name = "discount", columnDefinition = "decimal(10,8) default 0.0")
+    private BigDecimal discount;
 
     @Columns(columns = {
             @Column(name = "subtotal_currency"),
@@ -58,7 +59,7 @@ public class QuoteSection {
     public QuoteSection(String name) {
         this.name = name;
         positions = new ArrayList<>();
-        discount = 0;
+        discount = BigDecimal.ZERO;
     }
 
     public void addItemPositions(ItemPosition... pos) {
@@ -68,7 +69,7 @@ public class QuoteSection {
         });
     }
 
-    public QuoteSection(List<ItemPosition> positions, String name, Integer discount, Money total) {
+    public QuoteSection(List<ItemPosition> positions, String name, BigDecimal discount, Money total) {
         this.positions = positions;
         this.name = name;
         this.discount = discount;
@@ -77,6 +78,7 @@ public class QuoteSection {
 
     @JsonIgnore
     public MonetaryAmount getTotalDiscounted() {
-        return getTotal().multiply((100 - discount) / 100.);
+        return getTotal().multiply((BigDecimal.valueOf(100).subtract(discount).divide(BigDecimal.valueOf(100),
+                8, RoundingMode.HALF_UP)));
     }
 }
