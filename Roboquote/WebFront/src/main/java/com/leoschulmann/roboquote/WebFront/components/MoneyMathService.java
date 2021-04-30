@@ -6,12 +6,14 @@ import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
 public class MoneyMathService {
-    public MonetaryAmount calculateDiscountedPrice(MonetaryAmount ma, Integer discount) {
-        return ma.multiply((100.0 - discount) / 100);
+    public MonetaryAmount calculateDiscountedPrice(MonetaryAmount ma, BigDecimal discount) {
+        return ma.multiply((BigDecimal.valueOf(100).subtract(discount)).divide(BigDecimal.valueOf(100),
+                8, RoundingMode.HALF_UP));
     }
 
     public MonetaryAmount calculateIncludedTax(MonetaryAmount ma, Integer tax) {

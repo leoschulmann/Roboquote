@@ -12,6 +12,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import javax.money.MonetaryAmount;
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -46,7 +47,7 @@ public class QuoteViewer extends VerticalLayout {
             Span subtotalSpan = new Span(stringFormatter.getSubtotal(sect.getName(), sect.getTotal()));
             Span subtotalDiscountedSpan = new Span(stringFormatter.getSubtotalDisc(sect.getName(), sect.getTotal(), sect.getDiscount()));
 
-            if (sect.getDiscount() != 0) {
+            if (!sect.getDiscount().equals(BigDecimal.ZERO)) {
                 alignRightAndStrikethrough(subtotalSpan);
                 alignRightAndBolden(subtotalDiscountedSpan);
                 add(subtotalSpan, subtotalDiscountedSpan);
@@ -62,8 +63,9 @@ public class QuoteViewer extends VerticalLayout {
                 map(QuoteSection::getTotalDiscounted).collect(Collectors.toList()));
 
         Span totalSpan = new Span(stringFormatter.getCombined(sum));
-        Span discountedTotalSpan = new Span(stringFormatter.getCombinedWithDiscountOrMarkup(sum, q.getDiscount()));
-        Span vatSpan = new Span(stringFormatter.getVat(sum, q.getDiscount(), q.getVat()));
+        Span discountedTotalSpan = new Span(stringFormatter.getCombinedWithDiscountOrMarkup(sum,
+                BigDecimal.valueOf(q.getDiscount())));
+        Span vatSpan = new Span(stringFormatter.getVat(sum, BigDecimal.valueOf(q.getDiscount()), q.getVat()));
 
         add(totalSpan);
         if (q.getDiscount() != 0) {

@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.money.MonetaryAmount;
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,7 +24,7 @@ class MoneyMathServiceImplTest {
     @Test
     void calculateDiscountedPrice() {
         MonetaryAmount ma = Money.of(100, "USD");
-        MonetaryAmount discounted = moneyMathService.calculateDiscountedPrice(ma, 10);
+        MonetaryAmount discounted = moneyMathService.calculateDiscountedPrice(ma, BigDecimal.valueOf(10));
         assertEquals(90, discounted.getNumber().intValueExact());
     }
 

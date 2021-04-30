@@ -27,6 +27,7 @@ import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -113,9 +114,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             fireEvent(new RecalculateAndRedrawTotalEvent(this));
         });
 
-        lookup.addListener(RefreshButtonEvent.class, e -> {
-            fireEvent(new RefreshCachesEvent(this));
-        });
+        lookup.addListener(RefreshButtonEvent.class, e -> fireEvent(new RefreshCachesEvent(this)));
 
         addListener(RefreshCachesEvent.class, e -> {
             cachingService.updateItemCache();
@@ -313,8 +312,8 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         addListener(RecalculateAndRedrawTotalEvent.class, e -> {
             MonetaryAmount am = getTotalMoney();
             finishBlock.getTotalString().setText(stringFormattingService.getCombined(am));
-            finishBlock.getTotalWithDiscountString().setText(stringFormattingService.getCombinedWithDiscountOrMarkup(am, discount));
-            finishBlock.getIncludingVatValue().setText(stringFormattingService.getVat(am, discount, vat));
+            finishBlock.getTotalWithDiscountString().setText(stringFormattingService.getCombinedWithDiscountOrMarkup(am, BigDecimal.valueOf(discount)));
+            finishBlock.getIncludingVatValue().setText(stringFormattingService.getVat(am, BigDecimal.valueOf(discount), vat));
 
             finishBlock.getTotalWithDiscountString().setVisible(discount != 0);
 
@@ -433,10 +432,34 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         addListener(RecalculateSubtotalTotalEvent.class, e -> gridsBlock.getGridsAsList().stream()
                 .map(SectionGrid::getQuoteSection).forEach(qs -> recalculateSectionSubtotal(currency, qs)));
 
+        sectionAccordion.getControl().addListener(OverridePriceClicked.class, e -> openOverridePriceDialog(sectionAccordion));
+
         gridsBlock.add(sectionAccordion);
 
         fireEvent(new RedrawGridAndSubtotalsEvent(this));
         fireEvent(new UpdateAvailableGridsEvent(this));
+    }
+
+    private void openOverridePriceDialog(SectionAccordion sectionAccordion) {
+        Money money = (sectionAccordion.getQuoteSection().getDiscount().equals(BigDecimal.ZERO)) ?
+                sectionAccordion.getQuoteSection().getTotal() : (Money) sectionAccordion.getQuoteSection().getTotalDiscounted();
+
+        String currency = money.getCurrency().getCurrencyCode();
+        BigDecimal displayValue = money.getNumberStripped().setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal beforeDiscount = sectionAccordion.getQuoteSection().getTotal().getNumberStripped();
+
+        OverridePriceDialog dialog = new OverridePriceDialog(displayValue, currency);
+
+        dialog.getOverrideBtn().addClickListener(c -> {
+            BigDecimal overridden = dialog.getPrice().getValue();
+            BigDecimal newDiscount = BigDecimal.valueOf(100).subtract(overridden.divide(
+                    beforeDiscount, 8, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
+            sectionAccordion.getControl().getDiscountField().setValue(newDiscount);
+            dialog.close();
+        });
+
+        dialog.open();
     }
 
     private MonetaryAmount getTotalMoney() {

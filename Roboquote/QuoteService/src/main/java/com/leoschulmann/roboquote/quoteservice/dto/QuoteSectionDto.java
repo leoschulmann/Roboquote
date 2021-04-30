@@ -18,7 +18,7 @@ public class QuoteSectionDto {
 
     private String name;
 
-    private Integer discount;
+    private String discount;
 
     private Double totalAmount;
 
