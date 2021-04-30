@@ -13,17 +13,17 @@ import java.math.BigDecimal;
 @Getter
 public class OverridePriceDialog extends Dialog {
     private final BigDecimalField price;
-    private final Button override;
+    private final Button overrideBtn;
 
     public OverridePriceDialog(BigDecimal amount, String currency) {
         price = new BigDecimalField();
         price.setValue(amount);
         price.setSuffixComponent(new Span(currency));
         price.setWidthFull();
-        override = new Button("OK");
-        override.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        override.setWidthFull();
+        overrideBtn = new Button("OK");
+        overrideBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        overrideBtn.setWidthFull();
         setWidth("25%");
-        add(new VerticalLayout(price, override));
+        add(new VerticalLayout(price, overrideBtn));
     }
 }

@@ -432,28 +432,34 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         addListener(RecalculateSubtotalTotalEvent.class, e -> gridsBlock.getGridsAsList().stream()
                 .map(SectionGrid::getQuoteSection).forEach(qs -> recalculateSectionSubtotal(currency, qs)));
 
-        sectionAccordion.getGrid().getFooter().addListener(OverridePriceClicked.class, e -> {
-
-            Money m = (sectionAccordion.getQuoteSection().getDiscount().equals(BigDecimal.ZERO)) ?
-                    sectionAccordion.getQuoteSection().getTotal() :
-                    (Money) sectionAccordion.getQuoteSection().getTotalDiscounted();
-            BigDecimal value = sectionAccordion.getQuoteSection().getTotal().getNumberStripped();
-            OverridePriceDialog d = new OverridePriceDialog(m.getNumberStripped(), m.getCurrency().getCurrencyCode());
-            d.getOverride().addClickListener(c -> {
-                BigDecimal overridden = d.getPrice().getValue();
-                BigDecimal coeff = BigDecimal.valueOf(100).subtract(overridden.divide(
-                        value, 8, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
-                sectionAccordion.getControl().getDiscountField().setValue(coeff);
-                d.close();
-            });
-
-            d.open();
-        });
+        sectionAccordion.getControl().addListener(OverridePriceClicked.class, e -> openOverridePriceDialog(sectionAccordion));
 
         gridsBlock.add(sectionAccordion);
 
         fireEvent(new RedrawGridAndSubtotalsEvent(this));
         fireEvent(new UpdateAvailableGridsEvent(this));
+    }
+
+    private void openOverridePriceDialog(SectionAccordion sectionAccordion) {
+        Money money = (sectionAccordion.getQuoteSection().getDiscount().equals(BigDecimal.ZERO)) ?
+                sectionAccordion.getQuoteSection().getTotal() : (Money) sectionAccordion.getQuoteSection().getTotalDiscounted();
+
+        String currency = money.getCurrency().getCurrencyCode();
+        BigDecimal displayValue = money.getNumberStripped().setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal beforeDiscount = sectionAccordion.getQuoteSection().getTotal().getNumberStripped();
+
+        OverridePriceDialog dialog = new OverridePriceDialog(displayValue, currency);
+
+        dialog.getOverrideBtn().addClickListener(c -> {
+            BigDecimal overridden = dialog.getPrice().getValue();
+            BigDecimal newDiscount = BigDecimal.valueOf(100).subtract(overridden.divide(
+                    beforeDiscount, 8, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
+            sectionAccordion.getControl().getDiscountField().setValue(newDiscount);
+            dialog.close();
+        });
+
+        dialog.open();
     }
 
     private MonetaryAmount getTotalMoney() {

@@ -42,6 +42,8 @@ public class SectionButtons extends HorizontalLayout {
         discountField.setValueChangeMode(ValueChangeMode.ON_CHANGE);
         discountField.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         discountField.addValueChangeListener(c -> {
+            if (discountField.isEmpty()) discountField.setValue(BigDecimal.ZERO);
+
             discountField.setLabel(c.getValue().compareTo(BigDecimal.ZERO) < 0 ? "Markup, %" : "Discount, %");
             fireEvent(new AccordionDiscountChangedEvent(this));
         });
@@ -73,9 +75,13 @@ public class SectionButtons extends HorizontalLayout {
         decr.addClickListener(c -> discountField.setValue(discountField.getValue()
                 .setScale(0, RoundingMode.HALF_UP).subtract(BigDecimal.ONE)));
 
+        Button magicDiscountBtn = new Button(VaadinIcon.MAGIC.create());
+        magicDiscountBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_SMALL);
+        magicDiscountBtn.addClickListener(c -> fireEvent(new OverridePriceClicked(grid)));
+
         getStyle().set("margin-left", "auto");
         setAlignItems(Alignment.END);
-        add(decr, incr, discountField, editNameBtn, wrapButton, moveUpBtn, moveDownBtn, deleteBtn);
+        add(decr, magicDiscountBtn, incr, discountField, editNameBtn, wrapButton, moveUpBtn, moveDownBtn, deleteBtn);
     }
 
     public void disable() {

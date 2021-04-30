@@ -11,6 +11,7 @@ import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.javamoney.moneta.Money;
 import org.springframework.stereotype.Service;
 
 import javax.money.MonetaryAmount;
@@ -163,12 +164,21 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
             writePosition(positions.get(i), i == positions.size() - 1);
         }
         drawWideLine();
-        Cell subtotals = drawSubtotals(BigDecimal.ZERO, section.getName(), section.getTotal());
+        Cell subtotals;
         Cell subtotalsWithDiscount = null;
 
-        if (!section.getDiscount().equals(BigDecimal.ZERO)) {
+        //if rounded discount == 0 ...
+        if (section.getDiscount().setScale(0, RoundingMode.HALF_UP).equals(BigDecimal.ZERO)) {
+            //write section without discount or section without discount but with minor rounding
+            subtotals = drawSubtotals(section.getDiscount(), section.getName(), section.getTotalDiscounted());
+
+        } else {
+            //write section before discount,
+            //write section after discount
+            subtotals = drawSubtotals(BigDecimal.ZERO, section.getName(), section.getTotal());
             subtotalsWithDiscount = drawSubtotals(section.getDiscount(), section.getName(), section.getTotalDiscounted());
         }
+
         summarizingCellsAddress.add(subtotalsWithDiscount == null ? subtotals.getAddress().formatAsString()
                 : subtotalsWithDiscount.getAddress().formatAsString());
         createBlankRows(3);
@@ -192,13 +202,14 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
         sheet.addMergedRegion(new CellRangeAddress(idx, idx, 0, 3));
         String content;
 
-        if (discount.equals(BigDecimal.ZERO)) content = "ВСЕГО " + name;
+        if (discount.setScale(0, RoundingMode.HALF_UP).equals(BigDecimal.ZERO)) content = "ВСЕГО " + name;
         else if (discount.compareTo(BigDecimal.ZERO) > 0) {
             content = "ВСЕГО " + name + " (со скидкой " + discount.setScale(0, RoundingMode.HALF_UP) + "%)";
         } else content = "ВСЕГО " + name + " (с наценкой " + discount.abs().setScale(0, RoundingMode.HALF_UP) + "%)";
 
+        double value = ((Money) money).getNumberStripped().setScale(2, RoundingMode.HALF_UP).doubleValue();
         row.getCell(0).setCellValue(content);
-        row.getCell(4).setCellValue(money.getNumber().doubleValue());
+        row.getCell(4).setCellValue(value);
         row.getCell(0).setCellStyle(subTotalStyle);
         row.getCell(4).setCellStyle(getCurrencySubtotalStyle(money.getCurrency().getCurrencyCode().toLowerCase()));
         return row.getCell(4);
