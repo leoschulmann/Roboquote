@@ -89,10 +89,10 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
                         //empty quote with default rates, vat, discount and one empty quote section
                         Quote q = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
                                 BigDecimal.ONE, BigDecimal.valueOf(2));
-                        q.setValidThru(LocalDate.now().plus(3, ChronoUnit.MONTHS));
                         q.addSections(new QuoteSection("New quote section"));
                         return q;
                     });
+            quote.setValidThru(LocalDate.now().plus(3, ChronoUnit.MONTHS));
 
             ui.getSession().setAttribute(Quote.class, null); //delete session payload if any
             quoteBinder.readBean(quote);
@@ -182,6 +182,8 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
                 .bind(Quote::getComment, Quote::setComment);
 
         quoteBinder.forField(acc.getValidThru()).asRequired().bind(Quote::getValidThru, Quote::setValidThru);
+
+        quoteBinder.bind(acc.getInvisibleSerialField(), Quote::getNumber, Quote::setNumber);
         return acc;
     }
 
@@ -455,7 +457,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             BigDecimal overridden = dialog.getPrice().getValue();
             BigDecimal newDiscount = BigDecimal.valueOf(100).subtract(overridden.divide(
                     beforeDiscount, 8, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
-            sectionAccordion.getControl().getDiscountField().setValue(newDiscount);
+            sectionAccordion.getControl().getDiscountField().setValue(newDiscount.stripTrailingZeros());
             dialog.close();
         });
 

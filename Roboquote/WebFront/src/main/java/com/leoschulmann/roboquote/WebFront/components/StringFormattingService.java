@@ -41,10 +41,10 @@ public class StringFormattingService {
     public String getSubtotalDisc(String name, Money subtotal, BigDecimal discount) {
         if (discount.equals(BigDecimal.ZERO)) return "";
         if (discount.compareTo(BigDecimal.ZERO) > 0) {
-            return "Subtotal " + name + " (incl. discount " + discount.setScale(0, RoundingMode.HALF_UP) + "%): "
+            return "Subtotal " + name + " (incl. discount " + discount.stripTrailingZeros().toPlainString() + "%): "
                     + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(subtotal, discount));
         }
-        return "Subtotal " + name + " (incl. markup " + discount.abs().setScale(0, RoundingMode.HALF_UP) + "%): "
+        return "Subtotal " + name + " (incl. markup " + discount.abs().stripTrailingZeros().toPlainString() + "%): "
                 + currencyFormatService.formatMoney(moneyMathService.calculateDiscountedPrice(subtotal, discount));
     }
 }

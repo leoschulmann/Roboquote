@@ -199,13 +199,7 @@ public class HttpRestService {
 
     @Transactional
     public int postNew(Quote quote) {
-        String serial = Objects.requireNonNullElseGet(quote.getNumber(), () -> {
-            String str = getNameFromService();
-            quote.setNumber(str);
-            return str;
-        });
-
-        quote.setVersion(getVersionFromService(serial));
+        assignSerialNumberAndVersion(quote);
 
         QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);
         RequestEntity<QuoteDto> request = RequestEntity.post(URI.create(quoteUrl))
@@ -216,6 +210,14 @@ public class HttpRestService {
         Integer id = response.getBody();
         if (id == null) throw new RuntimeException("work in progress!"); //todo replace stub
         return id;
+    }
+
+    private void assignSerialNumberAndVersion(Quote quote) {
+        if (quote.getNumber() == null || quote.getNumber().isBlank()) {
+            quote.setNumber(getNameFromService());
+        }
+
+        quote.setVersion(getVersionFromService(quote.getNumber()));
     }
 
     private String getNameFromService() {

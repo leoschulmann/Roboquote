@@ -21,6 +21,7 @@ public class InfoAccordion extends Accordion {
     private final ComboBox<String> installation;
     private final TextField comment;
     private final DatePicker validThru;
+    private final TextField invisibleSerialField;
 
     public InfoAccordion() {
         setWidthFull();
@@ -57,6 +58,8 @@ public class InfoAccordion extends Accordion {
 
         comment = new TextField("Comment");
         validThru = new DatePicker("Valid through date");
+
+        invisibleSerialField = new TextField();
 
         columnLayout.add(customer);
         columnLayout.add(customerInfo, 2);

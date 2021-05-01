@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
 public class QuoteViewer extends VerticalLayout {
-    private CurrencyFormatService currencyService;
+    private final CurrencyFormatService currencyService;
 
     public QuoteViewer(Quote q, CurrencyFormatService currencyService,
                        MoneyMathService moneyMathService,
@@ -47,7 +47,7 @@ public class QuoteViewer extends VerticalLayout {
             Span subtotalSpan = new Span(stringFormatter.getSubtotal(sect.getName(), sect.getTotal()));
             Span subtotalDiscountedSpan = new Span(stringFormatter.getSubtotalDisc(sect.getName(), sect.getTotal(), sect.getDiscount()));
 
-            if (!sect.getDiscount().equals(BigDecimal.ZERO)) {
+            if (sect.getDiscount().compareTo(BigDecimal.ZERO) != 0) {
                 alignRightAndStrikethrough(subtotalSpan);
                 alignRightAndBolden(subtotalDiscountedSpan);
                 add(subtotalSpan, subtotalDiscountedSpan);

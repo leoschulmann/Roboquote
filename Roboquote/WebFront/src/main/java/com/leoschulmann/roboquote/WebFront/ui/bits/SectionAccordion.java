@@ -21,7 +21,7 @@ public class SectionAccordion extends Accordion {
         VerticalLayout content = new VerticalLayout();
         content.setWidthFull();
         grid = new SectionGrid(quoteSection, stringFormattingService);
-        control = new SectionButtons(grid, quoteSection.getDiscount());
+        control = new SectionButtons(grid, quoteSection.getDiscount().stripTrailingZeros());
         content.add(control, grid, grid.getFooter());
 
         add(quoteSection.getName(), content);

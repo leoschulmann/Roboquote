@@ -32,7 +32,6 @@ public class InventoryLookup extends HorizontalLayout {
     private final Button refreshItems;
     private List<SectionGrid> sectionGrids;
 
-    @Setter
     private List<Item> items;
 
     private static final MonetaryAmountFormat FORMATTER;
@@ -106,5 +105,10 @@ public class InventoryLookup extends HorizontalLayout {
     public void updateGrids(List<SectionGrid> gridsAsList) {
         this.sectionGrids = gridsAsList;
         grids.setItems(sectionGrids);
+    }
+
+    public void setItems(List<Item> items) {
+        this.items = items;
+        searchBox.setItems(items);
     }
 }
