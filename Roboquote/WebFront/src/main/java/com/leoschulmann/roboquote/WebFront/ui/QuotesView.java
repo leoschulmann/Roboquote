@@ -5,16 +5,18 @@ import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
@@ -29,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
@@ -42,8 +45,12 @@ public class QuotesView extends VerticalLayout {
     private final StringFormattingService stringFormattingService;
     private final HttpRestService httpRestService;
     private final DateTimeFormatter dtf;
-    private final Grid<Quote> grid;
+    private final PaginatedGrid<Quote> grid;
+    private final List<Quote> quotes;
+    private final ListDataProvider<Quote> dataProvider;
     private boolean showCancelled = false;
+    private ComboBox<String> dealerCombo;
+    private ComboBox<String> customersCombo;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
                       DownloadService downloadService, MoneyMathService moneyMathService,
@@ -55,13 +62,66 @@ public class QuotesView extends VerticalLayout {
         this.stringFormattingService = stringFormattingService;
         this.httpRestService = httpRestService;
         dtf = DateTimeFormatter.ofPattern("dd MMM yy");
+        quotes = getQuotes(showCancelled);
+        dataProvider = new ListDataProvider<>(quotes);
         grid = createGrid();
-        updateGrid(grid);
-        add(createCheckbox(), grid);
+        add(createControlFrame(), grid);
         grid.addItemClickListener(event -> {
             int qId = event.getItem().getId();
             openQuote(httpRestService.getQuoteById(qId));
         });
+    }
+
+    private HorizontalLayout createControlFrame() {
+        Checkbox cancelledCheckbox = createCheckbox();
+        customersCombo = new ComboBox<>("Customer", getDistinctCustomers());
+        dealerCombo = new ComboBox<>("Dealer", getDistinctDealers());
+        customersCombo.setClearButtonVisible(true);
+        dealerCombo.setClearButtonVisible(true);
+        ComboBox<String> sizeCombo = createGridSizeCombo();
+
+        customersCombo.addValueChangeListener(e -> {
+            if (e.getValue() == null) {
+                dataProvider.clearFilters();
+            } else {
+                dealerCombo.clear();
+                dataProvider.setFilter(q -> q.getCustomer().equals(e.getValue()));
+            }
+        });
+
+        dealerCombo.addValueChangeListener(e -> {
+            if (e.getValue() == null) {
+                dataProvider.clearFilters();
+            } else {
+                customersCombo.clear();
+                dataProvider.setFilter(q -> q.getDealer().equals(e.getValue()));
+            }
+        });
+
+        HorizontalLayout layout = new HorizontalLayout(cancelledCheckbox, customersCombo, dealerCombo, sizeCombo);
+        layout.getStyle().set("margin-left", "auto");
+        layout.setAlignItems(Alignment.END);
+        return layout;
+    }
+
+    private ComboBox<String> createGridSizeCombo() {
+        ComboBox<String> box = new ComboBox<>("Show");
+        box.setItems("15", "50", "100", "all");
+        box.addValueChangeListener(l -> {
+            if (l.getValue().equals("all")) grid.setPageSize(quotes.size());
+            else grid.setPageSize(Integer.parseInt(l.getValue()));
+        });
+        box.setValue("15");
+        box.setWidth("5em");
+        return box;
+    }
+
+    private List<String> getDistinctDealers() {
+        return quotes.stream().map(Quote::getDealer).distinct().sorted().collect(Collectors.toList());
+    }
+
+    private List<String> getDistinctCustomers() {
+        return quotes.stream().map(Quote::getCustomer).distinct().sorted().collect(Collectors.toList());
     }
 
     private Checkbox createCheckbox() {
@@ -69,13 +129,14 @@ public class QuotesView extends VerticalLayout {
         cb.setValue(showCancelled);
         cb.addValueChangeListener(e -> {
             showCancelled = e.getValue();
-            updateGrid(grid);
+            updateGrid(grid, showCancelled);
         });
         return cb;
     }
 
-    private Grid<Quote> createGrid() {
+    private PaginatedGrid<Quote> createGrid() {
         PaginatedGrid<Quote> grid = new PaginatedGrid<>(Quote.class);
+        grid.setDataProvider(dataProvider);
         grid.addThemeVariants(LUMO_COMPACT, LUMO_ROW_STRIPES, LUMO_COLUMN_BORDERS);
         grid.removeAllColumns();
         grid.addColumn((ValueProvider<Quote, String>) quote -> quote.getCreatedTimestamp().format(dtf))
@@ -101,8 +162,17 @@ public class QuotesView extends VerticalLayout {
         return grid;
     }
 
-    private void updateGrid(Grid<Quote> grid) {
-        grid.setItems(showCancelled ? httpRestService.findAllQuotes() : httpRestService.findAllUncancelledQuotes());
+    private void updateGrid(PaginatedGrid<Quote> grid, boolean showCancelled) {
+        quotes.clear();
+        quotes.addAll(getQuotes(showCancelled));
+        grid.getDataProvider().refreshAll();
+        grid.refreshPaginator();
+        customersCombo.setItems(getDistinctCustomers());
+        dealerCombo.setItems(getDistinctDealers());
+    }
+
+    private List<Quote> getQuotes(boolean getWithCancelled) {
+        return getWithCancelled ? httpRestService.findAllQuotes() : httpRestService.findAllUncancelledQuotes();
     }
 
     private void openQuote(Quote quote) {
@@ -146,7 +216,7 @@ public class QuotesView extends VerticalLayout {
         button.setText(cancelAction ? "Cancel quote" : "Uncancel quote");
         button.addClickListener(c -> {
             httpRestService.setCancelled(quote.getId(), cancelAction);
-            updateGrid(grid);
+            updateGrid(grid, showCancelled);
             viewerDialog.close();
         });
         return button;
@@ -162,7 +232,7 @@ public class QuotesView extends VerticalLayout {
         textField.setValue(Objects.requireNonNullElse(quote.getComment(), ""));
         Button ok = new Button("OK", click -> {
             httpRestService.addComment(quote.getId(), textField.getValue());
-            updateGrid(grid);
+            updateGrid(grid, showCancelled);
             qViewerDialog.close();
             dialog.close();
         });
