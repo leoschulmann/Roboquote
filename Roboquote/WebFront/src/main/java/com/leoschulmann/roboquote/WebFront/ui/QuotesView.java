@@ -1,6 +1,8 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.*;
+import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.button.Button;
@@ -49,7 +51,6 @@ public class QuotesView extends VerticalLayout {
     private final List<Quote> quotes;
     private final ListDataProvider<Quote> dataProvider;
     private boolean showCancelled = false;
-    private int textSize = 14;
     private ComboBox<String> dealerCombo;
     private ComboBox<String> customersCombo;
 
@@ -66,7 +67,6 @@ public class QuotesView extends VerticalLayout {
         quotes = getQuotes(showCancelled);
         dataProvider = new ListDataProvider<>(quotes);
         grid = createGrid();
-        setGridTextSize();
         add(createControlFrame(), grid);
         grid.addItemClickListener(event -> {
             int qId = event.getItem().getId();
@@ -107,44 +107,15 @@ public class QuotesView extends VerticalLayout {
             }
         });
 
-        ComboBox<String> sizeCombo = createGridSizeCombo();
+        ComboBox<String> sizeCombo = new GridSizeCombobox(grid, quotes);
 
-        Button bigger = new Button(VaadinIcon.SEARCH_PLUS.create());
-        bigger.getElement().setProperty("title", "Bigger font");
-
-        Button smaller = new Button(VaadinIcon.SEARCH_MINUS.create());
-        smaller.getElement().setProperty("title", "Smaller font");
-
-        bigger.addClickListener(c -> {
-            if (textSize <= 20) {
-                textSize++;
-                setGridTextSize();
-            }
-        });
-        smaller.addClickListener(c -> {
-            if (textSize >= 8) {
-                textSize--;
-                setGridTextSize();
-            }
-        });
+        ZoomButtons zoomButtons = new ZoomButtons(grid);
 
         HorizontalLayout layout = new HorizontalLayout(cancelledToggle, customersCombo, dealerCombo, sizeCombo,
-                smaller, bigger);
+                zoomButtons.getZoomOut(), zoomButtons.getZoomIn());
         layout.getStyle().set("margin-left", "auto");
         layout.setAlignItems(Alignment.CENTER);
         return layout;
-    }
-
-    private ComboBox<String> createGridSizeCombo() {
-        ComboBox<String> box = new ComboBox<>();
-        box.setItems("15", "50", "100", "all");
-        box.addValueChangeListener(l -> {
-            if (l.getValue().equals("all")) grid.setPageSize(quotes.size());
-            else grid.setPageSize(Integer.parseInt(l.getValue()));
-        });
-        box.setValue("15");
-        box.setWidth("5em");
-        return box;
     }
 
     private List<String> getDistinctDealers() {
@@ -315,9 +286,5 @@ public class QuotesView extends VerticalLayout {
         btn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
         btn.addClickListener(click -> qViewerDialog.close());
         return btn;
-    }
-
-    private void setGridTextSize() {
-        grid.getStyle().set("font-size", textSize + "px");
     }
 }

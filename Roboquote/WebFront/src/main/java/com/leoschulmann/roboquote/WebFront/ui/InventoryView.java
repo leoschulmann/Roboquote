@@ -1,25 +1,25 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
+import com.leoschulmann.roboquote.WebFront.components.CachingService;
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
-import com.leoschulmann.roboquote.WebFront.components.CachingService;
 import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
+import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
@@ -29,6 +29,8 @@ import org.vaadin.klaudeta.PaginatedGrid;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
 
@@ -40,9 +42,8 @@ public class InventoryView extends VerticalLayout {
     private final InventoryForm form;
     private final Dialog dialog;
     private final ListDataProvider<Item> dataProvider;
-    ArrayList<Item> data;
+    private final ArrayList<Item> data;
     private final HttpRestService httpService;
-
 
     public InventoryView(
             HttpRestService httpService,
@@ -70,38 +71,81 @@ public class InventoryView extends VerticalLayout {
     }
 
     private HorizontalLayout createTopControls() {
-        HorizontalLayout hl = new HorizontalLayout(createNewItem(), gridLengthSelector());
-        hl.setAlignItems(Alignment.BASELINE);
-        return hl;
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setAlignItems(Alignment.CENTER);
+        layout.setWidthFull();
+
+        Button newItem = createNewItem();
+        newItem.setWidth("20em");
+
+        ComboBox<String> sizeCombo = new GridSizeCombobox(grid, data);
+        ComboBox<String> brandCombo = new ComboBox<>();
+        brandCombo.setItems(getDistinctBrands());
+        brandCombo.setPlaceholder("Brand");
+        brandCombo.getElement().setProperty("title", "Brand");
+        brandCombo.setClearButtonVisible(true);
+
+        brandCombo.addValueChangeListener(e -> {
+            if (e.getValue() == null) {
+                dataProvider.clearFilters();
+            } else {
+                dataProvider.setFilter(i -> i.getBrand().equals(e.getValue()));
+            }
+        });
+
+        TextField search = new TextField();
+        search.setPlaceholder("Search name or part no.");
+        search.setClearButtonVisible(true);
+        search.addValueChangeListener(event -> dataProvider.addFilter(
+                item -> StringUtils.containsIgnoreCase(item.getNameRus(), search.getValue()) ||
+                        StringUtils.containsIgnoreCase(item.getPartno(), search.getValue())
+        ));
+        search.setValueChangeMode(ValueChangeMode.EAGER);
+        search.setWidthFull();
+
+        ToggleButton wrap = new ToggleButton(false);
+        wrap.getElement().setAttribute("title", "Wrap cell contents");
+        wrap.addValueChangeListener(e -> {
+            if (e.getValue()) {
+                grid.addThemeVariants(LUMO_WRAP_CELL_CONTENT);
+            } else {
+                grid.removeThemeVariants(LUMO_WRAP_CELL_CONTENT);
+            }
+            grid.refreshPaginator();
+        });
+
+        ZoomButtons zoomButtons = new ZoomButtons(grid);
+
+        layout.add(newItem, search, brandCombo, sizeCombo, zoomButtons.getZoomOut(), zoomButtons.getZoomIn(), wrap);
+        return layout;
     }
 
     private PaginatedGrid<Item> drawGrid() {
         grid = new PaginatedGrid<>(Item.class);
         grid.setDataProvider(dataProvider);
         grid.removeAllColumns();
-        grid.addThemeVariants(LUMO_ROW_STRIPES, LUMO_WRAP_CELL_CONTENT, LUMO_COLUMN_BORDERS);
+        grid.addThemeVariants(LUMO_COMPACT, LUMO_ROW_STRIPES, LUMO_COLUMN_BORDERS);
         grid.addColumn(Item::getId)
                 .setHeader("Id")
                 .setSortable(true)
                 .setAutoWidth(true)
                 .setResizable(true).setFlexGrow(0);
-        Column<Item> brandCol = grid.addColumn(Item::getBrand)
+        grid.addColumn(Item::getBrand)
                 .setHeader("Brand")
                 .setKey("brand")
                 .setSortable(true)
                 .setAutoWidth(true)
                 .setResizable(true).setFlexGrow(0);
-        Column<Item> partnoCol = grid.addColumn(Item::getPartno)
+        grid.addColumn(Item::getPartno)
                 .setHeader("Part No")
                 .setKey("partno")
                 .setSortable(true)
                 .setAutoWidth(true)
                 .setResizable(true).setFlexGrow(0);
-        Column<Item> nameCol = grid.addColumn(item -> trim(item.getNameRus(), 75))
+        grid.addColumn(Item::getNameRus)
                 .setHeader("Name RUS")
                 .setSortable(true)
                 .setResizable(true).setFlexGrow(1);
-//        grid.addColumn(item -> trim(item.getNameEng(), 75)).setHeader("Name ENG").setSortable(true).setFlexGrow(1);
         grid.addColumn(i -> currencyFormatService.formatMoney(
                 i.getSellingPrice() == null ? Money.of(0, "EUR") : i.getSellingPrice()))
                 .setHeader("Selling price").setSortable(true)
@@ -119,59 +163,30 @@ public class InventoryView extends VerticalLayout {
                 .setAutoWidth(true)
                 .setResizable(true).setFlexGrow(0);
         grid.addComponentColumn(i -> i.isOverridden() ? getIcon(true) : getIcon(false))
-                .setHeader("Override")
-                .setSortable(true)
                 .setAutoWidth(true).setFlexGrow(0);
 
-        HeaderRow filterRow = grid.appendHeaderRow();
-        TextField brandFil = new TextField();
-        brandFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
-        brandFil.setWidth("5em");
-        brandFil.setClearButtonVisible(true);
-        brandFil.addValueChangeListener(event -> dataProvider.addFilter(
-                item -> StringUtils.containsIgnoreCase(item.getBrand(), brandFil.getValue())));
-        brandFil.setValueChangeMode(ValueChangeMode.EAGER);
-
-        TextField partnoFil = new TextField();
-        partnoFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
-        partnoFil.setWidth("5em");
-        partnoFil.setClearButtonVisible(true);
-        partnoFil.addValueChangeListener(event -> dataProvider.addFilter(
-                item -> StringUtils.containsIgnoreCase(item.getPartno(), partnoFil.getValue())));
-        partnoFil.setValueChangeMode(ValueChangeMode.EAGER);
-
-        TextField nameFil = new TextField();
-        nameFil.addThemeVariants(TextFieldVariant.LUMO_SMALL);
-        nameFil.setWidth("15em");
-        nameFil.setClearButtonVisible(true);
-        nameFil.addValueChangeListener(event -> dataProvider.addFilter(
-                item -> StringUtils.containsIgnoreCase(item.getNameRus(), nameFil.getValue())));
-        nameFil.setValueChangeMode(ValueChangeMode.EAGER);
-
-        filterRow.getCell(brandCol).setComponent(brandFil);
-        filterRow.getCell(partnoCol).setComponent(partnoFil);
-        filterRow.getCell(nameCol).setComponent(nameFil);
-
         grid.asSingleSelect().addValueChangeListener(event -> editItem(event.getValue()));
-        grid.setPageSize(10);
         grid.setPaginatorSize(5);
-        grid.getStyle().set("font-size", "12px");
         return grid;
     }
 
-    private String trim(String str, int limit) {
-        return str.length() > limit ? str.substring(0, limit) + "[...]" : str;
-    }
-
-    private Icon getIcon(boolean boo) {
-        String size = "15px";
-        Icon i = boo ? VaadinIcon.CHECK_SQUARE_O.create() : VaadinIcon.THIN_SQUARE.create();
-        i.setSize(size);
+    private static Icon getIcon(boolean boo) {
+        Icon i;
+        if (boo) {
+            i = VaadinIcon.CIRCLE.create();
+            i.setSize("10px");
+            i.getElement().setAttribute("title", "Overridden price");
+        } else {
+            i = VaadinIcon.CIRCLE_THIN.create();
+            i.setSize("10px");
+            i.getElement().setAttribute("title", "Calculated price");
+        }
         return i;
     }
 
     private Button createNewItem() {
         Button newItemBtn = new Button("Create new item");
+        newItemBtn.getElement().setAttribute("tile", "Create new item");
         newItemBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         newItemBtn.addClickListener(c -> {
             grid.asSingleSelect().clear();
@@ -184,15 +199,6 @@ public class InventoryView extends VerticalLayout {
             dialog.open();
         });
         return newItemBtn;
-    }
-
-    private ComboBox<Integer> gridLengthSelector() {
-        ComboBox<Integer> box = new ComboBox<>("# items");
-        box.setItems(5, 10, 15, 20, 25, 30, 50, 100);
-        box.addValueChangeListener(l -> grid.setPageSize(l.getValue()));
-        box.setValue(10);
-        box.setWidth("5em");
-        return box;
     }
 
     private void editItem(Item value) {
@@ -227,5 +233,9 @@ public class InventoryView extends VerticalLayout {
         httpService.deleteItem(event.getEventItem().getId());
         updateList();
         closeDialog();
+    }
+
+    private List<String> getDistinctBrands() {
+        return data.stream().map(Item::getBrand).distinct().sorted().collect(Collectors.toList());
     }
 }
