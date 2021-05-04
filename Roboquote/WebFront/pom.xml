@@ -33,7 +33,11 @@
             <artifactId>grid-pagination</artifactId>
             <version>2.0.10</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.vaadin.componentfactory</groupId>
+            <artifactId>togglebutton</artifactId>
+            <version>1.0.1</version>
+        </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
