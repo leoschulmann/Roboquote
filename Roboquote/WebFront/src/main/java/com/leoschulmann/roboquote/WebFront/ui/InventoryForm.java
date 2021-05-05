@@ -5,12 +5,12 @@ import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
 import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -46,12 +46,11 @@ public class InventoryForm extends FormLayout {
     private final TextArea nameRusField = new TextArea("Name (rus)");
     private final TextArea nameEngField = new TextArea("Name (eng)");
     private final NumberField buyingAmountField = new NumberField("Buying price");
-    private final ComboBox<String> buyingCurrencyCombo = getBuyingCurrencyComboBox();
     private final NumberField marginField = new NumberField("Selling margin, %");
-
     private final NumberField sellingAmountField = new NumberField("Override selling price");
-    private final ComboBox<String> sellingCurrencyCombo = getSellingCurrencyComboBox();
-    private Checkbox overrideSellPriceCheckbox = createCheckbox();
+    private final ComboBox<String> currencyComboBox = createBuyingCurrencyComboBox();
+    private final ToggleButton overrideToggle;
+
     private Button saveBtn;
     private Button deleteBtn;
     private Registration saveButtonListener;
@@ -59,19 +58,13 @@ public class InventoryForm extends FormLayout {
     private final Binder<Item> itemBinder = new Binder<>(Item.class);
 
     public InventoryForm() {
-        setResponsiveSteps(
-                new ResponsiveStep("25em", 1),
-                new ResponsiveStep("32em", 2),
-                new ResponsiveStep("40em", 3));
-
-
-        add(idField, createdField, modifiedField);
-        add(brandField, partNoField);
-        add(nameRusField, 3);
-        add(nameEngField, 3);
-        add(buyingAmountField, buyingCurrencyCombo, marginField);
-        add(sellingAmountField, sellingCurrencyCombo, overrideSellPriceCheckbox);
-        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), createCloseButton()), 2);
+        buyingAmountField.setValue(0.);
+        sellingAmountField.setValue(0.);
+        sellingAmountField.setEnabled(false);
+        marginField.setValue(0.);
+        buyingAmountField.addValueChangeListener(e -> writeToSellingField());
+        marginField.addValueChangeListener(e -> writeToSellingField());
+        overrideToggle = createToggle();
 
         nameRusField.setMaxHeight("200px");
         nameEngField.setMaxHeight("200px");
@@ -79,6 +72,20 @@ public class InventoryForm extends FormLayout {
         idField.setEnabled(false);
         createdField.setEnabled(false);
         modifiedField.setEnabled(false);
+
+        setResponsiveSteps(
+                new ResponsiveStep("25em", 1),
+                new ResponsiveStep("32em", 2),
+                new ResponsiveStep("40em", 3));
+
+        add(idField, createdField, modifiedField);
+        add(brandField, partNoField);
+        add(nameRusField, 3);
+        add(nameEngField, 3);
+        add(buyingAmountField, marginField, currencyComboBox);
+        add(sellingAmountField, overrideToggle);
+        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), createCloseButton()), 2);
+
 
         prepBinder();
         itemBinder.bindInstanceFields(this);
@@ -92,12 +99,8 @@ public class InventoryForm extends FormLayout {
         return saveBtn;
     }
 
-    private ComboBox<String> getBuyingCurrencyComboBox() {
+    private ComboBox<String> createBuyingCurrencyComboBox() {
         return new ComboBox<>("Currency", List.of("EUR", "USD", "RUB", "JPY"));
-    }
-
-    private ComboBox<String> getSellingCurrencyComboBox() {
-        return new ComboBox<>("Override selling currency", List.of("EUR", "USD", "RUB", "JPY"));
     }
 
     private Component createDeleteButton() {
@@ -131,19 +134,22 @@ public class InventoryForm extends FormLayout {
         return b;
     }
 
-    private Checkbox createCheckbox() {
-        overrideSellPriceCheckbox = new Checkbox("Override selling price");
-        overrideSellPriceCheckbox.setValue(true);
+    private ToggleButton createToggle() {
+        ToggleButton toggle = new ToggleButton();
+        toggle.getElement().setAttribute("title", "Override selling price");
+        toggle.addValueChangeListener(event -> {
+            if (event.getValue()) {
+                buyingAmountField.setValue(0.);
+            } else {
+                sellingAmountField.setValue(0.);
+            }
 
-        overrideSellPriceCheckbox.addValueChangeListener(event -> {
             sellingAmountField.setEnabled(event.getValue());
-            sellingCurrencyCombo.setEnabled(event.getValue());
-            buyingCurrencyCombo.setEnabled(!event.getValue());
             buyingAmountField.setEnabled(!event.getValue());
             marginField.setEnabled(!event.getValue());
         });
-
-        return overrideSellPriceCheckbox;
+        toggle.setValue(false);
+        return toggle;
     }
 
     private void prepBinder() {
@@ -154,7 +160,8 @@ public class InventoryForm extends FormLayout {
         itemBinder.forField(partNoField).asRequired().bind(Item::getPartno, Item::setPartno);
         itemBinder.forField(nameRusField).asRequired().bind(Item::getNameRus, Item::setNameRus);
         itemBinder.forField(nameEngField).asRequired().bind(Item::getNameEng, Item::setNameEng);
-        itemBinder.forField(marginField).asRequired().bind(Item::getMargin, Item::setMargin);
+        itemBinder.forField(marginField).withValidator(v -> v >= 0 && v <= 99, "Bad margin value")
+                .asRequired().bind(Item::getMargin, Item::setMargin);
 
         itemBinder.forField(buyingAmountField).asRequired().bind(
                 item -> {
@@ -169,21 +176,21 @@ public class InventoryForm extends FormLayout {
                 }
         );
 
-        itemBinder.forField(buyingCurrencyCombo).bind(
-                item -> {
-                    if (item.getBuyingPrice() != null) {
-                        return item.getBuyingPrice().getCurrency().getCurrencyCode();
-                    } else return null;
-                },
+        itemBinder.forField(currencyComboBox).bind(
+                item -> item.getSellingPrice().getCurrency().getCurrencyCode(),
                 (item, cur) -> {
-                    if (item.getBuyingPrice() != null) {
-                        NumberValue nv = item.getBuyingPrice().getNumber();
-                        item.setBuyingPrice(Money.of(nv, cur));
-                    } else item.setBuyingPrice(Money.of(BigDecimal.ZERO, cur));
+                    NumberValue buyingAmt = item.getBuyingPrice().getNumber();
+                    NumberValue sellingAmt = item.getSellingPrice().getNumber();
+
+                    Money buyingMoney = Money.of(buyingAmt, cur);
+                    Money sellingMoney = Money.of(sellingAmt, cur);
+
+                    item.setBuyingPrice(buyingMoney);
+                    item.setSellingPrice(sellingMoney);
                 }
         );
 
-        itemBinder.forField(overrideSellPriceCheckbox).bind(Item::isOverridden, Item::setOverridden);
+        itemBinder.forField(overrideToggle).bind(Item::isOverridden, Item::setOverridden);
 
         itemBinder.forField(sellingAmountField).asRequired().bind(
                 item -> {
@@ -196,20 +203,6 @@ public class InventoryForm extends FormLayout {
                         String cur = item.getSellingPrice().getCurrency().getCurrencyCode();
                         item.setSellingPrice(Money.of(aDouble, cur));
                     } else item.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
-                }
-        );
-
-        itemBinder.forField(sellingCurrencyCombo).bind(
-                item -> {
-                    if (item.isOverridden()) {
-                        return item.getSellingPrice().getCurrency().getCurrencyCode();
-                    } else return "EUR";
-                },
-                (item, cur) -> {
-                    if (item.isOverridden()) {
-                        NumberValue nv = item.getSellingPrice().getNumber();
-                        item.setSellingPrice(Money.of(nv, cur));
-                    } else item.setSellingPrice(Money.of(BigDecimal.ZERO, cur));
                 }
         );
     }
@@ -261,5 +254,11 @@ public class InventoryForm extends FormLayout {
         vl.add(new Span("Please fill marked fields"));
         vl.setAlignItems(FlexComponent.Alignment.CENTER);
         new Dialog(vl).open();
+    }
+
+    private void writeToSellingField() {
+        if (!overrideToggle.getValue()) {
+            sellingAmountField.setValue(buyingAmountField.getValue() / ((100 - marginField.getValue()) / 100.));
+        }
     }
 }

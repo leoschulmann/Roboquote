@@ -76,6 +76,11 @@ public class QuotesView extends VerticalLayout {
 
     private HorizontalLayout createControlFrame() {
         ToggleButton cancelledToggle = createCancelledQuotesToggle();
+
+        Button newQuoteBtn = new Button("Create new quote");
+        newQuoteBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        newQuoteBtn.addClickListener(c -> newQuoteBtn.getUI().ifPresent(ui -> ui.navigate("new")));
+
         customersCombo = new ComboBox<>();
         customersCombo.setItems(getDistinctCustomers());
         customersCombo.setPlaceholder("Customer");
@@ -111,7 +116,7 @@ public class QuotesView extends VerticalLayout {
 
         ZoomButtons zoomButtons = new ZoomButtons(grid);
 
-        HorizontalLayout layout = new HorizontalLayout(cancelledToggle, customersCombo, dealerCombo, sizeCombo,
+        HorizontalLayout layout = new HorizontalLayout(cancelledToggle, newQuoteBtn, customersCombo, dealerCombo, sizeCombo,
                 zoomButtons.getZoomOut(), zoomButtons.getZoomIn());
         layout.getStyle().set("margin-left", "auto");
         layout.setAlignItems(Alignment.CENTER);

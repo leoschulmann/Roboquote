@@ -24,16 +24,14 @@ public class MainLayout extends AppLayout {
         header.addClassName("header");
         addToNavbar(header);
 
-        RouterLink linkToNew = new RouterLink("New Quote", NewQuote.class);
         RouterLink linkToInventory = new RouterLink("Inventory", InventoryView.class);
         RouterLink linkToQuotes = new RouterLink("Quotes", QuotesView.class);
         RouterLink linkToBundlesEditor = new RouterLink("Bundles", BundlesView.class);
         RouterLink linkToInvite = new RouterLink("Invite user", RegisterUser.class);
-        linkToNew.setHighlightCondition(HighlightConditions.sameLocation());
         linkToInventory.setHighlightCondition(HighlightConditions.sameLocation());
         linkToQuotes.setHighlightCondition(HighlightConditions.sameLocation());
         linkToBundlesEditor.setHighlightCondition(HighlightConditions.sameLocation());
         linkToInvite.setHighlightCondition(HighlightConditions.sameLocation());
-        addToDrawer(new VerticalLayout(linkToNew, linkToInventory, linkToQuotes, linkToBundlesEditor, linkToInvite));
+        addToDrawer(new VerticalLayout(linkToQuotes, linkToInventory, linkToBundlesEditor, linkToInvite));
     }
 }
