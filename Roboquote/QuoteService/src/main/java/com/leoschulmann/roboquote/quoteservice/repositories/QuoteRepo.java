@@ -53,4 +53,13 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
 
     @Query("select distinct q.warranty as warranty from Quote q")
     List<WarrantyProjection> getDistinctWarranties();
+
+
+    @Query("select qs.quote.created.id as id, qs.quote.created.created as createdDate, " +
+            "qs.quote.created.createdTimestamp as createdDateTime, qs.quote.created.number as serialNumber, " +
+            "qs.quote.created.version as version, qs.quote.created.customer as customer, " +
+            "qs.quote.created.dealer as dealer, qs.quote.created.finalPrice as finalPrice, " +
+            "qs.quote.created.comment as comment, qs.quote.created.cancelled as cancelled " +
+            "from ItemPosition ip inner join ip.section qs where ip.itemId = :id")
+    List<QuoteWithoutSections> getAllQuoteProjectionsForItemId(int id);
 }

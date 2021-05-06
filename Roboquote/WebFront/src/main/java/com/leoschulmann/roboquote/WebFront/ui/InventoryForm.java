@@ -1,9 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.Component;
@@ -53,6 +50,8 @@ public class InventoryForm extends FormLayout {
 
     private Button saveBtn;
     private Button deleteBtn;
+
+    private final Button usageButton;
     private Registration saveButtonListener;
 
     private final Binder<Item> itemBinder = new Binder<>(Item.class);
@@ -73,6 +72,10 @@ public class InventoryForm extends FormLayout {
         createdField.setEnabled(false);
         modifiedField.setEnabled(false);
 
+        usageButton = new Button("Check usage");
+        usageButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        usageButton.addClickListener(e -> fireEvent(new InvetoryUsageClickedEvent(this, idField.getValue())));
+
         setResponsiveSteps(
                 new ResponsiveStep("25em", 1),
                 new ResponsiveStep("32em", 2),
@@ -84,14 +87,14 @@ public class InventoryForm extends FormLayout {
         add(nameEngField, 3);
         add(buyingAmountField, marginField, currencyComboBox);
         add(sellingAmountField, overrideToggle);
-        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), createCloseButton()), 2);
+        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), usageButton, createCloseButton()), 2);
 
 
         prepBinder();
         itemBinder.bindInstanceFields(this);
     }
 
-    private Component createSaveButton() {
+    private Button createSaveButton() {
         saveBtn = new Button();
         saveBtn.setText("You shouldn't see this");
         saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -240,7 +243,7 @@ public class InventoryForm extends FormLayout {
                     }
                 }
         );
-
+        usageButton.setEnabled(edit);
         saveBtn.setText(edit ? "Update" : "Create");
         deleteBtn.setEnabled(edit);
 

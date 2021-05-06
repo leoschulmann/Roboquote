@@ -3,11 +3,9 @@ package com.leoschulmann.roboquote.WebFront.ui;
 import com.leoschulmann.roboquote.WebFront.components.CachingService;
 import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
 import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
-import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ItemUsageDialog;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.componentfactory.ToggleButton;
@@ -15,6 +13,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -66,7 +65,7 @@ public class InventoryView extends VerticalLayout {
         form.addListener(InventoryDeleteItemEvent.class, this::delete);
         form.addListener(InventoryUpdateItemEvent.class, this::update);
         form.addListener(InventoryCreateItemEvent.class, this::create);
-
+        form.addListener(InvetoryUsageClickedEvent.class, e -> showUsageDialog(e.getItemId()));
         add(createTopControls(), grid);
     }
 
@@ -233,6 +232,18 @@ public class InventoryView extends VerticalLayout {
         httpService.deleteItem(event.getEventItem().getId());
         updateList();
         closeDialog();
+    }
+
+    private void showUsageDialog(int itemId) {
+        ItemUsageDialog d = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
+        d.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
+        d.setWidth("80%");
+        d.open();
+    }
+
+    private void openQuoteViewer(int id) {
+        Dialog dialog = new Dialog(new Span(String.valueOf(id)));  //todo implement stub
+        dialog.open();
     }
 
     private List<String> getDistinctBrands() {

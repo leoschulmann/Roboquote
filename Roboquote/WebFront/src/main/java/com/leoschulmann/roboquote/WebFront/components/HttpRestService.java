@@ -260,4 +260,12 @@ public class HttpRestService {
                 .body(String.valueOf(cancel));
         restTemplate.exchange(request, String.class);
     }
+
+    public List<Quote> findAllQuotesForItemId(int itemId) {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "foritem/" + itemId)).
+                headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
+        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
+        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+    }
 }
