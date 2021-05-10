@@ -60,4 +60,10 @@ public class QuoteController {
     public ResponseEntity<DistinctTermsDto> getDistinctTerms() {
         return new ResponseEntity<>(quoteService.getDistinctQuoteTerms(), HttpStatus.OK);
     }
+
+    @GetMapping("/foritem/{id}")
+    public ResponseEntity<List<QuoteDto>> findAllForItemId(@PathVariable int id) {
+        List<QuoteDto> quotes = quoteService.findAllForItemId(id);
+        return new ResponseEntity<>(quotes, HttpStatus.OK);
+    }
 }

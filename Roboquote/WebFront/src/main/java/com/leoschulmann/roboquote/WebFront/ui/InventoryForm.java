@@ -1,12 +1,8 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.events.InventoryCreateItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryDeleteItemEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryFormCloseEvent;
-import com.leoschulmann.roboquote.WebFront.events.InventoryUpdateItemEvent;
+import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.componentfactory.ToggleButton;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
@@ -15,19 +11,17 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.BinderValidationStatus;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.ValidationResult;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
 
@@ -35,121 +29,124 @@ import javax.money.NumberValue;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class InventoryForm extends FormLayout {
+public class InventoryForm extends Dialog implements AfterNavigationObserver {
     private Item item;
-    private final IntegerField idField = new IntegerField("id");
-    private final DatePicker createdField = new DatePicker("Created on");
-    private final DatePicker modifiedField = new DatePicker("Modified on");
-    private final TextField brandField = new TextField("Brand");
-    private final TextField partNoField = new TextField("Part No");
-    private final TextArea nameRusField = new TextArea("Name (rus)");
-    private final TextArea nameEngField = new TextArea("Name (eng)");
-    private final NumberField buyingAmountField = new NumberField("Buying price");
-    private final NumberField marginField = new NumberField("Selling margin, %");
-    private final NumberField sellingAmountField = new NumberField("Override selling price");
-    private final ComboBox<String> currencyComboBox = createBuyingCurrencyComboBox();
+    private final IntegerField idField;
+    private final DatePicker createdField;
+    private final DatePicker modifiedField;
+    private final TextField brandField;
+    private final TextField partNoField;
+    private final TextArea nameRusField;
+    private final TextArea nameEngField;
+    private final NumberField buyingAmountField;
+    private final NumberField sellingMarginField;
+    private final NumberField overrideSellingAmountField;
+    private final ComboBox<String> currencyComboBox;
     private final ToggleButton overrideToggle;
 
-    private Button saveBtn;
-    private Button deleteBtn;
+    private final Button saveBtn;
+    private final Button deleteBtn;
+    private final Button usageButton;
     private Registration saveButtonListener;
 
-    private final Binder<Item> itemBinder = new Binder<>(Item.class);
+    private final Binder<Item> itemBinder;
 
     public InventoryForm() {
-        buyingAmountField.setValue(0.);
-        sellingAmountField.setValue(0.);
-        sellingAmountField.setEnabled(false);
-        marginField.setValue(0.);
-        buyingAmountField.addValueChangeListener(e -> writeToSellingField());
-        marginField.addValueChangeListener(e -> writeToSellingField());
-        overrideToggle = createToggle();
-
-        nameRusField.setMaxHeight("200px");
-        nameEngField.setMaxHeight("200px");
-
+        idField = new IntegerField("id");
         idField.setEnabled(false);
+
+        createdField = new DatePicker("Created on");
         createdField.setEnabled(false);
+
+        modifiedField = new DatePicker("Modified on");
         modifiedField.setEnabled(false);
 
-        setResponsiveSteps(
-                new ResponsiveStep("25em", 1),
-                new ResponsiveStep("32em", 2),
-                new ResponsiveStep("40em", 3));
+        brandField = new TextField("Brand");
+        partNoField = new TextField("Part No");
 
-        add(idField, createdField, modifiedField);
-        add(brandField, partNoField);
-        add(nameRusField, 3);
-        add(nameEngField, 3);
-        add(buyingAmountField, marginField, currencyComboBox);
-        add(sellingAmountField, overrideToggle);
-        add(new HorizontalLayout(createSaveButton(), createDeleteButton(), createCloseButton()), 2);
+        nameRusField = new TextArea("Name (rus)");
+        nameRusField.setMaxHeight("200px");
 
+        nameEngField = new TextArea("Name (eng)");
+        nameEngField.setMaxHeight("200px");
 
-        prepBinder();
-        itemBinder.bindInstanceFields(this);
-    }
+        buyingAmountField = new NumberField("Buying price");
+        buyingAmountField.setValue(0.);
 
-    private Component createSaveButton() {
+        sellingMarginField = new NumberField("Selling margin, %");
+        sellingMarginField.setValue(0.);
+
+        currencyComboBox = new ComboBox<>("Currency", List.of("EUR", "USD", "RUB", "JPY"));
+
+        overrideSellingAmountField = new NumberField("Override selling price");
+        overrideSellingAmountField.setValue(0.);
+        overrideSellingAmountField.setEnabled(false);
+
+        overrideToggle = new ToggleButton();
+        overrideToggle.getElement().setAttribute("title", "Override selling price");
+
         saveBtn = new Button();
-        saveBtn.setText("You shouldn't see this");
         saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        return saveBtn;
-    }
 
-    private ComboBox<String> createBuyingCurrencyComboBox() {
-        return new ComboBox<>("Currency", List.of("EUR", "USD", "RUB", "JPY"));
-    }
-
-    private Component createDeleteButton() {
         deleteBtn = new Button("Delete");
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        Div text = new Div(new Span("Delete item?"));
-        Button ok = new Button("Confirm");
-        ok.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Button cancel = new Button("Cancel");
-        Dialog confirmDialog = new Dialog(text, new HorizontalLayout(ok, cancel));
-        confirmDialog.setDraggable(true);
-        confirmDialog.setModal(true);
-        confirmDialog.setResizable(false);
+        usageButton = new Button("Check usage");
+        usageButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        deleteBtn.addClickListener(event -> confirmDialog.open());
-        cancel.addClickListener(event -> confirmDialog.close());
-        ok.addClickListener(event -> {
-            confirmDialog.close();
-            fireEvent(new InventoryDeleteItemEvent(this, item));
+        itemBinder = new Binder<>(Item.class);
+
+        FormLayout layout = new FormLayout();
+        layout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("25em", 1),
+                new FormLayout.ResponsiveStep("32em", 2),
+                new FormLayout.ResponsiveStep("40em", 3));
+
+        layout.add(idField, createdField, modifiedField);
+        layout.add(brandField, partNoField);
+        layout.add(nameRusField, 3);
+        layout.add(nameEngField, 3);
+        layout.add(buyingAmountField, sellingMarginField, currencyComboBox);
+        layout.add(overrideSellingAmountField, overrideToggle);
+        layout.add(new HorizontalLayout(saveBtn, deleteBtn, usageButton), 2);
+        add(layout);
+
+        buyingAmountField.addValueChangeListener(e -> {
+            if (!overrideToggle.getValue()) {
+                writeToSellingField();
+            }
         });
-        return deleteBtn;
-    }
+        sellingMarginField.addValueChangeListener(e -> {
+            if (!overrideToggle.getValue()) {
+                writeToSellingField();
+            }
+        });
 
-    private Component createCloseButton() {
-        Button b = new Button("Close");
-        b.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-        b.addClickListener(event -> fireEvent(new InventoryFormCloseEvent(this, false)));
-        return b;
-    }
+        deleteBtn.addClickListener(c -> {
+            ConfirmDialog dialog = new ConfirmDialog("Delete item?");
+            dialog.addListener(DialogConfirmed.class, e -> fireEvent(new InventoryDeleteItemEvent(this, item)));
+            dialog.open();
+        });
 
-    private ToggleButton createToggle() {
-        ToggleButton toggle = new ToggleButton();
-        toggle.getElement().setAttribute("title", "Override selling price");
-        toggle.addValueChangeListener(event -> {
+        overrideToggle.addValueChangeListener(event -> {
             if (event.getValue()) {
                 buyingAmountField.setValue(0.);
+                sellingMarginField.setValue(0.);
             } else {
-                sellingAmountField.setValue(0.);
+                overrideSellingAmountField.setValue(0.);
             }
-
-            sellingAmountField.setEnabled(event.getValue());
+            overrideSellingAmountField.setEnabled(event.getValue());
             buyingAmountField.setEnabled(!event.getValue());
-            marginField.setEnabled(!event.getValue());
+            sellingMarginField.setEnabled(!event.getValue());
         });
-        toggle.setValue(false);
-        return toggle;
+
+        usageButton.addClickListener(e -> fireEvent(new InvetoryUsageClickedEvent(this, idField.getValue())));
+
+        prepBinder();
     }
 
     private void prepBinder() {
@@ -160,7 +157,7 @@ public class InventoryForm extends FormLayout {
         itemBinder.forField(partNoField).asRequired().bind(Item::getPartno, Item::setPartno);
         itemBinder.forField(nameRusField).asRequired().bind(Item::getNameRus, Item::setNameRus);
         itemBinder.forField(nameEngField).asRequired().bind(Item::getNameEng, Item::setNameEng);
-        itemBinder.forField(marginField).withValidator(v -> v >= 0 && v <= 99, "Bad margin value")
+        itemBinder.forField(sellingMarginField).withValidator(v -> v >= 0 && v <= 99, "Bad margin value")
                 .asRequired().bind(Item::getMargin, Item::setMargin);
 
         itemBinder.forField(buyingAmountField).asRequired().bind(
@@ -192,7 +189,7 @@ public class InventoryForm extends FormLayout {
 
         itemBinder.forField(overrideToggle).bind(Item::isOverridden, Item::setOverridden);
 
-        itemBinder.forField(sellingAmountField).asRequired().bind(
+        itemBinder.forField(overrideSellingAmountField).asRequired().bind(
                 item -> {
                     if (item.isOverridden())
                         return item.getSellingPrice().getNumber().doubleValueExact();
@@ -207,9 +204,47 @@ public class InventoryForm extends FormLayout {
         );
     }
 
-    public void setItem(Item item) {
+    public void setUp(Item item, boolean editMode) {
+        mode(editMode);
+        setItem(item);
+    }
+
+    private void setItem(Item item) {
         this.item = item;
         itemBinder.readBean(item);
+    }
+
+    private void mode(boolean edit) {
+        if (saveButtonListener != null) saveButtonListener.remove();
+        saveButtonListener = saveBtn.addClickListener(click -> handleSaveUpdateClick(edit));
+        usageButton.setEnabled(edit);
+        saveBtn.setText(edit ? "Update" : "Create");
+        deleteBtn.setEnabled(edit);
+    }
+
+    private void handleSaveUpdateClick(boolean edit) {
+        BinderValidationStatus<Item> validationStatus = itemBinder.validate();
+        if (validationStatus.isOk()) {
+            try {
+                itemBinder.writeBean(item);
+            } catch (ValidationException e) {
+                new ErrorDialog("Internal Error").open();
+                e.printStackTrace();
+            }
+            item.setModified(LocalDate.now());
+            if (!edit) item.setCreated(LocalDate.now());
+
+            fireEvent(edit ? new InventoryUpdateItemEvent(this, item) : new InventoryCreateItemEvent(this, item));
+        } else {
+            List<String> errors = validationStatus.getValidationErrors().stream()
+                    .map(ValidationResult::getErrorMessage).collect(Collectors.toList());
+
+            new ErrorDialog(errors).open();
+        }
+    }
+
+    private void writeToSellingField() {
+        overrideSellingAmountField.setValue(buyingAmountField.getValue() / ((100 - sellingMarginField.getValue()) / 100.));
     }
 
     public <T extends ComponentEvent<?>> Registration addListener
@@ -217,48 +252,8 @@ public class InventoryForm extends FormLayout {
         return getEventBus().addListener(eventType, listener);
     }
 
-    public void mode(boolean edit) {
-        if (saveButtonListener != null) saveButtonListener.remove();
-        if (edit) saveButtonListener = saveBtn.addClickListener(click -> {
-                    try {
-                        itemBinder.writeBean(item);
-                        item.setModified(LocalDate.now());
-                        fireEvent(new InventoryUpdateItemEvent(this, item));
-                    } catch (ValidationException e) {
-                        showValidationErrorDialog();
-                    }
-                }
-        );
-        else saveButtonListener = saveBtn.addClickListener(click -> {
-                    try {
-                        itemBinder.writeBean(item);
-                        item.setCreated(LocalDate.now());
-                        item.setModified(LocalDate.now());
-                        fireEvent(new InventoryCreateItemEvent(this, item));
-                    } catch (ValidationException e) {
-                        showValidationErrorDialog();
-                    }
-                }
-        );
-
-        saveBtn.setText(edit ? "Update" : "Create");
-        deleteBtn.setEnabled(edit);
-
-    }
-
-    private void showValidationErrorDialog() {
-        Icon i = VaadinIcon.WARNING.create();
-        i.setColor("Red");
-        i.setSize("50px");
-        VerticalLayout vl = new VerticalLayout(i);
-        vl.add(new Span("Please fill marked fields"));
-        vl.setAlignItems(FlexComponent.Alignment.CENTER);
-        new Dialog(vl).open();
-    }
-
-    private void writeToSellingField() {
-        if (!overrideToggle.getValue()) {
-            sellingAmountField.setValue(buyingAmountField.getValue() / ((100 - marginField.getValue()) / 100.));
-        }
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        this.close();
     }
 }

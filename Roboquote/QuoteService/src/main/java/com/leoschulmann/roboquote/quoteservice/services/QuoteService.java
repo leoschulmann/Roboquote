@@ -78,4 +78,9 @@ public class QuoteService {
 
         return new DistinctTermsDto(installations, payments, shippings, warranties);
     }
+
+    public List<QuoteDto> findAllForItemId(int id) {
+        List<QuoteWithoutSections> projections = quoteRepo.getAllQuoteProjectionsForItemId(id);
+        return projections.stream().map(dtoService::convertProjectionToDto).collect(Collectors.toList());
+    }
 }
