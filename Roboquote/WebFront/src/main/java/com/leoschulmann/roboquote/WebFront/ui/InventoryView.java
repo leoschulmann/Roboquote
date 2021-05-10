@@ -8,6 +8,7 @@ import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ItemUsageDialog;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -164,7 +165,9 @@ public class InventoryView extends VerticalLayout {
         grid.addComponentColumn(i -> i.isOverridden() ? getIcon(true) : getIcon(false))
                 .setAutoWidth(true).setFlexGrow(0);
 
-        grid.asSingleSelect().addValueChangeListener(event -> editItem(event.getValue()));
+        grid.asSingleSelect().addValueChangeListener(event -> {
+            if (event.getValue() != null) editItem(event.getValue());
+        });
         grid.setPaginatorSize(5);
         return grid;
     }
@@ -191,18 +194,17 @@ public class InventoryView extends VerticalLayout {
             grid.asSingleSelect().clear();
             Item i = new Item();
             i.setOverridden(false);
+            i.setMargin(0.);
             i.setBuyingPrice(Money.of(BigDecimal.ZERO, "EUR"));
             i.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
-            form.mode(false);
-            form.setItem(i);
+            form.setUp(i, false);
             dialog.open();
         });
         return newItemBtn;
     }
 
     private void editItem(Item value) {
-        form.mode(true);
-        form.setItem(value);
+        form.setUp(value, true);
         dialog.open();
     }
 
@@ -210,6 +212,7 @@ public class InventoryView extends VerticalLayout {
         cachingService.updateItemCache();
         data.clear();
         data.addAll(cachingService.getItemsFromCache());
+        dataProvider.refreshAll();
     }
 
     private void closeDialog() {
@@ -235,10 +238,17 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void showUsageDialog(int itemId) {
-        ItemUsageDialog d = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
-        d.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
-        d.setWidth("80%");
-        d.open();
+        List<Quote> quotes = httpService.findAllQuotesForItemId(itemId);
+        if (quotes.size() == 0) {
+            ErrorDialog dialog = new ErrorDialog(List.of("No usage found"));
+            dialog.open();
+
+        } else {
+            ItemUsageDialog d = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
+            d.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
+            d.setWidth("80%");
+            d.open();
+        }
     }
 
     private void openQuoteViewer(int id) {

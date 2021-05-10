@@ -265,7 +265,7 @@ public class HttpRestService {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "foritem/" + itemId)).
                 headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
         QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
-        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
+        if (arr == null) throw new RuntimeException("work in progress!"); //todo replace stub
         return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
     }
 }
