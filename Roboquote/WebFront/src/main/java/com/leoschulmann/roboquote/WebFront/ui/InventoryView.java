@@ -1,11 +1,10 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
-import com.leoschulmann.roboquote.WebFront.components.CachingService;
-import com.leoschulmann.roboquote.WebFront.components.CurrencyFormatService;
-import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
+import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ItemUsageDialog;
+import com.leoschulmann.roboquote.WebFront.ui.bits.QuoteViewerWrapper;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
@@ -13,8 +12,6 @@ import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -40,27 +37,35 @@ public class InventoryView extends VerticalLayout {
     private final CachingService cachingService;
     private PaginatedGrid<Item> grid;
     private final InventoryForm form;
-    private final Dialog dialog;
     private final ListDataProvider<Item> dataProvider;
     private final ArrayList<Item> data;
     private final HttpRestService httpService;
+    private final MoneyMathService moneyMathService;
+    private final QuoteService quoteService;
+    private final DownloadService downloadService;
+    private final StringFormattingService stringFormattingService;
+
 
     public InventoryView(
-            HttpRestService httpService,
-            CurrencyFormatService currencyFormatService,
-            CachingService cachingService) {
+            HttpRestService httpService, CurrencyFormatService currencyFormatService,
+            CachingService cachingService, MoneyMathService moneyMathService,
+            QuoteService quoteService, DownloadService downloadService,
+            StringFormattingService stringFormattingService) {
 
         this.httpService = httpService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
+        this.moneyMathService = moneyMathService;
+        this.quoteService = quoteService;
+        this.downloadService = downloadService;
+        this.stringFormattingService = stringFormattingService;
         data = new ArrayList<>();
         data.addAll(cachingService.getItemsFromCache());
         dataProvider = new ListDataProvider<>(data);
         grid = drawGrid();
 
         form = new InventoryForm();
-        dialog = new Dialog(form);
-        dialog.setWidth("66%");
+        form.setWidth("66%");
 
         form.addListener(InventoryFormCloseEvent.class, event -> closeDialog());
         form.addListener(InventoryDeleteItemEvent.class, this::delete);
@@ -198,14 +203,14 @@ public class InventoryView extends VerticalLayout {
             i.setBuyingPrice(Money.of(BigDecimal.ZERO, "EUR"));
             i.setSellingPrice(Money.of(BigDecimal.ZERO, "EUR"));
             form.setUp(i, false);
-            dialog.open();
+            form.open();
         });
         return newItemBtn;
     }
 
     private void editItem(Item value) {
         form.setUp(value, true);
-        dialog.open();
+        form.open();
     }
 
     private void updateList() {
@@ -216,7 +221,7 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void closeDialog() {
-        dialog.close();
+        form.close();
     }
 
     private void create(InventoryCreateItemEvent event) {
@@ -240,23 +245,54 @@ public class InventoryView extends VerticalLayout {
     private void showUsageDialog(int itemId) {
         List<Quote> quotes = httpService.findAllQuotesForItemId(itemId);
         if (quotes.size() == 0) {
-            ErrorDialog dialog = new ErrorDialog(List.of("No usage found"));
-            dialog.open();
+            new ErrorDialog(List.of("No usage found")).open();
 
         } else {
-            ItemUsageDialog d = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
-            d.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
-            d.setWidth("80%");
-            d.open();
+            ItemUsageDialog itemUsageDialog = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
+            itemUsageDialog.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
+            itemUsageDialog.setWidth("80%");
+            itemUsageDialog.open();
         }
-    }
-
-    private void openQuoteViewer(int id) {
-        Dialog dialog = new Dialog(new Span(String.valueOf(id)));  //todo implement stub
-        dialog.open();
     }
 
     private List<String> getDistinctBrands() {
         return data.stream().map(Item::getBrand).distinct().sorted().collect(Collectors.toList());
+    }
+
+    private void openQuoteViewer(int id) {
+        Quote quote = httpService.getQuoteById(id);
+
+        QuoteViewer qv = new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService);
+        QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, downloadService);
+        qViewerDialog.addListener(QuoteViewerCancelClicked.class, e -> handleCancelClick(e.getId(), e.isCancelAction()));
+        qViewerDialog.addListener(QuoteViewerCommentClicked.class, e -> handleCommentClick(e.getId(), e.getComment()));
+        qViewerDialog.addListener(QuoteViewerTemplateClicked.class, e -> handleTemplateClick(e.getQuote()));
+        qViewerDialog.addListener(QuoteViewerNewVersionClicked.class, e -> handleNewVersionClick(e.getQuote()));
+        qViewerDialog.setWidth("80%");
+        qViewerDialog.open();
+    }
+
+    private void handleNewVersionClick(Quote quote) {
+        getUI().ifPresent(ui -> {
+            Quote newVerQuote = quoteService.createNewVersion(quote);
+            ui.getSession().setAttribute(Quote.class, newVerQuote);
+            ui.navigate(NewQuote.class);
+        });
+    }
+
+    private void handleTemplateClick(Quote quote) {
+        getUI().ifPresent(ui -> {
+            Quote templatedQuote = quoteService.createNewFromTemplate(quote);
+            ui.getSession().setAttribute(Quote.class, templatedQuote);
+            ui.navigate(NewQuote.class);
+        });
+    }
+
+    private void handleCancelClick(int id, boolean cancelAction) {
+        httpService.setCancelled(id, cancelAction);
+    }
+
+    private void handleCommentClick(int id, String comment) {
+        httpService.addComment(id, comment);
     }
 }

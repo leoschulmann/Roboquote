@@ -1,7 +1,12 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.*;
+import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCancelClicked;
+import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCommentClicked;
+import com.leoschulmann.roboquote.WebFront.events.QuoteViewerNewVersionClicked;
+import com.leoschulmann.roboquote.WebFront.events.QuoteViewerTemplateClicked;
 import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
+import com.leoschulmann.roboquote.WebFront.ui.bits.QuoteViewerWrapper;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.componentfactory.ToggleButton;
@@ -9,30 +14,20 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
 import org.javamoney.moneta.Money;
 import org.vaadin.klaudeta.PaginatedGrid;
-import org.vaadin.olli.FileDownloadWrapper;
 
-import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.vaadin.flow.component.grid.GridVariant.*;
@@ -184,112 +179,44 @@ public class QuotesView extends VerticalLayout {
 
     private void openQuote(Quote quote) {
         try {
-            Dialog qViewerDialog = new Dialog(
-                    new VerticalLayout(new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService)));
-
-            FileDownloadWrapper downloadXlsxWrapper = createDownloadWrapper(quote.getNumber(), quote.getVersion(), quote.getId());
-            Button asTemplateBtn = createAsTemplateBtn(quote, qViewerDialog);
-            Button appendNewVersionBtn = createNewQuoteVersion(quote.getNumber(), quote.getVersion(), quote, qViewerDialog);
-            Button closeBtn = createCloseBtn(qViewerDialog);
-            Button addCommentBtn = createCommentButton(quote, qViewerDialog);
-            Button cancelBtn = createCancelButton(quote, qViewerDialog);
-            FormLayout responsiveLayout = new FormLayout();
-            responsiveLayout.setResponsiveSteps(
-                    new FormLayout.ResponsiveStep("25em", 1),
-                    new FormLayout.ResponsiveStep("32em", 2),
-                    new FormLayout.ResponsiveStep("40em", 3));
-
-            responsiveLayout.add(asTemplateBtn, appendNewVersionBtn, downloadXlsxWrapper,
-                    addCommentBtn, cancelBtn, closeBtn);
-            qViewerDialog.add(responsiveLayout);
+            QuoteViewer qv = new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService);
+            QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, downloadService);
+            qViewerDialog.addListener(QuoteViewerCancelClicked.class, e -> handleCancelClick(e.getId(), e.isCancelAction()));
+            qViewerDialog.addListener(QuoteViewerCommentClicked.class, e -> handleCommentClick(e.getId(), e.getComment()));
+            qViewerDialog.addListener(QuoteViewerTemplateClicked.class, e -> handleTemplateClick(e.getQuote()));
+            qViewerDialog.addListener(QuoteViewerNewVersionClicked.class, e -> handleNewVersionClick(e.getQuote()));
             qViewerDialog.setWidth("80%");
             qViewerDialog.open();
-        } catch (
-                Exception e) {
-            Icon i = VaadinIcon.WARNING.create();
-            i.setColor("Red");
-            i.setSize("50px");
-            VerticalLayout vl = new VerticalLayout(i, new Span("Something went wrong..."));
-            vl.setAlignItems(Alignment.CENTER);
-            new Dialog(vl).open();
+        } catch (Exception e) {
+            new ErrorDialog("Something went wrong...").open();
             e.printStackTrace();
         }
     }
 
-    private Button createCancelButton(Quote quote, Dialog viewerDialog) {
-        boolean cancelAction = !quote.getCancelled();
-        Button button = new Button();
-        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
-        button.setText(cancelAction ? "Cancel quote" : "Uncancel quote");
-        button.addClickListener(c -> {
-            httpRestService.setCancelled(quote.getId(), cancelAction);
-            updateGrid(grid, showCancelled);
-            viewerDialog.close();
-        });
-        return button;
-    }
-
-    private Button createCommentButton(Quote quote, Dialog qViewerDialog) {
-        Button button = new Button("Add comment");
-        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
-        Dialog dialog = new Dialog();
-
-        TextField textField = new TextField();
-        textField.setWidth("30em");
-        textField.setValue(Objects.requireNonNullElse(quote.getComment(), ""));
-        Button ok = new Button("OK", click -> {
-            httpRestService.addComment(quote.getId(), textField.getValue());
-            updateGrid(grid, showCancelled);
-            qViewerDialog.close();
-            dialog.close();
-        });
-        ok.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
-        VerticalLayout vl = new VerticalLayout(textField, ok);
-        vl.setAlignItems(Alignment.CENTER);
-        dialog.add(vl);
-        button.addClickListener(c -> dialog.open());
-        return button;
-    }
-
-    private FileDownloadWrapper createDownloadWrapper(String serialNumber, Integer version, int id) {
-        Button downloadXlsxBtn = new Button("Download " + serialNumber + "-" + version + ".xlsx");
-        downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        FileDownloadWrapper wrapper = new FileDownloadWrapper(
-                new StreamResource(serialNumber + "-" + version + downloadService.getExtension(),
-                        () -> new ByteArrayInputStream(downloadService.downloadXlsx(id))));
-        downloadXlsxBtn.setWidthFull();
-        wrapper.wrapComponent(downloadXlsxBtn);
-        return wrapper;
-    }
-
-    private Button createAsTemplateBtn(Quote quote, Dialog qViewerDialog) {
-        Button btn = new Button("Use as a template");
-        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClickListener(click -> getUI().ifPresent(ui -> {
-            Quote templatedQuote = quoteService.createNewFromTemplate(quote);
-            ui.getSession().setAttribute(Quote.class, templatedQuote);
-            qViewerDialog.close();
-            ui.navigate(NewQuote.class);
-        }));
-        return btn;
-    }
-
-    private Button createNewQuoteVersion(String serialNumber, Integer version, Quote quote, Dialog qViewerDialog) {
-        Button btn = new Button("Create new version of " + serialNumber + "-" + version);
-        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClickListener(click -> getUI().ifPresent(ui -> {
+    private void handleNewVersionClick(Quote quote) {
+        getUI().ifPresent(ui -> {
             Quote newVerQuote = quoteService.createNewVersion(quote);
             ui.getSession().setAttribute(Quote.class, newVerQuote);
-            qViewerDialog.close();
             ui.navigate(NewQuote.class);
-        }));
-        return btn;
+        });
     }
 
-    private Button createCloseBtn(Dialog qViewerDialog) {
-        Button btn = new Button("Close");
-        btn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
-        btn.addClickListener(click -> qViewerDialog.close());
-        return btn;
+    private void handleTemplateClick(Quote quote) {
+        getUI().ifPresent(ui -> {
+            Quote templatedQuote = quoteService.createNewFromTemplate(quote);
+            ui.getSession().setAttribute(Quote.class, templatedQuote);
+            ui.navigate(NewQuote.class);
+        });
     }
+
+    private void handleCancelClick(int id, boolean cancelAction) {
+        httpRestService.setCancelled(id, cancelAction);
+        updateGrid(grid, showCancelled);
+    }
+
+    private void handleCommentClick(int id, String comment) {
+        httpRestService.addComment(id, comment);
+        updateGrid(grid, showCancelled);
+    }
+
 }

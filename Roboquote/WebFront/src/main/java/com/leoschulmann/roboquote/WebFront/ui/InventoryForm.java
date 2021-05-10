@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -19,6 +20,8 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BinderValidationStatus;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.binder.ValidationResult;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
 
@@ -28,7 +31,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class InventoryForm extends FormLayout {
+public class InventoryForm extends Dialog implements AfterNavigationObserver {
     private Item item;
     private final IntegerField idField;
     private final DatePicker createdField;
@@ -97,19 +100,20 @@ public class InventoryForm extends FormLayout {
 
         itemBinder = new Binder<>(Item.class);
 
-        setResponsiveSteps(
-                new ResponsiveStep("25em", 1),
-                new ResponsiveStep("32em", 2),
-                new ResponsiveStep("40em", 3));
+        FormLayout layout = new FormLayout();
+        layout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("25em", 1),
+                new FormLayout.ResponsiveStep("32em", 2),
+                new FormLayout.ResponsiveStep("40em", 3));
 
-        add(idField, createdField, modifiedField);
-        add(brandField, partNoField);
-        add(nameRusField, 3);
-        add(nameEngField, 3);
-        add(buyingAmountField, sellingMarginField, currencyComboBox);
-        add(overrideSellingAmountField, overrideToggle);
-        add(new HorizontalLayout(saveBtn, deleteBtn, usageButton), 2);
-
+        layout.add(idField, createdField, modifiedField);
+        layout.add(brandField, partNoField);
+        layout.add(nameRusField, 3);
+        layout.add(nameEngField, 3);
+        layout.add(buyingAmountField, sellingMarginField, currencyComboBox);
+        layout.add(overrideSellingAmountField, overrideToggle);
+        layout.add(new HorizontalLayout(saveBtn, deleteBtn, usageButton), 2);
+        add(layout);
 
         buyingAmountField.addValueChangeListener(e -> {
             if (!overrideToggle.getValue()) {
@@ -248,4 +252,8 @@ public class InventoryForm extends FormLayout {
         return getEventBus().addListener(eventType, listener);
     }
 
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        this.close();
+    }
 }

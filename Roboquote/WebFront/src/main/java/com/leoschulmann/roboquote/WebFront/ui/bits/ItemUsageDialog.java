@@ -9,6 +9,8 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.data.provider.SortDirection;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.shared.Registration;
 import org.javamoney.moneta.Money;
 
@@ -16,7 +18,7 @@ import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class ItemUsageDialog extends Dialog {
+public class ItemUsageDialog extends Dialog implements AfterNavigationObserver {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd MMM yy");
 
     public ItemUsageDialog(List<Quote> quotes, CurrencyFormatService currencyFormatService) {
@@ -55,5 +57,10 @@ public class ItemUsageDialog extends Dialog {
     public <T extends ComponentEvent<?>> Registration addListener
             (Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
+    }
+
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        this.close();
     }
 }
