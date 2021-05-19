@@ -56,7 +56,11 @@ public class SectionButtons extends HorizontalLayout {
         });
 
         deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-        deleteBtn.addClickListener(c -> fireEvent(new AccordionDeleteSectionEvent(this)));
+        deleteBtn.addClickListener(c -> {
+            ConfirmDialog dialog = new ConfirmDialog("Delete section?");
+            dialog.addListener(DialogConfirmed.class, e -> fireEvent(new AccordionDeleteSectionEvent(this)));
+            dialog.open();
+        });
 
         moveUpBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
         moveUpBtn.addClickListener(click -> fireEvent(new AccordionMoveUpEvent(this)));
@@ -76,6 +80,7 @@ public class SectionButtons extends HorizontalLayout {
                 .setScale(0, RoundingMode.HALF_UP).subtract(BigDecimal.ONE)));
 
         Button magicDiscountBtn = new Button(VaadinIcon.MAGIC.create());
+        magicDiscountBtn.getElement().setAttribute("title", "Adjust price");
         magicDiscountBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_SMALL);
         magicDiscountBtn.addClickListener(c -> fireEvent(new OverridePriceClicked(grid)));
 

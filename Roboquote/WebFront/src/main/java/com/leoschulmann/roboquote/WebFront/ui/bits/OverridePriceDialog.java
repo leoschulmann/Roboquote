@@ -23,7 +23,7 @@ public class OverridePriceDialog extends Dialog {
         overrideBtn = new Button("OK");
         overrideBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
         overrideBtn.setWidthFull();
-        setWidth("25%");
+        setWidth("15em");
         add(new VerticalLayout(price, overrideBtn));
     }
 }

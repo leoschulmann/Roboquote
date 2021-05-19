@@ -5,6 +5,7 @@ import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCancelClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCommentClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerNewVersionClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerTemplateClicked;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ErrorDialog;
 import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
 import com.leoschulmann.roboquote.WebFront.ui.bits.QuoteViewerWrapper;
 import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;

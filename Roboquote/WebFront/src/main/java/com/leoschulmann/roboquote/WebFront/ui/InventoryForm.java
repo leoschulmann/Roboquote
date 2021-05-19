@@ -1,6 +1,8 @@
 package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.events.*;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ConfirmDialog;
+import com.leoschulmann.roboquote.WebFront.ui.bits.ErrorDialog;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.vaadin.componentfactory.ToggleButton;
 import com.vaadin.flow.component.ComponentEvent;

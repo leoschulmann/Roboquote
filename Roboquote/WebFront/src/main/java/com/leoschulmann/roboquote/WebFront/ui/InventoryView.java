@@ -2,10 +2,7 @@ package com.leoschulmann.roboquote.WebFront.ui;
 
 import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.*;
-import com.leoschulmann.roboquote.WebFront.ui.bits.GridSizeCombobox;
-import com.leoschulmann.roboquote.WebFront.ui.bits.ItemUsageDialog;
-import com.leoschulmann.roboquote.WebFront.ui.bits.QuoteViewerWrapper;
-import com.leoschulmann.roboquote.WebFront.ui.bits.ZoomButtons;
+import com.leoschulmann.roboquote.WebFront.ui.bits.*;
 import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.componentfactory.ToggleButton;

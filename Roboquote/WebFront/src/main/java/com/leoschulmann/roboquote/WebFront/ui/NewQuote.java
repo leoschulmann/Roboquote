@@ -268,6 +268,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
             QuoteSection quoteSection = new QuoteSection(name);
             addNewGrid(quoteSection);
             dialog.close();
+            dialog.cleanInputs();
         });
 
         dialog.addListener(SectionDialogAddBundledSectionButtonClicked.class, e -> {
@@ -281,6 +282,7 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
             recalculateAndRedrawTotalsAndSubtotals();
             dialog.close();
+            dialog.cleanInputs();
         });
 
         finishBlock.addListener(FinishBlockSaveClickedEvent.class, e -> {

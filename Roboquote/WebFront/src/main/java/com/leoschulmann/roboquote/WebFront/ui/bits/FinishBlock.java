@@ -62,13 +62,17 @@ public class FinishBlock extends VerticalLayout {
 
         saveQuoteBtn = new Button("Save to DB");
         saveQuoteBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        saveQuoteBtn.addClickListener(click -> fireEvent(new FinishBlockSaveClickedEvent(this)));
-
+        saveQuoteBtn.addClickListener(click -> {
+            ConfirmDialog dialog = new ConfirmDialog("Are you sure?");
+            dialog.addListener(DialogConfirmed.class, e -> fireEvent(new FinishBlockSaveClickedEvent(this)));
+            dialog.open();
+        });
 
         dlButt = new Button("Download");
         wrapper = new FileDownloadWrapper(new StreamResource("error", () -> new ByteArrayInputStream(new byte[]{})));
         dlButt.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_PRIMARY);
         dlButt.setEnabled(false);
+        dlButt.setWidthFull();
         wrapper.wrapComponent(dlButt);
 
 
@@ -77,7 +81,7 @@ public class FinishBlock extends VerticalLayout {
         buttons.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("25em", 1),
                 new FormLayout.ResponsiveStep("32em", 3),
-                new FormLayout.ResponsiveStep("40em", 6));
+                new FormLayout.ResponsiveStep("50em", 6));
 
 
         totalString = new Span();

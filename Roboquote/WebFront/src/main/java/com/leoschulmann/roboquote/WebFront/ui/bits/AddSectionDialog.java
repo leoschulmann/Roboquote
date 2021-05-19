@@ -63,4 +63,9 @@ public class AddSectionDialog extends Dialog {
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType, ComponentEventListener<T> listener) {
         return getEventBus().addListener(eventType, listener);
     }
+
+    public void cleanInputs() {
+        tf.clear();
+        bundles.clear();
+    }
 }
