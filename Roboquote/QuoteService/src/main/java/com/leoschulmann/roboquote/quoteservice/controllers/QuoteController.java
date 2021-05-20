@@ -7,15 +7,15 @@ import com.leoschulmann.roboquote.quoteservice.validation.ExistingQuote;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Validated
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class QuoteController {
     private final QuoteService quoteService;
@@ -32,7 +32,8 @@ public class QuoteController {
         return new ResponseEntity<>(quotes, HttpStatus.OK);
     }
 
-    @GetMapping("/uncancelled")//returning only basic info, without sections or positions (returns projs with canceled=false only)
+    @GetMapping("/uncancelled")
+//returning only basic info, without sections or positions (returns projs with canceled=false only)
     public ResponseEntity<List<QuoteDto>> findAllUncacelled() {
         List<QuoteDto> quotes = quoteService.findAllUncancelled();
         return new ResponseEntity<>(quotes, HttpStatus.OK);
@@ -45,7 +46,8 @@ public class QuoteController {
     }
 
     @PostMapping("/comment/{id}")
-    public ResponseEntity<Object> addComment(@PathVariable @ExistingQuote int id, @RequestBody String comment) {
+    public ResponseEntity<Object> addComment(@PathVariable @ExistingQuote int id,
+                                             @RequestBody @Size(max = 255) String comment) {
         quoteService.addComment(id, comment);
         return new ResponseEntity<>(HttpStatus.OK);
     }

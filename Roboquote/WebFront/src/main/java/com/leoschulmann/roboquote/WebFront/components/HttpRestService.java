@@ -1,5 +1,6 @@
 package com.leoschulmann.roboquote.WebFront.components;
 
+import com.leoschulmann.roboquote.WebFront.ui.bits.ErrorDialog;
 import com.leoschulmann.roboquote.itemservice.dto.BundleDto;
 import com.leoschulmann.roboquote.itemservice.dto.BundleItemDto;
 import com.leoschulmann.roboquote.itemservice.dto.ItemDto;
@@ -19,13 +20,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,7 +46,7 @@ public class HttpRestService {
     @Value("${namingservice.url}")
     private String nameUrl;
 
-    private final RestTemplate restTemplate; //todo register with responseErrorHandler
+    private final RestTemplate restTemplate;
     private final AuthService auth;
     private final ItemBundleDtoConverter itemBundleDtoConverter;
     private final QuoteDtoConverter quoteDtoConverter;
@@ -251,21 +253,34 @@ public class HttpRestService {
         RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "comment/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(value);
-        restTemplate.exchange(request, String.class);
+        try {
+            restTemplate.exchange(request, String.class);
+        } catch (RestClientResponseException e) {
+            new ErrorDialog(e.getResponseBodyAsString()).open();
+        }
     }
 
     public void setCancelled(int id, boolean cancel) {
         RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "cancel/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(String.valueOf(cancel));
-        restTemplate.exchange(request, String.class);
+        try {
+            restTemplate.exchange(request, String.class);
+        } catch (RestClientResponseException e) {
+            new ErrorDialog(e.getResponseBodyAsString()).open();
+        }
     }
 
     public List<Quote> findAllQuotesForItemId(int itemId) {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "foritem/" + itemId)).
                 headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
-        if (arr == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+        try {
+            ResponseEntity<QuoteDto[]> responseEntity = restTemplate.exchange(request, QuoteDto[].class);
+            QuoteDto[] arr = responseEntity.getBody();
+
+            return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+        } catch (RestClientResponseException e) {
+            return Collections.emptyList();
+        }
     }
 }

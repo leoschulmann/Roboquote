@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.Size;
 import java.util.List;
 @Getter @Setter
 @NoArgsConstructor
@@ -76,6 +77,7 @@ public class QuoteDto {
 
     private String finalPriceCurrency;
 
+    @Size(max = 255)
     private String comment;
 
     private boolean cancelled;

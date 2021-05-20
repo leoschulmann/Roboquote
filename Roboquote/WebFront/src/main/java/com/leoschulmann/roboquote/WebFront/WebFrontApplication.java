@@ -11,23 +11,22 @@ import org.springframework.web.client.RestTemplate;
 @SpringBootApplication(exclude = ErrorMvcAutoConfiguration.class)
 public class WebFrontApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(WebFrontApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(WebFrontApplication.class, args);
+    }
 
-	@Bean
-	RestTemplate restTemplate() {
-		return new RestTemplate();     //todo register with responseErrorHandler
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 
-	}
+    @Bean
+    ItemBundleDtoConverter itemBundleDtoConverter() {
+        return new ItemBundleDtoConverter();
+    }
 
-	@Bean
-	ItemBundleDtoConverter itemBundleDtoConverter() {
-		return new ItemBundleDtoConverter();
-	}
-
-	@Bean
-	QuoteDtoConverter quoteDtoConverter() {
-		return new QuoteDtoConverter();
-	}
+    @Bean
+    QuoteDtoConverter quoteDtoConverter() {
+        return new QuoteDtoConverter();
+    }
 }
