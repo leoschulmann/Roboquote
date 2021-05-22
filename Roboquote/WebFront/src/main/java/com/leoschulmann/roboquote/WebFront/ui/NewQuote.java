@@ -24,6 +24,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 import lombok.Getter;
 import org.javamoney.moneta.Money;
+import org.springframework.web.client.RestClientResponseException;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
@@ -292,11 +293,15 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
             if (validationStatus.isOk() && noEmptyGrids) {
                 int id = postToDbAndGetID();  //persisting starts here
-                fireEvent(new QuotePersistedEvent(this,
-                        httpRestService.getFullName(id) + downloadService.getExtension(),
-                        downloadService.downloadXlsx(id)));
+                try {
+                    fireEvent(new QuotePersistedEvent(this,
+                            httpRestService.getFullName(id) + downloadService.getExtension(),
+                            downloadService.downloadXlsx(id)));
 
-                fireEvent(new DisableClickableComponents(this));
+                    fireEvent(new DisableClickableComponents(this));
+                } catch (RestClientResponseException ex) {
+                    new ErrorDialog(ex.getResponseBodyAsString()).open();
+                }
 
             } else {
                 List<String> msg = new ArrayList<>();

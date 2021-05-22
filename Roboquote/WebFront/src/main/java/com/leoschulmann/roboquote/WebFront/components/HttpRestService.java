@@ -240,13 +240,11 @@ public class HttpRestService {
         return version;
     }
 
-    public String getFullName(int id) {
+    public String getFullName(int id) throws RestClientResponseException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl + "forid/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.TEXT_PLAIN).build();
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        String name = response.getBody();
-        if (name == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return name;
+        return response.getBody();
     }
 
     public void addComment(int id, String value) {

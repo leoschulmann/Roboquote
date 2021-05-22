@@ -41,6 +41,6 @@ public class ExceptionProcessor extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException e) {
         String msg = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(" "));
-        return new ResponseEntity<>(msg, HttpStatus.NOT_EXTENDED);
+        return new ResponseEntity<>(msg, HttpStatus.BAD_REQUEST);
     }
 }
