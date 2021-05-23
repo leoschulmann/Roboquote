@@ -28,6 +28,7 @@ import org.vaadin.klaudeta.PaginatedGrid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,6 @@ import static com.vaadin.flow.component.grid.GridVariant.*;
 public class QuotesView extends VerticalLayout {
     private final QuoteService quoteService;
     private final CurrencyFormatService currencyFormatService;
-    private final DownloadService downloadService;
     private final MoneyMathService moneyMathService;
     private final StringFormattingService stringFormattingService;
     private final HttpRestService httpRestService;
@@ -51,11 +51,10 @@ public class QuotesView extends VerticalLayout {
     private ComboBox<String> customersCombo;
 
     public QuotesView(QuoteService quoteService, CurrencyFormatService currencyFormatService,
-                      DownloadService downloadService, MoneyMathService moneyMathService,
-                      StringFormattingService stringFormattingService, HttpRestService httpRestService) {
+                      MoneyMathService moneyMathService, StringFormattingService stringFormattingService,
+                      HttpRestService httpRestService) {
         this.quoteService = quoteService;
         this.currencyFormatService = currencyFormatService;
-        this.downloadService = downloadService;
         this.moneyMathService = moneyMathService;
         this.stringFormattingService = stringFormattingService;
         this.httpRestService = httpRestService;
@@ -66,7 +65,11 @@ public class QuotesView extends VerticalLayout {
         add(createControlFrame(), grid);
         grid.addItemClickListener(event -> {
             int qId = event.getItem().getId();
-            openQuote(httpRestService.getQuoteById(qId));
+            try {
+                openQuote(httpRestService.getQuoteById(qId));
+            } catch (ServerCommunicationException e) {
+                new ErrorDialog(e.getMessage()).open();
+            }
         });
     }
 
@@ -175,13 +178,18 @@ public class QuotesView extends VerticalLayout {
     }
 
     private List<Quote> getQuotes(boolean getWithCancelled) {
-        return getWithCancelled ? httpRestService.findAllQuotes() : httpRestService.findAllUncancelledQuotes();
+        try {
+            return httpRestService.findAllQuotes(getWithCancelled);
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+            return Collections.emptyList();
+        }
     }
 
     private void openQuote(Quote quote) {
         try {
             QuoteViewer qv = new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService);
-            QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, downloadService);
+            QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, httpRestService);
             qViewerDialog.addListener(QuoteViewerCancelClicked.class, e -> handleCancelClick(e.getId(), e.isCancelAction()));
             qViewerDialog.addListener(QuoteViewerCommentClicked.class, e -> handleCommentClick(e.getId(), e.getComment()));
             qViewerDialog.addListener(QuoteViewerTemplateClicked.class, e -> handleTemplateClick(e.getQuote()));
@@ -211,12 +219,20 @@ public class QuotesView extends VerticalLayout {
     }
 
     private void handleCancelClick(int id, boolean cancelAction) {
-        httpRestService.setCancelled(id, cancelAction);
+        try {
+            httpRestService.setCancelled(id, cancelAction);
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
         updateGrid(grid, showCancelled);
     }
 
     private void handleCommentClick(int id, String comment) {
-        httpRestService.addComment(id, comment);
+        try {
+            httpRestService.addComment(id, comment);
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
         updateGrid(grid, showCancelled);
     }
 

@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
+
 @Component
 @ControllerAdvice
 public class ExceptionProcessor extends ResponseEntityExceptionHandler {
@@ -32,5 +36,11 @@ public class ExceptionProcessor extends ResponseEntityExceptionHandler {
                 "Exception adding picture " + e.getPic() + "file";
 
         return new ResponseEntity<>(new ExceptionMessage(message, 500), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException e) {
+        String msg = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(" "));
+        return new ResponseEntity<>(msg, HttpStatus.BAD_REQUEST);
     }
 }

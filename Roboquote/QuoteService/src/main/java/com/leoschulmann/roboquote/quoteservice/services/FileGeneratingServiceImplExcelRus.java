@@ -106,6 +106,11 @@ public class FileGeneratingServiceImplExcelRus implements FileGeneratingService 
         return writeFileToByteArray();
     }
 
+    @Override
+    public String getExtension() {
+        return ".xlsx";
+    }
+
     private void drawColumnHeaders() {
         createBlankRows(1);
         Row r = sheet.getRow(sheet.getLastRowNum());

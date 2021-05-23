@@ -2,28 +2,39 @@ package com.leoschulmann.roboquote.quoteservice.controllers;
 
 import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
+import com.leoschulmann.roboquote.quoteservice.dto.XlsxDataObject;
+import com.leoschulmann.roboquote.quoteservice.entities.Quote;
+import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
 import com.leoschulmann.roboquote.quoteservice.validation.ExistingQuote;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Validated
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class QuoteController {
     private final QuoteService quoteService;
+    private final FileGeneratingService fileGeneratingService;
 
     @PostMapping
-    public ResponseEntity<Object> saveQuote(@RequestBody @Valid QuoteDto quoteDto) {
+    public ResponseEntity<XlsxDataObject> saveQuote(@RequestBody @Valid QuoteDto quoteDto) {
         Integer id = quoteService.saveQuote(quoteDto);
-        return new ResponseEntity<>(id, HttpStatus.CREATED);
+        Quote q = quoteService.getQuote(id);
+
+        XlsxDataObject data = new XlsxDataObject();
+
+        data.setFileName(quoteService.getQuoteFullName(id) + fileGeneratingService.getExtension());
+        data.setData(fileGeneratingService.generateFile(q));
+
+        return new ResponseEntity<>(data, HttpStatus.CREATED);
     }
 
     @GetMapping //returning only basic info, without sections or positions
@@ -32,7 +43,8 @@ public class QuoteController {
         return new ResponseEntity<>(quotes, HttpStatus.OK);
     }
 
-    @GetMapping("/uncancelled")//returning only basic info, without sections or positions (returns projs with canceled=false only)
+    @GetMapping("/uncancelled")
+//returning only basic info, without sections or positions (returns projs with canceled=false only)
     public ResponseEntity<List<QuoteDto>> findAllUncacelled() {
         List<QuoteDto> quotes = quoteService.findAllUncancelled();
         return new ResponseEntity<>(quotes, HttpStatus.OK);
@@ -45,7 +57,8 @@ public class QuoteController {
     }
 
     @PostMapping("/comment/{id}")
-    public ResponseEntity<Object> addComment(@PathVariable @ExistingQuote int id, @RequestBody String comment) {
+    public ResponseEntity<Object> addComment(@PathVariable @ExistingQuote int id,
+                                             @RequestBody @Size(max = 255) String comment) {
         quoteService.addComment(id, comment);
         return new ResponseEntity<>(HttpStatus.OK);
     }

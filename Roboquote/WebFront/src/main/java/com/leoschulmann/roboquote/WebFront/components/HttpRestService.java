@@ -10,6 +10,7 @@ import com.leoschulmann.roboquote.itemservice.entities.Item;
 import com.leoschulmann.roboquote.itemservice.services.ItemBundleDtoConverter;
 import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
+import com.leoschulmann.roboquote.quoteservice.dto.XlsxDataObject;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteDtoConverter;
@@ -19,13 +20,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,19 +45,24 @@ public class HttpRestService {
     @Value("${namingservice.url}")
     private String nameUrl;
 
-    private final RestTemplate restTemplate; //todo register with responseErrorHandler
+    @Value("${xlsxservice.url}")
+    private String downloadUrl;
+
+    private final RestTemplate restTemplate;
     private final AuthService auth;
     private final ItemBundleDtoConverter itemBundleDtoConverter;
     private final QuoteDtoConverter quoteDtoConverter;
     private final ConverterService converterService;
 
-    public List<Item> getAllItems() {
+    public List<Item> getAllItems() throws ServerCommunicationException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(itemUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        ItemDto[] arr = restTemplate.exchange(request, ItemDto[].class).getBody();
-        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
-
-        return Arrays.stream(arr).map(itemBundleDtoConverter::convertToItem).collect(Collectors.toList());
+        try {
+            ItemDto[] arr = restTemplate.exchange(request, ItemDto[].class).getBody();
+            return Arrays.stream(arr).map(itemBundleDtoConverter::convertToItem).collect(Collectors.toList());
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
     public DistinctTermsDto getDistinctTerms() {
@@ -172,100 +178,121 @@ public class HttpRestService {
         }).collect(Collectors.toList());
     }
 
-    public List<Quote> findAllQuotes() {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl))
+    public List<Quote> findAllQuotes(boolean findCancelled) throws ServerCommunicationException {
+        URI uri = findCancelled ? URI.create(quoteUrl) : URI.create(quoteUrl + "uncancelled");
+
+        RequestEntity<Void> request = RequestEntity.get(uri)
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
-        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
-        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+
+        try {
+            QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
+            return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    public List<Quote> findAllUncancelledQuotes() {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "uncancelled"))
-                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
-        if (arr == null || arr.length == 0) throw new RuntimeException("work in progress!"); //todo replace stub
-        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
-    }
-
-    public Quote getQuoteById(int id) {
+    public Quote getQuoteById(int id) throws ServerCommunicationException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        ResponseEntity<QuoteDto> response = restTemplate.exchange(request, QuoteDto.class);
-        QuoteDto dto = response.getBody();
-        if (dto == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return quoteDtoConverter.convertDtoToQuote(dto);
+        try {
+            ResponseEntity<QuoteDto> response = restTemplate.exchange(request, QuoteDto.class);
+            QuoteDto dto = response.getBody();
+            return quoteDtoConverter.convertDtoToQuote(dto);
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    @Transactional
-    public int postNew(Quote quote) {
-        assignSerialNumberAndVersion(quote);
+    public XlsxDataObject persistAndReturnData(QuoteDto dto) throws ServerCommunicationException {
+        String serialNumber = dto.getNumber();
 
-        QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);
+        if (serialNumber == null || serialNumber.isBlank()) {
+            serialNumber = getNameFromService();
+        }
+
+        Integer quoteVersion = getVersionFromService(dto.getNumber());
+
+        dto.setNumber(serialNumber);
+        dto.setVersion(quoteVersion);
+
+
         RequestEntity<QuoteDto> request = RequestEntity.post(URI.create(quoteUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(dto);
 
-        ResponseEntity<Integer> response = restTemplate.exchange(request, Integer.class);
-        Integer id = response.getBody();
-        if (id == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return id;
-    }
-
-    private void assignSerialNumberAndVersion(Quote quote) {
-        if (quote.getNumber() == null || quote.getNumber().isBlank()) {
-            quote.setNumber(getNameFromService());
+        try {
+            return restTemplate.exchange(request, XlsxDataObject.class).getBody();
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
         }
-
-        quote.setVersion(getVersionFromService(quote.getNumber()));
     }
 
-    private String getNameFromService() {
+    public XlsxDataObject getDataObjectForId(int id) throws ServerCommunicationException {
+        RequestEntity<Void> request = RequestEntity.get(URI.create(downloadUrl + id))
+                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
+
+        try {
+            return restTemplate.exchange(request, XlsxDataObject.class).getBody();
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
+    }
+
+    private String getNameFromService() throws ServerCommunicationException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl))
                 .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        String serial = response.getBody();
-        if (serial == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return serial;
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+            return response.getBody();
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    private Integer getVersionFromService(String serial) {
+    private Integer getVersionFromService(String serial) throws ServerCommunicationException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl + serial)).accept(MediaType.APPLICATION_JSON)
                 .headers(auth.provideHttpHeadersWithCredentials()).build();
-        ResponseEntity<Integer> response = restTemplate.exchange(request, Integer.class);
-        Integer version = response.getBody();
-        if (version == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return version;
+        try {
+            ResponseEntity<Integer> response = restTemplate.exchange(request, Integer.class);
+            return response.getBody();
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    public String getFullName(int id) {
-        RequestEntity<Void> request = RequestEntity.get(URI.create(nameUrl + "forid/" + id))
-                .headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.TEXT_PLAIN).build();
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        String name = response.getBody();
-        if (name == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return name;
-    }
-
-    public void addComment(int id, String value) {
+    public void addComment(int id, String value) throws ServerCommunicationException {
         RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "comment/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(value);
-        restTemplate.exchange(request, String.class);
+        try {
+            restTemplate.exchange(request, String.class);
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    public void setCancelled(int id, boolean cancel) {
+    public void setCancelled(int id, boolean cancel) throws ServerCommunicationException {
         RequestEntity<String> request = RequestEntity.post(URI.create(quoteUrl + "cancel/" + id))
                 .headers(auth.provideHttpHeadersWithCredentials()).contentType(MediaType.APPLICATION_JSON)
                 .body(String.valueOf(cancel));
-        restTemplate.exchange(request, String.class);
+        try {
+            restTemplate.exchange(request, String.class);
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 
-    public List<Quote> findAllQuotesForItemId(int itemId) {
+    public List<Quote> findAllQuotesForItemId(int itemId) throws ServerCommunicationException {
         RequestEntity<Void> request = RequestEntity.get(URI.create(quoteUrl + "foritem/" + itemId)).
                 headers(auth.provideHttpHeadersWithCredentials()).accept(MediaType.APPLICATION_JSON).build();
-        QuoteDto[] arr = restTemplate.exchange(request, QuoteDto[].class).getBody();
-        if (arr == null) throw new RuntimeException("work in progress!"); //todo replace stub
-        return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+        try {
+            ResponseEntity<QuoteDto[]> responseEntity = restTemplate.exchange(request, QuoteDto[].class);
+            QuoteDto[] arr = responseEntity.getBody();
+
+            return Arrays.stream(arr).map(quoteDtoConverter::convertDtoToMinimalQuote).collect(Collectors.toList());
+        } catch (RestClientResponseException e) {
+            throw new ServerCommunicationException(e.getResponseBodyAsString());
+        }
     }
 }

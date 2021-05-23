@@ -4,6 +4,7 @@ import com.leoschulmann.roboquote.quoteservice.dto.DistinctTermsDto;
 import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.projections.*;
+import com.leoschulmann.roboquote.quoteservice.exceptions.NoInventoryItemFound;
 import com.leoschulmann.roboquote.quoteservice.repositories.QuoteRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -81,6 +82,7 @@ public class QuoteService {
 
     public List<QuoteDto> findAllForItemId(int id) {
         List<QuoteWithoutSections> projections = quoteRepo.getAllQuoteProjectionsForItemId(id);
+        if (projections.size() == 0) throw new NoInventoryItemFound(id);
         return projections.stream().map(dtoService::convertProjectionToDto).collect(Collectors.toList());
     }
 }

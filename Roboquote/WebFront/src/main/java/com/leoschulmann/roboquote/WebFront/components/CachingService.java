@@ -23,7 +23,7 @@ public class CachingService {
     private List<String> warrantyCache;
 
     @PostConstruct
-    public void init() {
+    public void init() throws ServerCommunicationException {
         itemCache = new ArrayList<>();
         updateItemCache();
     }
@@ -32,7 +32,7 @@ public class CachingService {
         return itemCache;
     }
 
-    public void updateItemCache() {
+    public void updateItemCache() throws ServerCommunicationException {
         itemCache = httpService.getAllItems();
     }
 

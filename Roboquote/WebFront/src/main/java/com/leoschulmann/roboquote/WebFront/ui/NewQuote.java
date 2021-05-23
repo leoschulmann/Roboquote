@@ -4,9 +4,12 @@ import com.leoschulmann.roboquote.WebFront.components.*;
 import com.leoschulmann.roboquote.WebFront.events.*;
 import com.leoschulmann.roboquote.WebFront.ui.bits.*;
 import com.leoschulmann.roboquote.itemservice.entities.Bundle;
+import com.leoschulmann.roboquote.quoteservice.dto.QuoteDto;
+import com.leoschulmann.roboquote.quoteservice.dto.XlsxDataObject;
 import com.leoschulmann.roboquote.quoteservice.entities.ItemPosition;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.entities.QuoteSection;
+import com.leoschulmann.roboquote.quoteservice.services.QuoteDtoConverter;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
@@ -41,7 +44,6 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
 
     private final CurrencyRatesService currencyRatesService;
     private final QuoteSectionHandler sectionHandler;
-    private final DownloadService downloadService;
     private final StringFormattingService stringFormattingService;
     private final MoneyMathService moneyMathService;
     private final CachingService cachingService;
@@ -58,20 +60,22 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     private BigDecimal dollarRate;
     private BigDecimal yenRate;
     private double exchangeConversionFee;
+    private final QuoteDtoConverter quoteDtoConverter;
 
     public NewQuote(CurrencyRatesService currencyRatesService,
-                    QuoteSectionHandler sectionHandler, DownloadService downloadService,
+                    QuoteSectionHandler sectionHandler,
                     StringFormattingService stringFormattingService,
                     MoneyMathService moneyMathService, CachingService cachingService,
-                    HttpRestService httpRestService, ConverterService converterService) {
+                    HttpRestService httpRestService, ConverterService converterService,
+                    QuoteDtoConverter quoteDtoConverter) {
         this.currencyRatesService = currencyRatesService;
         this.sectionHandler = sectionHandler;
-        this.downloadService = downloadService;
         this.stringFormattingService = stringFormattingService;
         this.moneyMathService = moneyMathService;
         this.cachingService = cachingService;
         this.httpRestService = httpRestService;
         this.converterService = converterService;
+        this.quoteDtoConverter = quoteDtoConverter;
 
         gridsBlock = new GridsBlock();
 
@@ -117,8 +121,12 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         lookup.addListener(RefreshButtonEvent.class, e -> fireEvent(new RefreshCachesEvent(this)));
 
         addListener(RefreshCachesEvent.class, e -> {
-            cachingService.updateItemCache();
-            lookup.setItems(cachingService.getItemsFromCache());
+            try {
+                cachingService.updateItemCache();
+                lookup.setItems(cachingService.getItemsFromCache());
+            } catch (ServerCommunicationException ex) {
+                new ErrorDialog(ex.getMessage()).open();
+            }
         });
 
         addListener(UpdateAvailableGridsEvent.class, e -> lookup.updateGrids(gridsBlock.getGridsAsList()));
@@ -291,12 +299,14 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
                     .getPositions().size() == 0);
 
             if (validationStatus.isOk() && noEmptyGrids) {
-                int id = postToDbAndGetID();  //persisting starts here
-                fireEvent(new QuotePersistedEvent(this,
-                        httpRestService.getFullName(id) + downloadService.getExtension(),
-                        downloadService.downloadXlsx(id)));
+                try {
+                    XlsxDataObject xlsxDataObject = persistQuote();
 
-                fireEvent(new DisableClickableComponents(this));
+                    fireEvent(new QuotePersistedEvent(this, xlsxDataObject.getFileName(), xlsxDataObject.getData()));
+                    fireEvent(new DisableClickableComponents(this));
+                } catch (ServerCommunicationException | ValidationException ex) {
+                    new ErrorDialog(ex.getMessage()).open();
+                }
 
             } else {
                 List<String> msg = new ArrayList<>();
@@ -338,23 +348,21 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
         return finishBlock;
     }
 
+    private XlsxDataObject persistQuote() throws ServerCommunicationException, ValidationException {
+        Quote quote = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
+                BigDecimal.ONE, BigDecimal.valueOf(2));
+        quoteBinder.writeBean(quote);
+
+        quote.setSections(gridsBlock.getGridsAsList().stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList()));
+        quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
+        QuoteDto dto = quoteDtoConverter.convertQuoteToDto(quote);
+
+        return httpRestService.persistAndReturnData(dto);
+    }
+
     private void recalculateSectionSubtotal(String currency, QuoteSection qs) {
         sectionHandler.updateSubtotalToCurrency(qs, currency,
                 euroRate, dollarRate, yenRate, exchangeConversionFee);
-    }
-
-    private int postToDbAndGetID() {
-        try {
-            Quote quote = new Quote(0, 20, BigDecimal.valueOf(100), BigDecimal.valueOf(100),
-                    BigDecimal.ONE, BigDecimal.valueOf(2));
-            quoteBinder.writeBean(quote);
-            quote.setSections(gridsBlock.getGridsAsList().stream().map(SectionGrid::getQuoteSection).collect(Collectors.toList()));
-            quote.setFinalPrice((Money) getTotalMoney().multiply((100.0 - discount) / 100));
-            return httpRestService.postNew(quote);
-        } catch (ValidationException e) {
-            e.printStackTrace();
-            return -1;
-        }
     }
 
     private void addNewGrid(QuoteSection quoteSection) {
