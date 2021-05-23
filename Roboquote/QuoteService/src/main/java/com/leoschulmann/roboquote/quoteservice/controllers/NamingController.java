@@ -27,7 +27,7 @@ public class NamingController {
     }
 
     @GetMapping("/{serial}")
-    public ResponseEntity<Integer> generateVersion(@PathVariable Integer serial) {
+    public ResponseEntity<Integer> generateVersion(@PathVariable String serial) {
         return new ResponseEntity<>(generatingService.generateVer(String.valueOf(serial)), HttpStatus.OK);
     }
 

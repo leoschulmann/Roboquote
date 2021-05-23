@@ -1,12 +1,12 @@
 package com.leoschulmann.roboquote.quoteservice.controllers;
 
+import com.leoschulmann.roboquote.quoteservice.dto.XlsxDataObject;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.leoschulmann.roboquote.quoteservice.services.FileGeneratingService;
 import com.leoschulmann.roboquote.quoteservice.services.QuoteService;
+import com.leoschulmann.roboquote.quoteservice.validation.ExistingQuote;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,11 +21,13 @@ public class DownloadsController {
     private final QuoteService quoteService;
 
     @GetMapping("/xlsx/{id}")
-    ResponseEntity<byte[]> generateXlsxQuote(@PathVariable Integer id) {
+    ResponseEntity<XlsxDataObject> generateXlsxQuote(@PathVariable @ExistingQuote Integer id) {
         Quote q = quoteService.getQuote(id);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(fileGeneratingService.generateFile(q),
-                    headers, HttpStatus.OK);
+        XlsxDataObject data = new XlsxDataObject();
+
+        data.setFileName(quoteService.getQuoteFullName(id) + fileGeneratingService.getExtension());
+        data.setData(fileGeneratingService.generateFile(q));
+
+        return new ResponseEntity<>(data, HttpStatus.CREATED);
     }
 }

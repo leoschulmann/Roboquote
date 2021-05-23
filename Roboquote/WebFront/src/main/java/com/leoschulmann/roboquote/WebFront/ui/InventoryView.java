@@ -39,22 +39,19 @@ public class InventoryView extends VerticalLayout {
     private final HttpRestService httpService;
     private final MoneyMathService moneyMathService;
     private final QuoteService quoteService;
-    private final DownloadService downloadService;
     private final StringFormattingService stringFormattingService;
 
 
     public InventoryView(
             HttpRestService httpService, CurrencyFormatService currencyFormatService,
             CachingService cachingService, MoneyMathService moneyMathService,
-            QuoteService quoteService, DownloadService downloadService,
-            StringFormattingService stringFormattingService) {
+            QuoteService quoteService, StringFormattingService stringFormattingService) {
 
         this.httpService = httpService;
         this.currencyFormatService = currencyFormatService;
         this.cachingService = cachingService;
         this.moneyMathService = moneyMathService;
         this.quoteService = quoteService;
-        this.downloadService = downloadService;
         this.stringFormattingService = stringFormattingService;
         data = new ArrayList<>();
         data.addAll(cachingService.getItemsFromCache());
@@ -211,10 +208,14 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void updateList() {
-        cachingService.updateItemCache();
-        data.clear();
-        data.addAll(cachingService.getItemsFromCache());
-        dataProvider.refreshAll();
+        try {
+            cachingService.updateItemCache();
+            data.clear();
+            data.addAll(cachingService.getItemsFromCache());
+            dataProvider.refreshAll();
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
     }
 
     private void closeDialog() {
@@ -240,15 +241,15 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void showUsageDialog(int itemId) {
-        List<Quote> quotes = httpService.findAllQuotesForItemId(itemId);
-        if (quotes.size() == 0) {
-            new ErrorDialog(List.of("No usage found")).open();
-
-        } else {
-            ItemUsageDialog itemUsageDialog = new ItemUsageDialog(httpService.findAllQuotesForItemId(itemId), currencyFormatService);
+        List<Quote> quotes;
+        try {
+            quotes = httpService.findAllQuotesForItemId(itemId);
+            ItemUsageDialog itemUsageDialog = new ItemUsageDialog(quotes, currencyFormatService);
             itemUsageDialog.addListener(OpenQuoteViewerClicked.class, e -> openQuoteViewer(e.getId()));
             itemUsageDialog.setWidth("80%");
             itemUsageDialog.open();
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
         }
     }
 
@@ -257,16 +258,20 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void openQuoteViewer(int id) {
-        Quote quote = httpService.getQuoteById(id);
-
-        QuoteViewer qv = new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService);
-        QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, downloadService);
-        qViewerDialog.addListener(QuoteViewerCancelClicked.class, e -> handleCancelClick(e.getId(), e.isCancelAction()));
-        qViewerDialog.addListener(QuoteViewerCommentClicked.class, e -> handleCommentClick(e.getId(), e.getComment()));
-        qViewerDialog.addListener(QuoteViewerTemplateClicked.class, e -> handleTemplateClick(e.getQuote()));
-        qViewerDialog.addListener(QuoteViewerNewVersionClicked.class, e -> handleNewVersionClick(e.getQuote()));
-        qViewerDialog.setWidth("80%");
-        qViewerDialog.open();
+        Quote quote;
+        try {
+            quote = httpService.getQuoteById(id);
+            QuoteViewer qv = new QuoteViewer(quote, currencyFormatService, moneyMathService, stringFormattingService);
+            QuoteViewerWrapper qViewerDialog = new QuoteViewerWrapper(qv, quote, httpService);
+            qViewerDialog.addListener(QuoteViewerCancelClicked.class, e -> handleCancelClick(e.getId(), e.isCancelAction()));
+            qViewerDialog.addListener(QuoteViewerCommentClicked.class, e -> handleCommentClick(e.getId(), e.getComment()));
+            qViewerDialog.addListener(QuoteViewerTemplateClicked.class, e -> handleTemplateClick(e.getQuote()));
+            qViewerDialog.addListener(QuoteViewerNewVersionClicked.class, e -> handleNewVersionClick(e.getQuote()));
+            qViewerDialog.setWidth("80%");
+            qViewerDialog.open();
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
     }
 
     private void handleNewVersionClick(Quote quote) {
@@ -286,10 +291,18 @@ public class InventoryView extends VerticalLayout {
     }
 
     private void handleCancelClick(int id, boolean cancelAction) {
-        httpService.setCancelled(id, cancelAction);
+        try {
+            httpService.setCancelled(id, cancelAction);
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
     }
 
     private void handleCommentClick(int id, String comment) {
-        httpService.addComment(id, comment);
+        try {
+            httpService.addComment(id, comment);
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+        }
     }
 }

@@ -1,11 +1,13 @@
 package com.leoschulmann.roboquote.WebFront.ui.bits;
 
-import com.leoschulmann.roboquote.WebFront.components.DownloadService;
+import com.leoschulmann.roboquote.WebFront.components.HttpRestService;
+import com.leoschulmann.roboquote.WebFront.components.ServerCommunicationException;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCancelClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerCommentClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerNewVersionClicked;
 import com.leoschulmann.roboquote.WebFront.events.QuoteViewerTemplateClicked;
 import com.leoschulmann.roboquote.WebFront.ui.QuoteViewer;
+import com.leoschulmann.roboquote.quoteservice.dto.XlsxDataObject;
 import com.leoschulmann.roboquote.quoteservice.entities.Quote;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -24,10 +26,10 @@ import java.io.ByteArrayInputStream;
 import java.util.Objects;
 
 public class QuoteViewerWrapper extends Dialog {
-    private final DownloadService downloadService;
+    private final HttpRestService httpRestService;
 
-    public QuoteViewerWrapper(QuoteViewer qv, Quote quote, DownloadService downloadService) {
-        this.downloadService = downloadService;
+    public QuoteViewerWrapper(QuoteViewer qv, Quote quote, HttpRestService httpRestService) {
+        this.httpRestService = httpRestService;
         add(qv);
         FileDownloadWrapper downloadXlsxWrapper = createDownloadWrapper(quote.getNumber(), quote.getVersion(), quote.getId());
         Button asTemplateBtn = createAsTemplateBtn(quote);
@@ -82,9 +84,17 @@ public class QuoteViewerWrapper extends Dialog {
     private FileDownloadWrapper createDownloadWrapper(String serialNumber, Integer version, int id) {
         Button downloadXlsxBtn = new Button("Download " + serialNumber + "-" + version + ".xlsx");
         downloadXlsxBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-        FileDownloadWrapper wrapper = new FileDownloadWrapper(
-                new StreamResource(serialNumber + "-" + version + downloadService.getExtension(),
-                        () -> new ByteArrayInputStream(downloadService.downloadXlsx(id))));
+        FileDownloadWrapper wrapper;
+
+        try {
+            XlsxDataObject dataObj = httpRestService.getDataObjectForId(id);
+
+            wrapper = new FileDownloadWrapper(
+                    new StreamResource(dataObj.getFileName(), () -> new ByteArrayInputStream(dataObj.getData())));
+        } catch (ServerCommunicationException e) {
+            new ErrorDialog(e.getMessage()).open();
+            wrapper = new FileDownloadWrapper("error", () -> new byte[0]);
+        }
         downloadXlsxBtn.setWidthFull();
         wrapper.wrapComponent(downloadXlsxBtn);
         return wrapper;
