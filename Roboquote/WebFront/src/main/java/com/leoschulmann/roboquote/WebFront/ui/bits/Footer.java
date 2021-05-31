@@ -37,12 +37,12 @@ public class Footer extends VerticalLayout {
         totalDiscounted.setText(stringFormattingService.getSubtotalDisc(grid.getName(),
                 grid.getQuoteSection().getTotal(), disc));
 
-        if (!disc.equals(BigDecimal.ZERO)) {
-            totalDiscounted.setVisible(true);
-            total.getElement().getStyle().remove("font-weight").set("text-decoration", "line-through");
-        } else {
+        if (disc.compareTo(BigDecimal.ZERO) == 0) {
             totalDiscounted.setVisible(false);
             total.getElement().getStyle().set("font-weight", "bold").remove("text-decoration");
+        } else {
+            totalDiscounted.setVisible(true);
+            total.getElement().getStyle().remove("font-weight").set("text-decoration", "line-through");
         }
     }
 

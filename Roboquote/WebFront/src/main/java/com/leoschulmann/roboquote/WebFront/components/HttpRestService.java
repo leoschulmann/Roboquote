@@ -211,7 +211,7 @@ public class HttpRestService {
             serialNumber = getNameFromService();
         }
 
-        Integer quoteVersion = getVersionFromService(dto.getNumber());
+        Integer quoteVersion = getVersionFromService(serialNumber);
 
         dto.setNumber(serialNumber);
         dto.setVersion(quoteVersion);
