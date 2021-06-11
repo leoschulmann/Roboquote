@@ -14,4 +14,6 @@ public class DistinctTermsDto {
     private List<String> paymentTerms;
     private List<String> shippingTerms;
     private List<String> warranty;
+    private List<String> dealers;
+    private List<String> customers;
 }

@@ -11,9 +11,9 @@ import lombok.Getter;
 @Getter
 public class InfoAccordion extends Accordion {
     private final FormLayout columnLayout;
-    private final TextField customer; //todo lookup in DB
+    private final ComboBox<String> customer;
     private final TextField customerInfo;
-    private final TextField dealer;
+    private final ComboBox<String> dealer;
     private final TextField dealerInfo;
     private final ComboBox<String> paymentTerms;
     private final ComboBox<String> shippingTerms;
@@ -31,9 +31,18 @@ public class InfoAccordion extends Accordion {
                 new FormLayout.ResponsiveStep("32em", 2),
                 new FormLayout.ResponsiveStep("40em", 3));
 
-        customer = new TextField("Customer");
+        customer = new ComboBox<>("Customer");
+        customer.setAllowCustomValue(true);
+        customer.setClearButtonVisible(true);
+        customer.addCustomValueSetListener(e -> customer.setValue(e.getDetail()));
+
         customerInfo = new TextField("Customer info");
-        dealer = new TextField("Dealer");
+
+        dealer = new ComboBox<>("Dealer");
+        dealer.setAllowCustomValue(true);
+        dealer.setClearButtonVisible(true);
+        dealer.addCustomValueSetListener(e -> dealer.setValue(e.getDetail()));
+
         dealerInfo = new TextField("Dealer info");
 
         paymentTerms = new ComboBox<>("Payment Terms");

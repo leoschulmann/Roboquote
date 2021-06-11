@@ -21,6 +21,8 @@ public class CachingService {
     private List<String> paymentCache;
     private List<String> shippingCache;
     private List<String> warrantyCache;
+    private List<String> dealersCache;
+    private List<String> customersCache;
 
     @PostConstruct
     public void init() throws ServerCommunicationException {
@@ -42,6 +44,8 @@ public class CachingService {
         paymentCache = terms.getPaymentTerms();
         shippingCache = terms.getShippingTerms();
         warrantyCache = terms.getWarranty();
+        dealersCache = terms.getDealers();
+        customersCache = terms.getCustomers();
     }
 
     public List<String> getDistinctInstallationTerms() {
@@ -59,5 +63,13 @@ public class CachingService {
 
     public List<String> getDistinctwarrantyTerms() {
         return warrantyCache;
+    }
+
+    public List<String> getDistinctDealers() {
+        return dealersCache;
+    }
+
+    public List<String> getDistinctCustomers() {
+        return customersCache;
     }
 }

@@ -137,6 +137,8 @@ public class NewQuote extends VerticalLayout implements AfterNavigationObserver 
     private InfoAccordion createQuoteInfoBlock() {
         InfoAccordion acc = new InfoAccordion();
         cachingService.updateTermsCache();
+        acc.getDealer().setItems(cachingService.getDistinctDealers());
+        acc.getCustomer().setItems(cachingService.getDistinctCustomers());
         acc.getInstallation().setItems(cachingService.getDistinctInstallationTerms());
         acc.getPaymentTerms().setItems(cachingService.getDistinctPaymentTerms());
         acc.getShippingTerms().setItems(cachingService.getDistinctShippingTerms());

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import javax.transaction.Transactional;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,6 +55,12 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
     @Query("select distinct q.warranty as warranty from Quote q")
     List<WarrantyProjection> getDistinctWarranties();
 
+    @Query("select distinct q.dealer as dealer from Quote q")
+    List<DealerProjection> getDistinctDealers();
+
+    @Query("select distinct q.customer as customer from Quote q")
+    List<CustomerProjection> getDistinctCustomers();
+
 
     @Query("select qs.quote.created.id as id, qs.quote.created.created as createdDate, " +
             "qs.quote.created.createdTimestamp as createdDateTime, qs.quote.created.number as serialNumber, " +
@@ -62,4 +69,5 @@ public interface QuoteRepo extends JpaRepository<Quote, Integer> {
             "qs.quote.created.comment as comment, qs.quote.created.cancelled as cancelled " +
             "from ItemPosition ip inner join ip.section qs where ip.itemId = :id")
     List<QuoteWithoutSections> getAllQuoteProjectionsForItemId(int id);
+
 }

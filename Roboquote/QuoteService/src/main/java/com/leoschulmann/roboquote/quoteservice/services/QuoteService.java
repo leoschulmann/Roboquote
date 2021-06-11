@@ -77,7 +77,17 @@ public class QuoteService {
                 .filter(i -> !i.isBlank())
                 .collect(Collectors.toList());
 
-        return new DistinctTermsDto(installations, payments, shippings, warranties);
+        List<String> dealers = quoteRepo.getDistinctDealers().stream()
+                .filter(Objects::nonNull).map(DealerProjection::getDealer)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        List<String> customers = quoteRepo.getDistinctCustomers().stream()
+                .filter(Objects::nonNull).map(CustomerProjection::getCustomer)
+                .filter(i -> !i.isBlank())
+                .collect(Collectors.toList());
+
+        return new DistinctTermsDto(installations, payments, shippings, warranties, dealers, customers);
     }
 
     public List<QuoteDto> findAllForItemId(int id) {
